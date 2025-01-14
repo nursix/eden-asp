@@ -315,9 +315,9 @@ def site_presence_validate_id(label):
                 advice = T("Verify signature: %(signature)s") % {"signature": signature}
             else:
                 advice = T("No valid registration card found")
-    elif not error:
+    elif error:
         # No person found with this ID
-        pass
+        pe_label = None
 
     return pe_label, advice, error
 
