@@ -283,7 +283,21 @@ def org_organisation_controller(**attr):
 
 # -------------------------------------------------------------------------
 def site_presence_validate_id(label):
-    # TODO docstring
+    """
+        Validates the ID label during presence/checkpoint registration
+
+        Args:
+            label: the ID label (possibly including validation details)
+
+        Returns:
+            tuple (pe_label, advice, error), with
+                - pe_label: the actual PE label (without validation details)
+                - advice: advice to display (if validation not possible)
+                - error: validation error (if validation failed)
+
+        Note:
+            no pe_label will be returned if validation was possible but failed
+    """
 
     from ..idcards import IDCard
 

@@ -475,10 +475,13 @@ class PresenceRegistration(CRUDMethod):
     @staticmethod
     def get_person(label):
         """
-            Get the person record for the label
+            Returns the person record for a PE label
 
             Args:
                 label: the PE label
+
+            Returns:
+                the pr_person Row
         """
 
         if not label:
