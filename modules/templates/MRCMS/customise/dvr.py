@@ -798,6 +798,7 @@ def dvr_case_appointment_controller(**attr):
                     TextFilter(["person_id$pe_label",
                                 "person_id$first_name",
                                 "person_id$last_name",
+                                "person_id$dvr_case.reference",
                                 ],
                                 label = T("Search"),
                                 ),
@@ -856,8 +857,9 @@ def dvr_case_appointment_controller(**attr):
 
             # Custom list fields
             list_fields = [(T("ID"), "person_id$pe_label"),
-                           "person_id$last_name",
-                           "person_id$first_name",
+                           (T("Principal Ref.No."), "person_id$dvr_case.reference"),
+                           # TODO render as link to person if not XLS
+                           (T("Name"), "person_id"),
                            "type_id",
                            #"date",
                            (T("Date"), "start_date"),

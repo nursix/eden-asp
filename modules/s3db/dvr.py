@@ -3360,6 +3360,7 @@ class DVRCaseAppointmentModel(DataModel):
     names = ("dvr_case_appointment",
              "dvr_case_appointment_type",
              "dvr_appointment_type_id",
+             "dvr_appointment_status_opts",
              )
 
     def model(self):

@@ -2850,6 +2850,41 @@ form.auth_login #submit_record__row {
   color: #f08a24;
 }
 
+/* line 496, ../../default/scss/theme/_forms.scss */
+.bulk-action-form {
+  padding: 0.5rem;
+}
+/* line 499, ../../default/scss/theme/_forms.scss */
+.bulk-action-form .bulk-action-info {
+  font-size: 0.8rem;
+  font-weight: bold;
+}
+/* line 503, ../../default/scss/theme/_forms.scss */
+.bulk-action-form .bulk-action-question {
+  font-size: 0.8rem;
+  font-weight: bold;
+  border-top: 1px solid #eee;
+  padding-top: 0.5rem;
+}
+/* line 509, ../../default/scss/theme/_forms.scss */
+.bulk-action-form label {
+  font-size: 0.825rem;
+}
+/* line 512, ../../default/scss/theme/_forms.scss */
+.bulk-action-form .label-above {
+  font-weight: bold;
+}
+/* line 514, ../../default/scss/theme/_forms.scss */
+.bulk-action-form .label-above select {
+  display: block;
+  margin-bottom: 1rem;
+  min-width: 12rem;
+}
+/* line 521, ../../default/scss/theme/_forms.scss */
+.bulk-action-form .bulk-action-buttons button, .bulk-action-form .bulk-action-buttons a.cancel-form-btn {
+  margin-bottom: 0;
+}
+
 /* line 13, ../../default/scss/theme/_filters.scss */
 #filter-form {
   margin: 0;

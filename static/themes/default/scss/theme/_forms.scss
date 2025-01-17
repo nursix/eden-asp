@@ -490,4 +490,38 @@ form {
     }
 }
 
+// ----------------------------------------------------------------------------
+// Bulk Action Dialogs
+//
+.bulk-action-form {
+
+    padding: 0.5rem;
+    .bulk-action-info {
+        font-size: 0.8rem;
+        font-weight: bold;
+    }
+    .bulk-action-question {
+        font-size: 0.8rem;
+        font-weight: bold;
+        border-top: 1px solid #eee;
+        padding-top: 0.5rem;
+    }
+    label {
+        font-size: 0.825rem;
+    }
+    .label-above {
+        font-weight: bold;
+        select {
+            display: block;
+            margin-bottom: 1rem;
+            min-width: 12rem;
+        }
+    }
+    .bulk-action-buttons {
+        button, a.cancel-form-btn {
+            margin-bottom: 0
+        }
+    }
+}
+
 // END ========================================================================

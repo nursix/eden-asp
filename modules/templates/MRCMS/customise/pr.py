@@ -10,7 +10,7 @@ import json
 from gluon import current, URL, A, IS_EMPTY_OR, SPAN
 from gluon.storage import Storage
 
-from core import FS, IS_ONE_OF, s3_str
+from core import FS, IS_ONE_OF, S3CalendarWidget, s3_str
 
 # Limit after which a checked-out resident is reported overdue (days)
 ABSENCE_LIMIT = 5
@@ -199,22 +199,34 @@ def pr_person_resource(r, tablename):
 
                 from ..reports import PresenceReport, ArrivalsDeparturesReport
                 s3db.set_method("pr_person", method="presence_report", action=PresenceReport)
-                s3db.set_method("pr_person", method = "aandd", action=ArrivalsDeparturesReport)
+                s3db.set_method("pr_person", method="aandd", action=ArrivalsDeparturesReport)
 
                 bulk_actions = []
 
                 get_vars = r.get_vars
                 select_vars = {k:get_vars[k] for k in get_vars.keys() & {"closed", "archived"}}
 
-                if case_administration and \
-                   has_permission("update", "cr_shelter_registration"):
-
-                    from ..shelter import BulkRegistration
-                    s3db.set_method("pr_person", method="checkout", action=BulkRegistration)
-
+                if case_administration and has_permission("update", "cr_shelter_registration"):
+                    from ..bulk import CheckoutResidents
+                    s3db.set_method("pr_person", method="checkout", action=CheckoutResidents)
                     bulk_actions.append({"label": T("Check-out"),
                                          "mode": "ajax",
-                                         "url": r.url(method="checkout", representation="json", vars=select_vars),
+                                         "url": r.url(method = "checkout",
+                                                      representation = "json",
+                                                      vars = select_vars,
+                                                      ),
+                                         })
+
+                if case_administration and has_permission("create", "dvr_case_appointment"):
+                    from ..bulk import CreateAppointment
+                    s3db.set_method("pr_person", method="create_appointment", action=CreateAppointment)
+                    bulk_actions.append({"label": T("Create Appointment"),
+                                         "mode": "ajax",
+                                         "url": r.url(method = "create_appointment",
+                                                      representation = "json",
+                                                      vars = select_vars,
+                                                      ),
+                                         "script": S3CalendarWidget.global_scripts(current.calendar.name)[0],
                                          })
 
                 if auth.s3_has_role("ADMIN"):
