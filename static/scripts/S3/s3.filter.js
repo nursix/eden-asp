@@ -252,8 +252,13 @@ S3.search = {};
 
     /**
      * clearFilters: remove all selected filter options
+     *
+     * @param {jQuery} form - the filter form
+     * @param {boolean} delayed - do not immediately trigger a target update
+     *                            after removing the filters (e.g. when this
+     *                            is done only in order to set new filters)
      */
-    var clearFilters = function(form) {
+    var clearFilters = function(form, delayed) {
 
         // If no form has been specified, find the first one
         if (undefined === form) {
@@ -340,7 +345,9 @@ S3.search = {};
         form.data('noAutoSubmit', 0);
 
         // Fire optionChanged event
-        form.trigger('optionChanged');
+        if (!delayed) {
+            form.trigger('optionChanged');
+        }
     };
 
     S3.search.clearFilters = clearFilters;
@@ -2746,12 +2753,11 @@ S3.search = {};
         _load: function() {
 
             const filterForm = $(this.element).closest('form'),
-                  filters = this.options.filters;
+                  filters = this.options.filters,
+                  filter_id = $(this.element).val();
 
-            S3.search.clearFilters(filterForm);
-
-            let filter_id = $(el).val();
             if (filter_id && filters.hasOwnProperty(filter_id)) {
+                S3.search.clearFilters(filterForm, true);
                 S3.search.setCurrentFilters(filterForm, filters[filter_id]);
             }
         },
