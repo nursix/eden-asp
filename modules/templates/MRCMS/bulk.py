@@ -781,7 +781,26 @@ class CreateAppointment(CRUDMethod):
     # -------------------------------------------------------------------------
     @staticmethod
     def create_appointment(person_ids, appointment_type_id, start_date, end_date):
-        # TODO docstring
+        """
+            Creates the appointment for each of the selected persons
+
+            Args:
+                person_ids: list|set of the selected person's IDs
+                appointment_type_id: the appointment type ID
+                start_date: the start date/time for the appointment
+                end_date: the end date/time for the appointment,
+                          defaults to one hour after start
+
+            Returns:
+                tuple (num_created, num_updated)
+
+            Notes:
+                - overlapping, non-completed appointments of the same type
+                  would be updated with new status and date/times rather
+                  than duplicated
+                - bulk-creation of appointments needs to be handled
+                  with extra care as it could be costly to undo
+        """
 
         created = updated = 0
 
