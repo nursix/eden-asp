@@ -501,9 +501,8 @@ class CreateAppointment(CRUDMethod):
         resource = self.resource
         table = resource.table
 
-        get_vars = r.get_vars
-
         # Select-URL for redirections (retain closed/archived flags)
+        get_vars = r.get_vars
         select_vars = {"$search": "session"}
         select_vars.update({k:get_vars[k] for k in get_vars.keys() & {"closed", "archived"}})
         select_url = r.url(method="select", representation="", vars=select_vars)
