@@ -748,6 +748,7 @@
                             if (json.recordsFiltered !== undefined) {
                                 // This could be smaller than totalRecords
                                 cacheEnd = json.recordsFiltered;
+                                self.totalRecords = json.recordsFiltered;
                             }
                             cacheCombined.store(requestStart, json.data, cacheEnd);
 
@@ -1284,6 +1285,9 @@
                     this._bulkActionSelect(selector);
                 }
             }
+
+            // Update all-selected indicator checkbox
+            this._bulkToggleAllSelected();
         },
 
         /**
@@ -1300,15 +1304,10 @@
 
             if (action) {
                 let min = action.min,
-                    max = action.max,
-                    totalRecords = this.totalRecords;
+                    max = action.max;
 
                 // Get number of selected records
                 var numActive = this.selectedRows.length;
-                if (this.selectionMode == 'Exclusive') {
-                    numActive = totalRecords - numActive;
-                }
-
                 if (numActive == 0 || min && numActive < min || max && numActive > max) {
                     executeBtn.prop('disabled', true);
                 } else {
@@ -1342,9 +1341,6 @@
 
                 // Verify min/max selected
                 let numActive = this.selectedRows.length;
-                if (this.selectionMode == 'Exclusive') {
-                    numActive = this.totalRecords - numActive;
-                }
                 if (action.min && numActive < action.min ||
                     action.max && numActive > action.max) {
                     $button.prop('disabled', false);
@@ -1673,13 +1669,7 @@
                     selected = [];
                 }
                 this.selectedRows = selected;
-
-                // Determine selection mode
-                if ($(this.selector + '_dataTable_bulkSelectAll').val()) {
-                    this.selectionMode = 'Exclusive';
-                } else {
-                    this.selectionMode = 'Inclusive';
-                }
+                this.selectionMode = 'Inclusive';
             }
         },
 
@@ -1693,76 +1683,29 @@
         _bulkSelect: function(row, index) {
 
             // Elements
-            var el = $(this.element),
-                bulkSelectOptions = $('.bulk-select-options', el),  // mandatory layout element
-                selectAll = $('.bulk-select-all', el),              // mandatory layout element
-                totalAvailable = $('.bulk-total-available', el),    // optional layout element
-                totalSelected = $('.bulk-total-selected', el),      // optional layout element
-                selectedIndicator = totalAvailable.length && totalSelected.length;
+            var el = $(this.element);
 
-            // Numbers of records
-            var totalRecords = this.totalRecords,
-                numSelected = this.selectedRows.length;
-
-            if (this.selectionMode == 'Inclusive') {
-                // Update selected-indicator
-                if (selectedIndicator) {
-                    totalSelected.text(numSelected);
-                    totalAvailable.text(totalRecords);
-                }
-
-                // Manage selection
-                let bulkSingle = this.tableConfig.bulkSingle;
-                if (index == -1) {
-                    // Row is not currently selected
-                    $(row).removeClass('row_selected');
-                    $('.bulkcheckbox', row).prop('checked', false);
-                } else {
-                    // Row is currently selected
-                    if (bulkSingle) {
-                        // Deselect all other rows
-                        $(row).closest('table').find('tr')
-                                               .removeClass('row_selected')
-                                               .find('.bulkcheckbox')
-                                               .prop('checked', false);
-                    }
-                    $(row).addClass('row_selected');
-                    $('.bulkcheckbox', row).prop('checked', true);
-                }
-
-                // Check selection mode
-                if (!bulkSingle && (numSelected == totalRecords)) {
-                    // All rows have been selected => switch to exclusive mode
-                    selectAll.prop('checked', true);
-                    this.selectionMode = 'Exclusive';
-                    this.selectedRows = [];
-                }
+            // Manage selection
+            let bulkSingle = this.tableConfig.bulkSingle;
+            if (index == -1) {
+                // Row is not currently selected
+                $(row).removeClass('row_selected');
+                $('.bulkcheckbox', row).prop('checked', false);
             } else {
-                // Update selected-indicator
-                if (selectedIndicator) {
-                    totalSelected.text(totalRecords - numSelected);
-                    totalAvailable.text(totalRecords);
+                // Row is currently selected
+                if (bulkSingle) {
+                    // Deselect all other rows
+                    $(row).closest('table').find('tr')
+                                           .removeClass('row_selected')
+                                           .find('.bulkcheckbox')
+                                           .prop('checked', false);
                 }
-
-                // Manage selection
-                if (index == -1) {
-                    // Row is currently selected
-                    $(row).addClass('row_selected');
-                    $('.bulkcheckbox', row).prop('checked', true);
-                } else {
-                    // Row is not currently selected
-                    $(row).removeClass('row_selected');
-                    $('.bulkcheckbox', row).prop('checked', false);
-                }
-
-                // Check selection mode
-                if (numSelected == totalRecords) {
-                    // All rows have been de-selected => switch to inclusive mode
-                    selectAll.prop('checked', false);
-                    this.selectionMode = 'Inclusive';
-                    this.selectedRows = [];
-                }
+                $(row).addClass('row_selected');
+                $('.bulkcheckbox', row).prop('checked', true);
             }
+
+            // Toggle all-selected indicator checkbox
+            this._bulkToggleAllSelected();
 
             // Store select mode and (de-)selected rows in hidden form fields
             $(this.selector + '_dataTable_bulkMode').val(this.selectionMode);
@@ -1812,15 +1755,36 @@
 
             return function(/* event */) {
 
-                self.selectedRows = [];
-                if ($(this).prop('checked')) {
-                    self.selectionMode = 'Exclusive';
-                } else {
-                    self.selectionMode = 'Inclusive';
-                }
+                let visibleRows = $('td.dt-bulk', el),
+                    selectedRows = self.selectedRows,
+                    select = $(this).prop('checked');
+
+                visibleRows.each(function() {
+                    let id = $('.bulkcheckbox', this).data('dbid'),
+                        index = selectedRows.indexOf(id);
+                    if (select && index == -1) {
+                        selectedRows.push(id);
+                    } else if (!select && index != -1) {
+                        selectedRows.splice(index, 1);
+                    }
+                });
+
                 // Trigger row-callback for all rows
                 el.dataTable().api().draw(false);
             };
+        },
+
+        /**
+         * Updates the all-selected indicator checkbox, depending on
+         * whether all records on the current page are selected or not
+         */
+        _bulkToggleAllSelected: function() {
+
+            const el = $(this.element);
+
+            $('.bulk-select-all', el).prop(
+                'checked', !($('.bulkcheckbox:not(:checked)', el).length)
+            );
         },
 
         // --------------------------------------------------------------------
@@ -2448,7 +2412,8 @@
                 el.on('click' + ns, '.bulk-select-all', this._bulkSelectAll());
 
                 // Bulk action checkbox handler
-                el.on('click' + ns, '.bulkcheckbox', this._bulkSelectRow());
+//                 el.on('click' + ns, '.bulkcheckbox', this._bulkSelectRow());
+                el.on('change' + ns, '.bulkcheckbox', this._bulkSelectRow());
 
                 // Bulk action selector and execute-button
                 $('.bulk-action-select', outerForm).on('change' + ns, function() {
