@@ -762,17 +762,22 @@ def configure_case_list_fields(resource,
 
     # Accessible shelters
     shelters = current.s3db.resource("cr_shelter").select(["id"], as_rows=True)
-    if len(shelters) == 1:
-        # Only one shelter => include only housing unit
-        shelter = None
-        unit = (T("Housing Unit"), "shelter_registration.shelter_unit_id")
-    elif shelters:
-        # Multiple shelters => include both shelter and housing unit
-        shelter = (T("Shelter"), "shelter_registration.shelter_id")
-        unit = (T("Housing Unit"), "shelter_registration.shelter_unit_id")
+    if shelters:
+        if len(shelters) == 1:
+            # Only one shelter => include only housing unit
+            shelter = None
+            unit = (T("Housing Unit"), "shelter_registration.shelter_unit_id")
+        else:
+            # Multiple shelters => include both shelter and housing unit
+            shelter = (T("Shelter"), "shelter_registration.shelter_id")
+            unit = (T("Housing Unit"), "shelter_registration.shelter_unit_id")
+        registration_status = (T("Shelter Status"), "shelter_registration.registration_status")
+        check_in_date = (T("Moving-in Date"), "shelter_registration.check_in_date")
+        check_out_date = (T("Moving-out Date"), "shelter_registration.check_out_date")
     else:
         # No shelters => include neither
         shelter = unit = None
+        registration_status = check_in_date = check_out_date = None
 
     if privileged:
         # Additional list fields for privileged roles
@@ -811,6 +816,9 @@ def configure_case_list_fields(resource,
                              case_date,
                              shelter,
                              unit,
+                             registration_status,
+                             check_in_date,
+                             check_out_date,
                              # TODO presence (at assigned shelter), # not default
                              "dvr_case.last_seen_on",
                              ]
