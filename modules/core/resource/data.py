@@ -900,13 +900,12 @@ class ResourceData:
                 if tname == tablename:
                     # no join required
                     continue
-                else:
-                    # Get joins from dfields
-                    tnames = None
-                    for dfield in dfields:
-                        if dfield.colname == fname:
-                            tnames = self.rfield_tables(dfield)
-                            break
+                # Get joins from dfields
+                tnames = None
+                for dfield in dfields:
+                    if dfield.colname == fname:
+                        tnames = self.rfield_tables(dfield)
+                        break
                 if tnames:
                     tables |= tnames
                 else:
@@ -1181,8 +1180,10 @@ class ResourceData:
         else:
             show_link = None
 
+        # Use per-row lookup for list:types, unless its a reference type
+        # and the estimated lookup effort would exceed bulk-lookup effort
         per_row_lookup = list_type and \
-                         self.effort[colname] < len(fvalues) * 30
+                         (rfield.ftype != "list:reference" or self.effort[colname] < len(fvalues) * 30)
 
         # Treat even single values as lists?
         # - can be set as class attribute of custom S3Represents
@@ -1253,7 +1254,7 @@ class ResourceData:
                                 if value in fvalues else none
                         vlist.append(value)
 
-                    if any([hasattr(v, "xml") for v in vlist]):
+                    if any(hasattr(v, "xml") for v in vlist):
                         data = TAG[""](
                                 list(
                                     chain.from_iterable(
