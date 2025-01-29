@@ -257,8 +257,9 @@ S3.search = {};
      * @param {boolean} delayed - do not immediately trigger a target update
      *                            after removing the filters (e.g. when this
      *                            is done only in order to set new filters)
+     * @param {boolean} keepFilterMgr - keep the current filterManager selection
      */
-    var clearFilters = function(form, delayed) {
+    var clearFilters = function(form, delayed, keepFilterMgr) {
 
         // If no form has been specified, find the first one
         if (undefined === form) {
@@ -334,12 +335,14 @@ S3.search = {};
         // Other widgets go here
 
         // Clear filter manager
-        form.find('.filter-manager-widget').each(function() {
-            var that = $(this);
-            if (that.filtermanager !== undefined) {
-                that.filtermanager('clear');
-            }
-        });
+        if (!keepFilterMgr) {
+            $('.filter-manager-widget', form).each(function() {
+                var that = $(this);
+                if (that.filtermanager !== undefined) {
+                    that.filtermanager('clear');
+                }
+            });
+        }
 
         // Re-enable auto-submit
         form.data('noAutoSubmit', 0);
@@ -2757,7 +2760,7 @@ S3.search = {};
                   filter_id = $(this.element).val();
 
             if (filter_id && filters.hasOwnProperty(filter_id)) {
-                S3.search.clearFilters(filterForm, true);
+                S3.search.clearFilters(filterForm, true, true);
                 S3.search.setCurrentFilters(filterForm, filters[filter_id]);
             }
         },
