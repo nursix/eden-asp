@@ -181,8 +181,8 @@ def about():
                     }
 
         if item:
-            from core import S3XMLContents
-            contents = S3XMLContents(item.body)
+            from core import XMLContentsRepresent
+            contents = XMLContentsRepresent(item.body)
             if ADMIN:
                 item = DIV(contents,
                            BR(),

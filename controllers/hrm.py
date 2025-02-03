@@ -631,6 +631,8 @@ def competency():
         - used for options.s3json lookups
     """
 
+    from core import S3PersonAutocompleteWidget
+
     s3.filter = FS("person_id$human_resource.type") == 1
 
     field = s3db.hrm_competency.person_id

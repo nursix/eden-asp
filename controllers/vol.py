@@ -273,6 +273,8 @@ def training():
 def training_event():
     """ Training Events Controller """
 
+    from core import S3PersonAutocompleteWidget
+
     table = s3db.hrm_training
     table.person_id.widget = S3PersonAutocompleteWidget(controller="vol")
 
@@ -284,6 +286,8 @@ def competency():
 
     # Filter to just Volunteers
     s3.filter = FS("person_id$human_resource.type") == 2
+
+    from core import S3PersonAutocompleteWidget
 
     field = s3db.hrm_competency.person_id
     field.widget = S3PersonAutocompleteWidget(ajax_filter = "~.human_resource.type=2")
