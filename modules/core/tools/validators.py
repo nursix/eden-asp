@@ -1356,7 +1356,8 @@ class IS_NOT_ONE_OF(IS_NOT_IN_DB):
         # Establish table and field
         tablename, fieldname = str(self.field).split(".")
         dbset = self.dbset
-        table = dbset.db[tablename]
+        db = dbset if hasattr(dbset, "define_table") else dbset.db
+        table = db[tablename]
         field = table[fieldname]
 
         if self.skip_imports and current.response.s3.bulk and not field.unique:
