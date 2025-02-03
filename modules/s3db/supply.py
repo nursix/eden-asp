@@ -142,6 +142,9 @@ class SupplyCatalogModel(DataModel):
 
         # Table configuration
         configure(tablename,
+                  deduplicate = S3Duplicate(primary=("name",),
+                                            secondary=("organisation_id",),
+                                            ),
                   deletable = False,
                   filter_widgets = filter_widgets,
                   onvalidation = self.catalog_onvalidation,
