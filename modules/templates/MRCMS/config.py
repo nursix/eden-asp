@@ -669,6 +669,11 @@ def config(settings):
             restricted = True,
             module_type = 10,
         )),
+        ("med", Storage(
+            name_nice = T("Medical Journal"),
+            #description = "Emergency Medical Journal",
+            module_type = None, # No menu entry
+        )),
         #("event", Storage(
         #   name_nice = T("Events"),
         #   #description = "Activate Events (e.g. from Scenario templates) for allocation of appropriate Resources (Human, Assets & Facilities).",

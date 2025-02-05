@@ -441,6 +441,33 @@ button.toggle-text {
   margin-right: 0.5rem;
 }
 
+/* line 264, ../../default/scss/theme/_represent.scss */
+.hazard-neg, .hazard-pos {
+  display: inline-block;
+  width: 20px;
+  height: 20px;
+  margin: 1px;
+  border: 1px solid #666;
+  background-repeat: no-repeat;
+  background-size: 20px;
+  background-position: center;
+}
+
+/* line 275, ../../default/scss/theme/_represent.scss */
+.hazard-bio.hazard-pos {
+  background-image: url(../../img/hazard/bio.png);
+}
+
+/* line 278, ../../default/scss/theme/_represent.scss */
+.hazard-tox.hazard-pos {
+  background-image: url(../../img/hazard/tox.png);
+}
+
+/* line 281, ../../default/scss/theme/_represent.scss */
+.hazard-rad.hazard-pos {
+  background-image: url(../../img/hazard/rad.png);
+}
+
 /* line 24, ../../default/scss/theme/_widgets.scss */
 input[type="text"],
 input[type="password"],

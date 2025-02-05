@@ -1142,6 +1142,24 @@ class OptionsMenu:
 
     # -------------------------------------------------------------------------
     @staticmethod
+    def med():
+        """ Medical Journal """
+
+        ADMIN = current.session.s3.system_roles.ADMIN
+
+        return M(c="med")(
+                    M("Patients", f="patient")(
+                        M("Create", m="create"),
+                        ),
+                    # M("Persons", f="person"),
+                    M("Administration", link=False, restrict=[ADMIN])(
+                        M("Treatment Areas", f="area"),
+                        M("Vaccination Types", f="vaccination_type"),
+                        )
+                    )
+
+    # -------------------------------------------------------------------------
+    @staticmethod
     def member():
         """ Membership Management """
 

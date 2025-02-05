@@ -1149,6 +1149,13 @@ class PRPersonModel(DataModel):
                        # Tags
                        pr_person_tag = "person_id",
 
+                       # Medical Record
+                       med_patient = "person_id",
+                       med_vaccination = "person_id",
+                       med_anamnesis = {"joinby": "person_id",
+                                        "multiple": False,
+                                        },
+
                        # Seized Items (owner)
                        security_seized_item = "person_id",
 
@@ -3759,8 +3766,6 @@ class PRImageModel(DataModel):
     def model(self):
 
         T = current.T
-        db = current.db
-        request = current.request
 
         # ---------------------------------------------------------------------
         # Image

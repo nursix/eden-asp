@@ -1,0 +1,207 @@
+"""
+    Medical Journals - Controllers
+"""
+
+module = request.controller
+resourcename = request.function
+
+if not settings.has_module(module):
+    raise HTTP(404, body="Module disabled: %s" % module)
+
+# =============================================================================
+def index():
+    """ Module's Home Page """
+
+    return s3db.cms_index(module, alt_function="index_alt")
+
+# -----------------------------------------------------------------------------
+def index_alt():
+    """
+        Module homepage for non-Admin users when no CMS content found
+    """
+
+    # Just redirect to the list of persons
+    s3_redirect_default(URL(f="patient"))
+
+# =============================================================================
+def area():
+    """ Treatment Areas - CRUD Controller """
+
+    return crud_controller()
+
+# =============================================================================
+def patient():
+    """ Patients - CRUD Controller """
+
+    def prep(r):
+
+        get_vars = r.get_vars
+
+        if not r.record:
+            # Filter for valid/invalid patient records
+            invalid = get_vars.get("invalid") == "1"
+            if invalid:
+                query = FS("invalid") == True
+            else:
+                query = (FS("invalid") == False) | (FS("invalid") == None)
+
+            # Filter to open/closed patient records
+            if not invalid:
+                closed = get_vars.get("closed")
+                if closed == "only":
+                    query &= FS("closed") == True
+                elif closed not in ("1", "include"):
+                    query &= FS("closed") == False
+
+            r.resource.add_filter(query)
+
+        return True
+    s3.prep = prep
+
+    return crud_controller(rheader=s3db.med_rheader)
+
+# -----------------------------------------------------------------------------
+def person():
+    """ Persons (MED Perspective) - CRUD controller """
+
+    def prep(r):
+
+        viewing = r.viewing
+        if viewing:
+
+            person_id = None
+
+            vtablename, record_id = viewing
+            if vtablename == "med_patient" and record_id:
+
+                # Load person_id from patient
+                ptable = s3db.med_patient
+                query = (ptable.id == record_id) & (ptable.deleted == False)
+                row = db(query).select(ptable.person_id, limitby=(0, 1)).first()
+                person_id = row.person_id if row else None
+
+            if not person_id:
+                r.error(404, current.ERROR.BAD_RECORD)
+            elif r.record:
+                if r.record.id != person_id:
+                    r.error(404, current.ERROR.BAD_RECORD)
+            else:
+                # Load the person record
+                resource = s3db.resource(r.resource, id=[person_id])
+                resource.load()
+                if len(resource) == 1:
+                    from core import set_last_record_id
+                    r.resource = resource
+                    r.record = resource.records().first()
+                    r.id = r.record[resource._id.name]
+                    set_last_record_id(r.tablename, r.id)
+                else:
+                    r.error(404, current.ERROR.BAD_RECORD)
+
+        s3.crud_strings["med_patient"] = Storage(
+            label_create = T("Add Care Occasion"),
+            title_display = T("Care Occasion"),
+            title_list = T("Care Occasions"),
+            title_update = T("Edit Care Occasion"),
+            label_list_button = T("List Care Occasions"),
+            label_delete_button = T("Delete Care Occasion"),
+            msg_record_created = T("Care Occasion added"),
+            msg_record_modified = T("Care Occasion updated"),
+            msg_record_deleted = T("Care Occasion deleted"),
+            msg_list_empty = T("No Care Occasions currently registered"),
+            )
+
+        r.resource.configure(insertable = False,
+                             deletable = False,
+                             )
+        return True
+    s3.prep = prep
+
+    return crud_controller("pr", "person", rheader=s3db.med_rheader)
+
+# =============================================================================
+# Vaccinations
+#
+def vaccination_type():
+    """ Vaccination Types - CRUD Controller """
+
+    return crud_controller()
+
+# -----------------------------------------------------------------------------
+def vaccination():
+    """ Vaccinations - CRUD Controller """
+
+    def prep(r):
+
+        viewing = r.viewing
+        if viewing:
+
+            person_id = None
+
+            vtablename, record_id = viewing
+            if vtablename == "med_patient" and record_id:
+                # Load person_id from patient record
+                ptable = s3db.med_patient
+                query = (ptable.id == record_id) & (ptable.deleted == False)
+                row = db(query).select(ptable.person_id, limitby=(0, 1)).first()
+                person_id = row.person_id if row else None
+
+            if person_id:
+                # Filter records by person_id
+                resource = r.resource
+                resource.add_filter((FS("person_id") == person_id))
+
+                # Default person ID and hide field
+                field = resource.table.person_id
+                field.default = person_id
+                field.writable = field.readable = False
+            else:
+                r.error(404, current.ERROR.BAD_RECORD)
+        else:
+            r.resource.configure(insertable = False,
+                                 )
+        return True
+    s3.prep = prep
+
+    return crud_controller(rheader=s3db.med_rheader)
+
+# -----------------------------------------------------------------------------
+def anamnesis():
+    """ Anamnesis - CRUD Controller """
+
+    def prep(r):
+
+        viewing = r.viewing
+        if viewing:
+
+            person_id = None
+
+            vtablename, record_id = viewing
+            if vtablename == "med_patient" and record_id:
+                # Load person_id from patient record
+                ptable = s3db.med_patient
+                query = (ptable.id == record_id) & (ptable.deleted == False)
+                row = db(query).select(ptable.person_id, limitby=(0, 1)).first()
+                person_id = row.person_id if row else None
+
+            if person_id:
+                # Filter records by person_id
+                resource = r.resource
+                resource.add_filter((FS("person_id") == person_id))
+
+                # Default person ID and hide field
+                field = resource.table.person_id
+                field.default = person_id
+                field.writable = field.readable = False
+            else:
+                r.error(404, current.ERROR.BAD_RECORD)
+        else:
+            # Viewing is required
+            r.error(400, current.ERROR.BAD_REQUEST)
+
+        return True
+    s3.prep = prep
+
+    return crud_controller(rheader=s3db.med_rheader)
+
+# END =========================================================================
