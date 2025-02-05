@@ -20,6 +20,7 @@ from . import hms
 from . import hrm
 from . import inv
 from . import irs
+from . import med
 from . import member
 from . import msg
 from . import org

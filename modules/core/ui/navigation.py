@@ -322,10 +322,10 @@ class S3NavigationItem:
         item.controller = self.controller
         item.function = self.function
 
-        item.match_controller = [c for c in self.match_controller]
-        item.match_function = [f for f in self.match_function]
+        item.match_controller = list(self.match_controller)
+        item.match_function = list(self.match_function)
 
-        item.args = [a for a in self.args]
+        item.args = list(self.args)
         item.vars = Storage(**self.vars)
 
         item.extension = self.extension
@@ -347,7 +347,7 @@ class S3NavigationItem:
         item.link = self.link
         item.mandatory = self.mandatory
         if self.restrict is not None:
-            item.restrict = [r for r in self.restrict]
+            item.restrict = list(self.restrict)
         else:
             item.restrict = None
 
@@ -476,7 +476,7 @@ class S3NavigationItem:
             if root.selected is None:
                 root.check_selected(request)
 
-        return True if self.selected else False
+        return bool(self.selected)
 
     # -------------------------------------------------------------------------
     @property
@@ -770,14 +770,13 @@ class S3NavigationItem:
                 if k not in rvars or k in rvars and rvars[k] != s3_str(v):
                     extra = 0
                     break
-                else:
-                    extra = 2
+                extra = 2
             rargs = request.args
             if rargs:
                 if args:
                     largs = [a for a in rargs if not a.isdigit()]
                     if len(args) == len(largs) and \
-                       all([args[i] == largs[i] for i in range(len(args))]):
+                       all(args[i] == largs[i] for i in range(len(args))):
                         level = 5
                     else:
                         if len(rargs) >= len(args) > 0 and \
@@ -1207,8 +1206,7 @@ class S3NavigationItem:
 
         items = []
         for item in self.components:
-            if not flags or \
-               all([getattr(item, f) == flags[f] for f in flags]):
+            if not flags or all(getattr(item, f) == flags[f] for f in flags):
                 items.append(item)
         return items
 
@@ -1222,8 +1220,7 @@ class S3NavigationItem:
         """
 
         for item in self.components:
-            if not flags or \
-               all([getattr(item, f) == flags[f] for f in flags]):
+            if not flags or all(getattr(item, f) == flags[f] for f in flags):
                 return item
         return None
 
@@ -1239,8 +1236,7 @@ class S3NavigationItem:
         components = list(self.components)
         components.reverse()
         for item in components:
-            if not flags or \
-               all([getattr(item, f) == flags[f] for f in flags]):
+            if not flags or all(getattr(item, f) == flags[f] for f in flags):
                 return item
         return None
 
@@ -1296,12 +1292,12 @@ class S3NavigationItem:
 
         if not flags:
             return len(self.preceding()) == 0
-        if not all([getattr(self, f) == flags[f] for f in flags]):
+        if not all(getattr(self, f) == flags[f] for f in flags):
             return False
         preceding = self.preceding()
         if preceding:
             for item in preceding:
-                if all([getattr(item, f) == flags[f] for f in flags]):
+                if all(getattr(item, f) == flags[f] for f in flags):
                     return False
         return True
 
@@ -1317,12 +1313,12 @@ class S3NavigationItem:
 
         if not flags:
             return len(self.following()) == 0
-        if not all([getattr(self, f) == flags[f] for f in flags]):
+        if not all(getattr(self, f) == flags[f] for f in flags):
             return False
         following = self.following()
         if following:
             for item in following:
-                if all([getattr(item, f) == flags[f] for f in flags]):
+                if all(getattr(item, f) == flags[f] for f in flags):
                     return False
         return True
 
@@ -1364,8 +1360,7 @@ class S3NavigationItem:
         preceding = self.preceding()
         preceding.reverse()
         for item in preceding:
-            if not flags or \
-               all([getattr(item, f) == flags[f] for f in flags]):
+            if not flags or all(getattr(item, f) == flags[f] for f in flags):
                 return item
         return None
 
@@ -1380,8 +1375,7 @@ class S3NavigationItem:
 
         following = self.following()
         for item in following:
-            if not flags or \
-               all([getattr(item, f) == flags[f] for f in flags]):
+            if not flags or all(getattr(item, f) == flags[f] for f in flags):
                 return item
         return None
 
@@ -1403,8 +1397,7 @@ def s3_rheader_resource(r):
             tablename = r.tablename
             record = r.record
         else:
-            db = current.db
-            record = db[tablename][record_id]
+            record = current.s3db[tablename][record_id]
     else:
         tablename = r.tablename
         record = r.record
@@ -1499,7 +1492,7 @@ class S3ComponentTabs:
             # Is this the current tab?
             component = tab.component
             here = False
-            if function == r.name or function == r.function:
+            if function in (r.name, r.function):
                 here = r.method == component or not mtab
             if component:
                 if r.component and \
@@ -1669,7 +1662,7 @@ class S3ComponentTab:
         if len(tab) > 2:
             tab_vars = self.vars = Storage(tab[2])
             if "native" in tab_vars:
-                self.native = True if tab_vars["native"] else False
+                self.native = bool(tab_vars["native"])
                 del tab_vars["native"]
             if len(tab) > 3:
                 # Component Method
@@ -1788,7 +1781,7 @@ class S3ScriptItem(S3NavigationItem):
                 script: script to inject into jquery_ready when rendered
         """
 
-        super(S3ScriptItem, self).__init__(attributes)
+        super().__init__(attributes)
         self.script = script
 
     # -------------------------------------------------------------------------

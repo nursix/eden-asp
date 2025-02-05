@@ -258,5 +258,29 @@
     }
 }
 
+// ----------------------------------------------------------------------------
+// MED Hazards
+//
+.hazard-neg, .hazard-pos {
+    display: inline-block;
+    width: 20px;
+    height: 20px;
+    margin: 1px;
+    border: 1px solid #666;
+    background-repeat: no-repeat;
+    background-size: 20px;
+    background-position: center;
+}
+
+.hazard-bio.hazard-pos {
+    background-image: url(../../img/hazard/bio.png)
+}
+.hazard-tox.hazard-pos {
+    background-image: url(../../img/hazard/tox.png)
+}
+.hazard-rad.hazard-pos {
+    background-image: url(../../img/hazard/rad.png)
+}
+
 // END ========================================================================
 

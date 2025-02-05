@@ -1368,6 +1368,11 @@ def config(settings):
         #    #description = "Helps to monitor status of hospitals",
         #    module_type = 10
         #)),
+        #("med", Storage(
+        #    name_nice = T("Medical Journal"),
+        #    #description = "Emergency Medical Journal",
+        #    module_type = None, # No menu entry
+        #)),
         #("member", Storage(
         #    name_nice = T("Members"),
         #    #description = "Membership Management System",

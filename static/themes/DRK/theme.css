@@ -436,6 +436,33 @@ button.toggle-text {
   margin-right: 0.5rem;
 }
 
+/* line 264, ../../default/scss/theme/_represent.scss */
+.hazard-neg, .hazard-pos {
+  display: inline-block;
+  width: 20px;
+  height: 20px;
+  margin: 1px;
+  border: 1px solid #666;
+  background-repeat: no-repeat;
+  background-size: 20px;
+  background-position: center;
+}
+
+/* line 275, ../../default/scss/theme/_represent.scss */
+.hazard-bio.hazard-pos {
+  background-image: url(../../img/hazard/bio.png);
+}
+
+/* line 278, ../../default/scss/theme/_represent.scss */
+.hazard-tox.hazard-pos {
+  background-image: url(../../img/hazard/tox.png);
+}
+
+/* line 281, ../../default/scss/theme/_represent.scss */
+.hazard-rad.hazard-pos {
+  background-image: url(../../img/hazard/rad.png);
+}
+
 /* line 24, ../../default/scss/theme/_widgets.scss */
 input[type="text"],
 input[type="password"],
@@ -2848,6 +2875,41 @@ form.auth_login #submit_record__row {
 .ajaxtip:hover:before,
 .htmltip:hover:before {
   color: #f08a24;
+}
+
+/* line 496, ../../default/scss/theme/_forms.scss */
+.bulk-action-form {
+  padding: 0.5rem;
+}
+/* line 499, ../../default/scss/theme/_forms.scss */
+.bulk-action-form .bulk-action-info {
+  font-size: 0.8rem;
+  font-weight: bold;
+}
+/* line 503, ../../default/scss/theme/_forms.scss */
+.bulk-action-form .bulk-action-question {
+  font-size: 0.8rem;
+  font-weight: bold;
+  border-top: 1px solid #eee;
+  padding-top: 0.5rem;
+}
+/* line 509, ../../default/scss/theme/_forms.scss */
+.bulk-action-form label {
+  font-size: 0.825rem;
+}
+/* line 512, ../../default/scss/theme/_forms.scss */
+.bulk-action-form .label-above {
+  font-weight: bold;
+}
+/* line 514, ../../default/scss/theme/_forms.scss */
+.bulk-action-form .label-above select {
+  display: block;
+  margin-bottom: 1rem;
+  min-width: 12rem;
+}
+/* line 521, ../../default/scss/theme/_forms.scss */
+.bulk-action-form .bulk-action-buttons button, .bulk-action-form .bulk-action-buttons a.cancel-form-btn {
+  margin-bottom: 0;
 }
 
 /* line 13, ../../default/scss/theme/_filters.scss */
