@@ -1126,14 +1126,14 @@ class MedMedicationModel(DataModel):
         # ---------------------------------------------------------------------
         # Priorities
         #
-        priorities = (("MUST", T("Critical")),
-                      ("SHOULD", T("Regular")),
-                      ("COULD", T("Optional")),
+        priorities = (("A", T("Critical")),
+                      ("B", T("Regular")),
+                      ("C", T("Optional")),
                       )
         priority_represent = S3PriorityRepresent(priorities,
-                                                 {"MUST": "red",
-                                                  "SHOULD": "green",
-                                                  "COULD": "lightblue",
+                                                 {"A": "red",
+                                                  "B": "green",
+                                                  "C": "lightblue",
                                                   }).represent
 
         # ---------------------------------------------------------------------
@@ -1180,7 +1180,7 @@ class MedMedicationModel(DataModel):
                          ),
                      Field("priority",
                            label = T("Priority"),
-                           default = "SHOULD",
+                           default = "B",
                            requires = IS_IN_SET(priorities, zero=None, sort=False),
                            represent = priority_represent,
                            ),
