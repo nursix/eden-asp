@@ -1154,6 +1154,7 @@ class OptionsMenu:
                     # M("Persons", f="person"),
                     M("Administration", link=False, restrict=[ADMIN])(
                         M("Treatment Areas", f="area"),
+                        M("Medicines", f="substance"),
                         M("Vaccination Types", f="vaccination_type"),
                         )
                     )

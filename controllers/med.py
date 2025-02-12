@@ -204,4 +204,55 @@ def anamnesis():
 
     return crud_controller(rheader=s3db.med_rheader)
 
+# -----------------------------------------------------------------------------
+# Medication
+#
+def substance():
+    """ Substances - CRUD Controller """
+
+    return crud_controller()
+
+def medication():
+    """ Medication - CRUD Controller """
+
+    def prep(r):
+
+        resource = r.resource
+
+        viewing = r.viewing
+        if viewing:
+
+            person_id = None
+
+            vtablename, record_id = viewing
+            if vtablename == "med_patient" and record_id:
+                # Load person_id from patient record
+                ptable = s3db.med_patient
+                query = (ptable.id == record_id) & (ptable.deleted == False)
+                row = db(query).select(ptable.person_id, limitby=(0, 1)).first()
+                person_id = row.person_id if row else None
+
+            if person_id:
+                # Filter records by person_id
+                resource.add_filter((FS("person_id") == person_id))
+
+                # Default person ID and hide field
+                field = resource.table.person_id
+                field.default = person_id
+                field.writable = field.readable = False
+            else:
+                r.error(404, current.ERROR.BAD_RECORD)
+        else:
+            # Viewing is required
+            r.error(400, current.ERROR.BAD_REQUEST)
+
+        # Forward to list view after create/update
+        resource.configure(create_next = r.url(method=""),
+                           update_next = r.url(method=""),
+                           )
+        return True
+    s3.prep = prep
+
+    return crud_controller(rheader=s3db.med_rheader)
+
 # END =========================================================================

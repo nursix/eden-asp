@@ -32,6 +32,7 @@ __all__ = ("MedAreaModel",
            "MedStatusModel",
            "MedAnamnesisModel",
            "MedEpicrisisModel",
+           "MedMedicationModel",
            "MedVaccinationModel",
            "med_rheader",
            )
@@ -54,8 +55,8 @@ class MedAreaModel(DataModel):
         T = current.T
         db = current.db
 
-        s3 = current.response.s3
-        crud_strings = s3.crud_strings
+        #s3 = current.response.s3
+        #crud_strings = s3.crud_strings
 
         define_table = self.define_table
         # configure = self.configure
@@ -414,7 +415,11 @@ class MedPatientModel(DataModel):
             record.update_record(refno=str(record.id))
 
         # Update person_id in component records
-        for tn in ("med_status", "med_vitals", "med_treatment"):
+        for tn in ("med_status",
+                   "med_vitals",
+                   "med_treatment",
+                   "med_epicrisis",
+                   ):
             ctable = s3db.table(tn)
             query = (ctable.patient_id == record_id) & \
                     (ctable.person_id != record.person_id) & \
@@ -1033,11 +1038,11 @@ class MedAnamnesisModel(DataModel):
 
     def model(self):
 
-        T = current.T
+        #T = current.T
         # db = current.db
 
-        s3 = current.response.s3
-        crud_strings = s3.crud_strings
+        #s3 = current.response.s3
+        #crud_strings = s3.crud_strings
 
         define_table = self.define_table
         # configure = self.configure
@@ -1069,6 +1074,192 @@ class MedAnamnesisModel(DataModel):
 
         return {}
 
+# =============================================================================
+class MedMedicationModel(DataModel):
+    """ Data Model to record chronic medication """
+
+    names = ("med_substance",
+             "med_medication",
+             )
+
+    def model(self):
+
+        T = current.T
+        db = current.db
+
+        # s3 = current.response.s3
+        # crud_strings = s3.crud_strings
+
+        define_table = self.define_table
+        # configure = self.configure
+
+        # ---------------------------------------------------------------------
+        # Medicine (generic substance)
+        # TODO import XSLT
+        #
+        tablename = "med_substance"
+        define_table(tablename,
+                     Field("name",
+                           label = T("Substance"),
+                           requires = IS_NOT_EMPTY(),
+                           represent = lambda v, row=None: v if v else "-",
+                           ),
+                     CommentsField(),
+                     )
+
+        # TODO onvalidation to exclude duplicates
+
+        # Field template
+        represent = S3Represent(lookup = tablename)
+        substance_id = FieldTemplate("substance_id", "reference %s" % tablename,
+                                     label = T("Substance"),
+                                     ondelete = "RESTRICT",
+                                     represent = represent,
+                                     requires = IS_EMPTY_OR(
+                                                    IS_ONE_OF(db, "%s.id" % tablename,
+                                                              represent,
+                                                              )),
+                                                    )
+
+        # TODO CRUD Strings
+
+        # ---------------------------------------------------------------------
+        # Priorities
+        #
+        priorities = (("MUST", T("Critical")),
+                      ("SHOULD", T("Regular")),
+                      ("COULD", T("Optional")),
+                      )
+        priority_represent = S3PriorityRepresent(priorities,
+                                                 {"MUST": "red",
+                                                  "SHOULD": "green",
+                                                  "COULD": "lightblue",
+                                                  }).represent
+
+        # ---------------------------------------------------------------------
+        # Pharmaceutical forms
+        #
+        pforms = {"TBL": T("Tbl##pharma"),
+                  "CPS": T("Cps##pharma"),
+                  "INH": T("Inh##pharma"),
+                  "INJ": T("Inj##pharma"),
+                  "INF": T("Inf##pharma"),
+                  "SPP": T("Spp##pharma"),
+                  "OTH": T("Other"),
+                  }
+
+        # ---------------------------------------------------------------------
+        # Application forms
+        #
+        aforms = (("PO", T("p.o.##medical")),
+                  ("SC", T("s.c.##medical")),
+                  ("IV", T("i.v.##medical")),
+                  ("IM", T("i.m.##medical")),
+                  ("PR", T("p.r.##medical")),
+                  ("OTH", T("Other")),
+                  )
+
+        # ---------------------------------------------------------------------
+        # Dosage units
+        #
+        dunits = (("MG", T("mg")),
+                  ("G", T("g")),
+                  ("ML", T("ml")),
+                  ("L", T("l")),
+                  ("DOS", T("Dose##pharma")),
+                  ("IU", T("IU##pharma")),
+                  ("UNIT", T("Unit##pharma")),
+                  )
+        # ---------------------------------------------------------------------
+        # Medication (prescription)
+        #
+        tablename = "med_medication"
+        define_table(tablename,
+                     self.pr_person_id(
+                         comment = None,
+                         ),
+                     Field("priority",
+                           label = T("Priority"),
+                           default = "SHOULD",
+                           requires = IS_IN_SET(priorities, zero=None, sort=False),
+                           represent = priority_represent,
+                           ),
+                     Field("pform",
+                           label = T("Form##pharma"),
+                           default = "TBL",
+                           requires = IS_IN_SET(pforms, zero=None),
+                           represent = represent_option(pforms),
+                           ),
+                     Field("product", length=255,
+                           label = T("Preparation / Trade Name"),
+                           requires = IS_EMPTY_OR(IS_LENGTH(255, minsize=1)),
+                           represent = lambda v, row=None: v if v else "-",
+                           ),
+                     substance_id(),
+                     Field("aform",
+                           label = T("Application##pharma"),
+                           default = "PO",
+                           requires = IS_IN_SET(aforms, zero=None, sort=False),
+                           represent = represent_option(dict(aforms)),
+                           ),
+                     Field("dosage", "double",
+                           label = T("Dosage"),
+                           requires = IS_FLOAT_IN_RANGE(minimum=0.01),
+                           represent = lambda v, row=None: IS_FLOAT_AMOUNT.represent(v,
+                                                                                     precision = 4,
+                                                                                     fixed = False,
+                                                                                     ),
+                           ),
+                     Field("dosage_unit",
+                           label = T("Unit"),
+                           requires = IS_IN_SET(dunits, zero="", sort=False),
+                           represent = represent_option(dict(dunits)),
+                           ),
+                     Field("scheme",
+                           label = T("Scheme"),
+                           requires = IS_NOT_EMPTY(),
+                           ),
+                     Field("is_current", "boolean",
+                           label = T("Current"),
+                           default = True,
+                           represent = BooleanRepresent(labels = False,
+                                                        icons = True,
+                                                        colors = True,
+                                                        ),
+                           ),
+                     CommentsField(),
+                     )
+
+        list_fields = ["priority",
+                       "is_current",
+                       "pform",
+                       "product",
+                       "substance_id",
+                       "dosage",
+                       "dosage_unit",
+                       "aform",
+                       "scheme",
+                       "comments",
+                       # TODO use separate DateField and set onaccept
+                       (T("Updated"), "modified_on"),
+                       ]
+
+        self.configure(tablename,
+                       list_fields = list_fields,
+                       )
+
+        # TODO CRUD Strings
+
+        # ---------------------------------------------------------------------
+        # Pass names back to global scope (s3.*)
+        #
+        return {}
+
+    # -------------------------------------------------------------------------
+    def defaults(self):
+        """ Safe defaults for names in case the module is disabled """
+
+        return {}
 
 # =============================================================================
 class MedVaccinationModel(DataModel):
@@ -1091,6 +1282,7 @@ class MedVaccinationModel(DataModel):
 
         # ---------------------------------------------------------------------
         # Vaccination Type
+        # TODO import XSLT
         #
         tablename = "med_vaccination_type"
         define_table(tablename,
@@ -1099,15 +1291,20 @@ class MedVaccinationModel(DataModel):
                            requires = IS_NOT_EMPTY(),
                            represent = lambda v, row=None: v if v else "-",
                            ),
-                     Field("abrv",
-                           label = T("Abbreviation"),
+                     Field("vaccine_type",
+                           label = T("Vaccine type"),
                            represent = lambda v, row=None: v if v else "-",
                            ),
                      CommentsField(),
                      )
 
+        # TODO onvalidation to exclude duplicates
+
         # Field template
-        represent = S3Represent(lookup=tablename, fields=["abrv", "name"])
+        represent = S3Represent(lookup = tablename,
+                                fields = ["name", "vaccine_type"],
+                                labels = "%(name)s (%(vaccine_type)s)",
+                                )
         vaccination_type_id = FieldTemplate("type_id", "reference %s" % tablename,
                                             label = T("Vaccination Type"),
                                             ondelete = "RESTRICT",
@@ -1118,6 +1315,11 @@ class MedVaccinationModel(DataModel):
                                                                   )),
                                             )
 
+        # TODO CRUD Strings
+
+        # ---------------------------------------------------------------------
+        # TODO m2m link vaccination_type <=> disease
+        #
         # ---------------------------------------------------------------------
         # Vaccination
         #
@@ -1127,8 +1329,16 @@ class MedVaccinationModel(DataModel):
                          comment = None,
                          ),
                      vaccination_type_id(),
-                     # TODO product name
-                     # TODO lot number
+                     Field("product", length=255,
+                           label = T("Preparation / Trade Name"),
+                           represent = lambda v, row=None: v if v else "-",
+                           requires = IS_EMPTY_OR(IS_LENGTH(255, minsize=1)),
+                           ),
+                     Field("lot_no", length=255,
+                           label = T("LOT No."),
+                           represent = lambda v, row=None: v if v else "-",
+                           requires = IS_EMPTY_OR(IS_LENGTH(255, minsize=1)),
+                           ),
                      DateField(),
                      CommentsField(),
                      )
@@ -1145,7 +1355,6 @@ class MedVaccinationModel(DataModel):
         """ Safe defaults for names in case the module is disabled """
 
         return {}
-
 
 # =============================================================================
 def med_rheader(r, tabs=None):
@@ -1172,11 +1381,11 @@ def med_rheader(r, tabs=None):
             if not tabs:
                 tabs = [(T("Basic Details"), None),
                         # TODO contacts tab
-                        (T("Background"), "anamnesis/"),
+                        (T("Background"), "anamnesis"),
                         (T("Vaccinations"), "vaccination"),
+                        (T("Medication"), "medication"),
                         (T("Care Occasions"), "patient"),
-                        # TODO medication
-                        # TODO lab reports
+                        # TODO lab results
                         # TODO examinations / interventions
                         ]
             rheader_fields = [["date_of_birth"],
@@ -1193,17 +1402,18 @@ def med_rheader(r, tabs=None):
                         # TODO contacts tab     [viewing, if we have a person_id]
                         # Background [viewing]
                         # Vaccinations [viewing]
+                        # Medication [viewing]
                         (T("Vital Signs"), "vitals"),
                         (T("Status Reports"), "status"),
                         (T("Treatment"), "treatment"),
-                        # TODO medication [viewing, if we have a person_id]
-                        # TODO lab reports (=findings)
+                        # TODO lab results
                         # TODO examinations / interventions
                         (T("Epicrisis"), "epicrisis"),
                         ]
                 if record.person_id:
                     tabs[1:1] = [(T("Person Details"), "person/"),
                                  (T("Background"), "anamnesis/"),
+                                 (T("Medication"), "medication/"),
                                  (T("Vaccinations"), "vaccination/"),
                                  ]
 
