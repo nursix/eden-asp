@@ -1152,11 +1152,13 @@ class OptionsMenu:
                         M("Create", m="create"),
                         ),
                     # M("Persons", f="person"),
+                    M("Units", f="unit")(
+                        M("Create", m="create"),
+                        ),
                     M("Administration", link=False, restrict=[ADMIN])(
-                        M("Treatment Areas", f="area"),
                         M("Medicines", f="substance"),
                         M("Vaccination Types", f="vaccination_type"),
-                        )
+                        ),
                     )
 
     # -------------------------------------------------------------------------

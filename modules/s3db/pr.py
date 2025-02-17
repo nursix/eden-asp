@@ -1152,6 +1152,7 @@ class PRPersonModel(DataModel):
                        # Medical Record
                        med_patient = "person_id",
                        med_vaccination = "person_id",
+                       med_medication = "person_id",
                        med_anamnesis = {"joinby": "person_id",
                                         "multiple": False,
                                         },
@@ -6283,12 +6284,8 @@ class pr_PersonRepresent(S3Represent):
                 controller = "vol"
             else:
                 c = request.controller
-                if c == "hrm":
-                    controller = "hrm"
-                elif c == "vol":
-                    controller = "vol"
-                elif c == "dvr":
-                    controller = "dvr"
+                if c in ("hrm", "vol", "dvr", "med"):
+                    controller = c
                 else:
                     controller = "pr"
             linkto = URL(c=controller, f="person", args=["[id]"], extension="")
