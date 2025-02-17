@@ -266,6 +266,7 @@ def pr_person_resource(r, tablename):
                                        "case_details",
                                        "case_language",
                                        "case_note",
+                                       "case_task",
                                        "contact",
                                        "contact_emergency",
                                        "group_membership",
@@ -1048,6 +1049,19 @@ def configure_dvr_person_controller(r, privileged=False, administration=False):
         if not record:
             from ..helpers import AbsenceFilter
             AbsenceFilter.apply_filter(resource, r.get_vars)
+
+    elif r.component_name == "case_task":
+
+        component = r.component
+        ctable = component.table
+
+        # Default category for tasks
+        default_category = "C" if r.controller == "counsel" else "A"
+
+        component.add_filter(FS("category") == default_category)
+
+        field = ctable.category
+        field.default = default_category
 
     elif r.component_name == "case_appointment":
 
