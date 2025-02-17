@@ -68,6 +68,7 @@ def dvr_rheader(r, tabs=None):
 
     rheader = None
     rheader_fields = []
+    rheader_title = None
 
     if record:
         T = current.T
@@ -101,6 +102,7 @@ def dvr_rheader(r, tabs=None):
                         tabs.append((T("Family Members"), "group_membership/"))
                         if has_roles(("CASE_ADMIN", "CASE_MANAGER")):
                             tabs.extend([(T("Appointments"), "case_appointment"),
+                                         (T("ToDo"), "case_task"),
                                          (T("Vulnerabilities"), "vulnerability"),
                                          (T("Needs"), "case_activity"),
                                          (T("Measures"), "response_action"),
@@ -122,7 +124,9 @@ def dvr_rheader(r, tabs=None):
                                      (T("Appointments"), "case_appointment"),
                                      ])
                         if has_roles(("CASE_ADMIN",)):
-                            tabs.append((T("Events"), "case_event"))
+                            tabs.extend([(T("ToDo"), "case_task"),
+                                         (T("Events"), "case_event"),
+                                         ])
                         if has_roles(("SHELTER_ADMIN", "SHELTER_MANAGER")):
                             tabs.append((T("Presence"), "site_presence_event"))
                         tabs.extend([(T("Photos"), "image"),
@@ -254,10 +258,19 @@ def dvr_rheader(r, tabs=None):
 
                 return rheader
 
-        rheader = S3ResourceHeader(rheader_fields, tabs)(r,
-                                                         table=resource.table,
-                                                         record=record,
-                                                         )
+        elif tablename == "dvr_task":
+
+            if not tabs:
+                tabs = [(T("Basic Details"), None),
+                        ]
+
+            rheader_fields = [[(T("Client"), "person_id"), (T("Staff"), "human_resource_id")],
+                              ["status", "due_date"],
+                              ]
+            rheader_title = "name"
+
+        rheader = S3ResourceHeader(rheader_fields, tabs, title=rheader_title)
+        rheader = rheader(r, table=resource.table, record=record)
 
     return rheader
 

@@ -35,6 +35,7 @@ __all__ = ("DVRCaseModel",
            "DVRCaseEventModel",
            "DVRNeedsModel",
            "DVRNotesModel",
+           "DVRTaskModel",
            "DVRReferralModel",
            "DVRResponseModel",
            "DVRVulnerabilityModel",
@@ -46,6 +47,7 @@ __all__ = ("DVRCaseModel",
            "dvr_ResponseThemeRepresent",
            "dvr_VulnerabilityRepresent",
 
+           "dvr_get_case",
            "dvr_case_organisation",
            "dvr_case_default_status",
            "dvr_case_status_filter_opts",
@@ -75,6 +77,7 @@ __all__ = ("DVRCaseModel",
 import datetime
 
 from collections import OrderedDict
+from dateutil.relativedelta import relativedelta
 
 from gluon import *
 from gluon.storage import Storage
@@ -1222,6 +1225,236 @@ class DVRNeedsModel(DataModel):
 
         return {"dvr_need_id": FieldTemplate.dummy("need_id"),
                 }
+
+# =============================================================================
+class DVRTaskModel(DataModel):
+    """ To-Do-lists for case files """
+
+    names = ("dvr_task",
+             )
+
+    def model(self):
+
+        T = current.T
+        #db = current.db
+
+        crud_strings = current.response.s3.crud_strings
+
+        define_table = self.define_table
+
+        # ---------------------------------------------------------------------
+        # Task Status
+        #
+        task_status = (("NEW", T("Pending")),
+                       ("PROC", T("In Progress")),
+                       ("NA", T("Not Actionable")),
+                       ("DONE", T("Done")),
+                       ("DEF", T("Deferred")),
+                       ("OBS", T("Obsolete")),
+                       )
+
+        status_represent = S3PriorityRepresent(task_status,
+                                               {"NEW": "lightblue",
+                                                "PROC": "amber",
+                                                "NA": "red",
+                                                "DONE": "green",
+                                                "DEF": "grey",
+                                                "OBS": "black",
+                                                }).represent
+
+        # ---------------------------------------------------------------------
+        # Task Category
+        #
+        task_category = {"A": T("Administrative"),
+                         "C": T("Counseling"),
+                         "S": T("Supply"),
+                         "H": T("Health"),
+                         }
+
+        # ---------------------------------------------------------------------
+        # Tasks
+        #
+        three_months = datetime.datetime.utcnow().date() + relativedelta(months=3)
+        tablename = "dvr_task"
+        define_table(tablename,
+                     self.pr_person_id(
+                         comment = False,
+                         writable = False,
+                         ),
+                     self.dvr_case_id(
+                         readable = False,
+                         writable = False,
+                         ),
+                     self.org_organisation_id(
+                         readable = False,
+                         writable = False,
+                         ),
+                     DateField(
+                         default = "now",
+                         label = T("Date"),
+                         # Enable in template if/as required:
+                         readable = False,
+                         writable = False,
+                         ),
+                     Field("category",
+                           label = T("Category"),
+                           default = "A",
+                           requires = IS_IN_SET(task_category, zero=None),
+                           represent = represent_option(task_category),
+                           readable = False,
+                           writable = False,
+                           ),
+                     Field("name",
+                           label = T("Subject"),
+                           requires = IS_NOT_EMPTY(),
+                           represent = lambda v, row=None: v if v else "-",
+                           ),
+                     CommentsField("description",
+                                   label = T("Details"),
+                                   comment = None,
+                                   ),
+                     Field("status",
+                           default = "NEW",
+                           requires = IS_IN_SET(task_status,
+                                                sort = False,
+                                                zero = None,
+                                                ),
+                           represent = status_represent,
+                           ),
+                     self.hrm_human_resource_id(
+                         label = T("Assigned to"),
+                         ),
+                     DateField("due_date",
+                               label = T("Date Due"),
+                               default = three_months,
+                               past = 0,
+                               empty = False,
+                               # TODO represent as priority
+                               ),
+                     DateTimeField("status_date",
+                                   readable = False,
+                                   writable = False,
+                                   ),
+                     Field("previous_status",
+                           readable = False,
+                           writable = False,
+                           ),
+                     DateTimeField("closed_on",
+                                   readable = False,
+                                   writable = False,
+                                   ),
+                     CommentsField(),
+                     )
+
+        # TODO list fields (for primary controller)
+
+        # Filter widgets
+        filter_widgets = [TextFilter(["person_id$pe_label",
+                                      "person_id$first_name",
+                                      "person_id$middle_name",
+                                      "person_id$last_name",
+                                      "name",
+                                      "description",
+                                      "comments"
+                                      ],
+                                     label = T("Search"),
+                                     ),
+                           OptionsFilter("status",
+                                         options = dict(task_status),
+                                         default = ["NEW", "PROC"],
+                                         cols = 3,
+                                         ),
+                          ]
+
+        # Table configuration
+        self.configure(tablename,
+                       filter_widgets = filter_widgets,
+                       onaccept = self.task_onaccept,
+                       )
+
+        # CRUD Strings
+        crud_strings[tablename] = Storage(
+            label_create = T("Create Task"),
+            title_display = T("Task Details"),
+            title_list = T("Tasks"),
+            title_update = T("Edit Task"),
+            label_list_button = T("List Tasks"),
+            label_delete_button = T("Delete Task"),
+            msg_record_created = T("Task added"),
+            msg_record_modified = T("Task updated"),
+            msg_record_deleted = T("Task deleted"),
+            msg_list_empty = T("No Tasks found"),
+            )
+
+        # ---------------------------------------------------------------------
+        # Pass names back to global scope (s3.*)
+        #
+        return None
+
+    # -------------------------------------------------------------------------
+    @staticmethod
+    def task_onaccept(form):
+        """
+            Onaccept-routine for tasks
+            - detect status change and set status_date / closed_on
+            - set case_id and organisation_id
+        """
+
+        # Get form record ID
+        record_id = get_form_record_id(form)
+        if not record_id:
+            return
+
+        db = current.db
+        s3db = current.s3db
+
+        # Re-read record
+        table = s3db.dvr_task
+        query = (table.id == record_id) & \
+                (table.deleted == False)
+        record = db(query).select(table.id,
+                                  table.person_id,
+                                  table.case_id,
+                                  table.organisation_id,
+                                  table.status,
+                                  table.previous_status,
+                                  table.status_date,
+                                  table.closed_on,
+                                  limitby = (0, 1),
+                                  ).first()
+        if not record:
+            return
+
+        update = {"previous_status": record.status,
+                  # System-side update
+                  "modified_on": table.modified_on,
+                  "modified_by": table.modified_by,
+                  }
+
+        # Set transition dates
+        now = current.request.utcnow
+        if record.status != record.previous_status:
+            update["status_date"] = now
+        if record.status == "DONE":
+            if not record.closed_on:
+                update["closed_on"] = now
+        elif record.closed_on:
+            update["closed_on"] = None
+
+        # Set case and organisation
+        if not record.case_id:
+            case = dvr_get_case(record.person_id, archived=False)
+            update["case_id"] = case.id
+            update["organisation_id"] = case.organisation_id
+        elif not record.organisation_id:
+            ctable = s3db.dvr_case
+            case = db(ctable.id==record.case_id).select(ctable.id,
+                                                        ctable.organisation_id,
+                                                        limitby = (0, 1),
+                                                        ).first()
+            update["organisation_id"] = case.organisation_id
+
+        record.update_record(**update)
 
 # =============================================================================
 class DVRNotesModel(DataModel):
@@ -5220,8 +5453,17 @@ class DVRServiceContactModel(DataModel):
         return None
 
 # =============================================================================
-def dvr_case_organisation(person_id):
-    # TODO docstring
+def dvr_get_case(person_id, archived=None):
+    """
+        Looks up the latest (open) case for a person
+
+        Args:
+            person_id: the person ID
+            archived: True|False to exclude valid|invalid cases
+
+        Returns:
+            the case (dvr_case Row)
+    """
 
     db = current.db
     s3db = current.s3db
@@ -5233,6 +5475,8 @@ def dvr_case_organisation(person_id):
     left = stable.on(stable.id == ctable.status_id)
     query = (ctable.person_id == person_id) & \
             (ctable.deleted == False)
+    if archived is not None:
+        query &= (ctable.archived == archived)
     rows = db(query).select(ctable.id,
                             ctable.organisation_id,
                             stable.is_closed,
@@ -5247,6 +5491,22 @@ def dvr_case_organisation(person_id):
                 break
         if not case:
             case = rows.first().dvr_case
+
+    return case
+
+# -----------------------------------------------------------------------------
+def dvr_case_organisation(person_id):
+    """
+        Looks up the case organisation for a person
+
+        Args:
+            person_id: the person ID
+
+        Returns:
+            the organisation ID
+    """
+
+    case = dvr_get_case(person_id)
 
     return case.organisation_id if case else None
 
@@ -9789,6 +10049,16 @@ def dvr_rheader(r, tabs=None):
 
             rheader_fields = [["reference"],
                               ["status_id"],
+                              ]
+
+        elif tablename == "dvr_task":
+
+            if not tabs:
+                tabs = [(T("Basic Details"), None),
+                        ]
+
+            rheader_fields = [["person_id"],
+                              ["status"],
                               ]
 
         rheader = S3ResourceHeader(rheader_fields, tabs)(r,

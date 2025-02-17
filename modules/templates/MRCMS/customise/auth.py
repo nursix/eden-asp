@@ -116,6 +116,7 @@ def realm_entity(table, row):
                        "dvr_case_details",
                        "dvr_case_language",
                        "dvr_note",
+                       "dvr_task",
                        "dvr_residence_status",
                        "dvr_response_action",
                        "dvr_service_contact",

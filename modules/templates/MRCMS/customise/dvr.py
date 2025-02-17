@@ -119,6 +119,75 @@ def dvr_case_resource(r, tablename):
                 field.writable = False
 
 # -------------------------------------------------------------------------
+def dvr_task_resource(r, tablename):
+    pass
+
+def dvr_task_controller(**attr):
+
+    T = current.T
+    s3db = current.s3db
+    s3 = current.response.s3
+
+    current.deployment_settings.base.bigtable = True
+
+    # Custom prep
+    standard_prep = s3.prep
+    def prep(r):
+
+        # Call standard prep
+        result = standard_prep(r) if callable(standard_prep) else True
+
+        resource = r.resource
+
+        # Hide person_id from form (shown in rheader instead)
+        table = resource.table
+        field = table.person_id
+        field.readable = field.writable = False
+        field.represent = s3db.pr_PersonRepresent(linkto = URL(c = r.controller,
+                                                               f = "person",
+                                                               args = ["[id]", "case_task"],
+                                                               extension = "",
+                                                               ),
+                                                  show_link = True,
+                                                  )
+
+        # List Fields
+        list_fields = ["due_date",
+                       (T("ID"), "person_id$pe_label"),
+                       "person_id",
+                       "name",
+                       "human_resource_id",
+                       "status",
+                       "comments",
+                       ]
+
+        # TODO Custom Filters
+
+        # Reconfigure resource
+        resource.configure(list_fields = list_fields,
+                           )
+
+        # Filter by Category
+        # TODO possibly more useful to filter by user role:
+        #      - Counselor = A and C
+        #      - Anyone else = A only
+        if r.controller == "dvr":
+            # Show only administrative TODOs
+            resource.add_filter(FS("category") == "A")
+        elif r.controller == "counsel":
+            # Show only counseling TODOs
+            resource.add_filter(FS("category") == "C")
+        else:
+            resource.add_filter(FS("category") == None)
+
+        return result
+    s3.prep = prep
+
+    from ..rheaders import dvr_rheader
+    attr["rheader"] = dvr_rheader
+    return attr
+
+# -------------------------------------------------------------------------
 def note_date_dt_orderby(field, direction, orderby, left_joins):
     """
         When sorting notes by date, use created_on to maintain

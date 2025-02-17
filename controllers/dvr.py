@@ -1183,6 +1183,41 @@ def note_type():
     return crud_controller()
 
 # =============================================================================
+# Case Tasks
+#
+def task():
+    """ Case Tasks: CRUD controller """
+
+    settings.base.bigtable = True
+
+    def prep(r):
+
+        resource = r.resource
+        resource.configure(insertable = False,
+                           deletable = False,
+                           )
+
+        # This is the default:
+        #table = resource.table
+        #field = table.person_id
+        #field.writable = False
+
+        # TODO prep:
+        # - configure suitable list_fields
+        # - person_id read-only, render as link, hidden in form
+        # - filter hrm to case/task organisation
+        return True
+    s3.prep = prep
+
+    # TODO rheader:
+    # - subject line
+    # - client
+    # - date
+    # - status
+
+    return crud_controller(rheader=s3db.dvr_rheader)
+
+# =============================================================================
 # Residence Status
 #
 def residence_status_type():
