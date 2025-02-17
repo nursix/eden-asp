@@ -24,10 +24,10 @@ def index_alt():
     s3_redirect_default(URL(f="patient"))
 
 # =============================================================================
-def area():
-    """ Treatment Areas - CRUD Controller """
+def unit():
+    """ Medical Units - CRUD Controller """
 
-    return crud_controller()
+    return crud_controller(rheader=s3db.med_rheader)
 
 # =============================================================================
 def patient():
@@ -55,8 +55,24 @@ def patient():
 
             r.resource.add_filter(query)
 
+        if r.component_name in ("status", "epicrisis") and r.component_id:
+
+            # Records only editable/deletable for original author
+            rows = r.component.load()
+            record = rows[0] if rows else None
+
+            user = current.auth.user
+            user_id = user.id if user else None
+
+            if record and record.created_by != user_id:
+                r.component.configure(editable = False,
+                                      deletable = False,
+                                      )
         return True
     s3.prep = prep
+
+    # TODO postp
+    # * status/epicrisis components: set filter for deletable records
 
     return crud_controller(rheader=s3db.med_rheader)
 
@@ -98,24 +114,38 @@ def person():
                 else:
                     r.error(404, current.ERROR.BAD_RECORD)
 
-        s3.crud_strings["med_patient"] = Storage(
-            label_create = T("Add Care Occasion"),
-            title_display = T("Care Occasion"),
-            title_list = T("Care Occasions"),
-            title_update = T("Edit Care Occasion"),
-            label_list_button = T("List Care Occasions"),
-            label_delete_button = T("Delete Care Occasion"),
-            msg_record_created = T("Care Occasion added"),
-            msg_record_modified = T("Care Occasion updated"),
-            msg_record_deleted = T("Care Occasion deleted"),
-            msg_list_empty = T("No Care Occasions currently registered"),
-            )
+        elif r.component_name == "patient":
+
+            r.component.configure(insertable = False,
+                                  editable = False,
+                                  deletable = False,
+                                  )
+            s3.crud_strings["med_patient"] = Storage(
+                label_create = T("Add Care Occasion"),
+                title_display = T("Care Occasion"),
+                title_list = T("Care Occasions"),
+                title_update = T("Edit Care Occasion"),
+                label_list_button = T("List Care Occasions"),
+                label_delete_button = T("Delete Care Occasion"),
+                msg_record_created = T("Care Occasion added"),
+                msg_record_modified = T("Care Occasion updated"),
+                msg_record_deleted = T("Care Occasion deleted"),
+                msg_list_empty = T("No Care Occasions currently registered"),
+                )
 
         r.resource.configure(insertable = False,
                              deletable = False,
                              )
         return True
     s3.prep = prep
+
+    def postp(r, output):
+
+        if r.component_name == "patient":
+            if isinstance(output, dict):
+                output["native"] = True
+        return output
+    s3.postp = postp
 
     return crud_controller("pr", "person", rheader=s3db.med_rheader)
 

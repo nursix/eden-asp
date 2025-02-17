@@ -25,7 +25,7 @@
     OTHER DEALINGS IN THE SOFTWARE.
 """
 
-__all__ = ("MedAreaModel",
+__all__ = ("MedUnitModel",
            "MedPatientModel",
            "MedVitalsModel",
            "MedTreatmentModel",
@@ -43,10 +43,12 @@ from gluon.storage import Storage
 from ..core import *
 
 # =============================================================================
-class MedAreaModel(DataModel):
+class MedUnitModel(DataModel):
     """ Treatment Area Data Model """
 
-    names = ("med_area",
+    names = ("med_unit",
+             "med_unit_id",
+             "med_area",
              "med_area_id",
              )
 
@@ -54,12 +56,59 @@ class MedAreaModel(DataModel):
 
         T = current.T
         db = current.db
+        settings = current.deployment_settings
 
-        #s3 = current.response.s3
-        #crud_strings = s3.crud_strings
+        s3 = current.response.s3
+        crud_strings = s3.crud_strings
 
         define_table = self.define_table
         # configure = self.configure
+
+        # ---------------------------------------------------------------------
+        tablename = "med_unit"
+        define_table(tablename,
+                     # TODO make person entity
+                     # TODO make OU of organisation (=> onaccept)
+                     self.org_organisation_id(),
+                     self.org_site_id(),
+                     Field("name", length=64,
+                           # TODO should be unique within the organisation
+                           #      => onvalidation
+                           requires = IS_NOT_EMPTY(),
+                           represent = lambda v, row=None: v if v else "-",
+                           ),
+                     )
+
+        # Components
+        self.add_components(tablename,
+                            med_area = "unit_id",
+                            )
+
+        # CRUD strings
+        crud_strings[tablename] = Storage(
+            label_create = T("Add Medical Unit"),
+            title_display = T("Medical Unit"),
+            title_list = T("Medical Units"),
+            title_update = T("Edit Medical Unit"),
+            label_list_button = T("List Medical Units"),
+            label_delete_button = T("Delete Medical Unit"),
+            msg_record_created = T("Medical Unit added"),
+            msg_record_modified = T("Medical Unit updated"),
+            msg_record_deleted = T("Medical Unit deleted"),
+            msg_list_empty = T("No Medical Units currently registered"),
+            )
+
+        # Foreign key template
+        represent = S3Represent(lookup=tablename)
+        unit_id = FieldTemplate("unit_id", "reference %s" % tablename,
+                                label = T("Unit"),
+                                ondelete = "RESTRICT",
+                                represent = represent,
+                                requires = IS_EMPTY_OR(
+                                                IS_ONE_OF(db, "%s.id" % tablename,
+                                                          represent,
+                                                          )),
+                                )
 
         # ---------------------------------------------------------------------
         # Area functions
@@ -91,10 +140,9 @@ class MedAreaModel(DataModel):
         #
         tablename = "med_area"
         define_table(tablename,
-                     self.org_organisation_id(),
-                     self.org_site_id(),
+                     unit_id(),
                      Field("name", length=64,
-                           # TODO should be unique within the organisation
+                           # TODO should be unique within the unit
                            #      => onvalidation
                            requires = IS_NOT_EMPTY(),
                            represent = lambda v, row=None: v if v else "-",
@@ -122,12 +170,39 @@ class MedAreaModel(DataModel):
                      CommentsField(),
                      )
 
-        # TODO CRUD strings
+        # CRUD strings
+        area_label = settings.get_med_area_label()
+        if area_label == "area":
+            crud_strings[tablename] = Storage(
+                label_create = T("Add Treatment Area"),
+                title_display = T("Treatment Area"),
+                title_list = T("Treatment Areas"),
+                title_update = T("Edit Treatment Area"),
+                label_list_button = T("List Treatment Areas"),
+                label_delete_button = T("Delete Treatment Area"),
+                msg_record_created = T("Treatment Area added"),
+                msg_record_modified = T("Treatment Area updated"),
+                msg_record_deleted = T("Treatment Area deleted"),
+                msg_list_empty = T("No Treatment Areas currently registered"),
+                )
+        else:
+            crud_strings[tablename] = Storage(
+                label_create = T("Add Room"),
+                title_display = T("Room"),
+                title_list = T("Rooms"),
+                title_update = T("Edit Room"),
+                label_list_button = T("List Rooms"),
+                label_delete_button = T("Delete Room"),
+                msg_record_created = T("Room added"),
+                msg_record_modified = T("Room updated"),
+                msg_record_deleted = T("Room deleted"),
+                msg_list_empty = T("No Rooms currently registered"),
+                )
 
         # Foreign key template
         represent = S3Represent(lookup=tablename)
         area_id = FieldTemplate("area_id", "reference %s" % tablename,
-                                label = T("Room"),
+                                label = T("Area") if area_label == "area" else T("Room"),
                                 ondelete = "RESTRICT",
                                 represent = represent,
                                 requires = IS_EMPTY_OR(
@@ -139,14 +214,18 @@ class MedAreaModel(DataModel):
         # ---------------------------------------------------------------------
         # Pass names back to global scope (s3.*)
         #
-        return {"med_area_id": area_id,
+        return {"med_unit_id": unit_id,
+                "med_area_id": area_id,
                 }
 
     # -------------------------------------------------------------------------
     def defaults(self):
         """ Safe defaults for names in case the module is disabled """
 
-        return {"med_area_id": FieldTemplate.dummy("area_id"),
+        dummy = FieldTemplate.dummy
+
+        return {"med_unit_id": dummy("unit_id"),
+                "med_area_id": dummy("area_id"),
                 }
 
 # =============================================================================
@@ -161,6 +240,7 @@ class MedPatientModel(DataModel):
 
         T = current.T
         db = current.db
+        settings = current.deployment_settings
 
         s3 = current.response.s3
         crud_strings = s3.crud_strings
@@ -201,7 +281,7 @@ class MedPatientModel(DataModel):
         #
         tablename = "med_patient"
         define_table(tablename,
-                     self.org_organisation_id(),
+                     self.med_unit_id(),
                      Field("refno",
                            label = T("No."),
                            writable = False,
@@ -213,9 +293,11 @@ class MedPatientModel(DataModel):
                            ),
                      self.pr_person_id(
                          label = T("Identity"),
+                         represent = self.pr_PersonRepresent(show_link=True),
                          comment = None,
                          ),
 
+                     # TODO filterOptions
                      self.med_area_id(),
 
                      # Start and end date of the care occasion
@@ -295,7 +377,9 @@ class MedPatientModel(DataModel):
 
         # List fields
         # TODO make using areas a deployment setting
-        list_fields = [(T("Room"), "area_id$name"),
+        # TODO show unit if user can see multiple
+        area_label = T("Area") if settings.get_med_area_label() == "area" else T("Room")
+        list_fields = [(area_label, "area_id$name"),
                        "priority",
                        "refno",
                        "person_id",
@@ -539,22 +623,26 @@ class MedStatusModel(DataModel):
                         past = 24, # hours
                         ),
                      # TODO role (physician, nurse, paramedic, assistant, consultant, other)
-                     Field("situation", "text",
-                           label = T("Situation"),
-                           represent = s3_text_represent,
-                           ),
-                     Field("background", "text",
-                           label = T("Background"),
-                           represent = s3_text_represent,
-                           ),
-                     Field("assessment", "text",
-                           label = T("Assessment"),
-                           represent = s3_text_represent,
-                           ),
-                     Field("recommendation", "text",
-                           label = T("Recommendation"),
-                           represent = s3_text_represent,
-                           ),
+                     CommentsField("situation",
+                                   label = T("Situation"),
+                                   represent = s3_text_represent,
+                                   comment = None,
+                                   ),
+                     CommentsField("background",
+                                   label = T("Background"),
+                                   represent = s3_text_represent,
+                                   comment = None,
+                                   ),
+                     CommentsField("assessment",
+                                   label = T("Assessment"),
+                                   represent = s3_text_represent,
+                                   comment = None,
+                                   ),
+                     CommentsField("recommendation",
+                                   label = T("Recommendation"),
+                                   represent = s3_text_represent,
+                                   comment = None
+                                   ),
                      # TODO show this field for the original author
                      Field("complete", "boolean",
                            default = False,
@@ -951,27 +1039,32 @@ class MedEpicrisisModel(DataModel):
                          empty = False,
                          comment = None,
                          readable = False,
-                         writable = False, # TODO set onaccept
+                         writable = False,
                          ),
                      self.med_patient_id(
                          readable = False, # TODO make readable in person perspective
-                         writable = False, # TODO set onaacept
+                         writable = False,
                          ),
-                     Field("situation", "text",
-                           label = T("Initial Situation Details"),
-                           ),
-                     Field("diagnoses", "text",
-                           label = T("Diagnoses"),
-                           ),
-                     Field("progress", "text",
-                           label = T("Treatment / Progress"),
-                           ),
-                     Field("outcome", "text",
-                           label = T("Outcome"),
-                           ),
-                     Field("recommendation", "text",
-                           label = T("Recommendation"),
-                           ),
+                     CommentsField("situation",
+                                   label = T("Initial Situation Details"),
+                                   comment = None,
+                                   ),
+                     CommentsField("diagnoses",
+                                   label = T("Diagnoses"),
+                                   comment = None,
+                                   ),
+                     CommentsField("progress",
+                                   label = T("Treatment / Progress"),
+                                   comment = None,
+                                   ),
+                     CommentsField("outcome",
+                                   label = T("Outcome"),
+                                   comment = None,
+                                   ),
+                     CommentsField("recommendation",
+                                   label = T("Recommendation"),
+                                   comment = None,
+                                   ),
                      Field("closed", "boolean",
                            label = T("Closed##status"),
                            default = False,
@@ -1376,6 +1469,7 @@ def med_rheader(r, tabs=None):
     if record:
 
         T = current.T
+        settings = current.deployment_settings
 
         if tablename == "pr_person":
             if not tabs:
@@ -1391,9 +1485,6 @@ def med_rheader(r, tabs=None):
             rheader_fields = [["date_of_birth"],
                               ]
             rheader_title = s3_fullname
-
-            rheader = S3ResourceHeader(rheader_fields, tabs, title=rheader_title)
-            rheader = rheader(r, table=resource.table, record=record)
 
         elif tablename == "med_patient":
             if not tabs:
@@ -1423,8 +1514,26 @@ def med_rheader(r, tabs=None):
                               ]
             rheader_title = "person_id"
 
-            rheader = S3ResourceHeader(rheader_fields, tabs, title=rheader_title)
-            rheader = rheader(r, table=resource.table, record=record)
+        elif tablename == "med_unit":
+            if not tabs:
+                if settings.get_med_area_label() == "area":
+                    areas_label = T("Treatment Areas")
+                else:
+                    areas_label = T("Rooms")
+                tabs = [(T("Basic Details"), None),
+                        (areas_label, "area"),
+                        ]
+
+            rheader_fields = ["organisation_id",
+                              "site_id",
+                              ]
+            rheader_title = "name"
+
+        else:
+            return None
+
+        rheader = S3ResourceHeader(rheader_fields, tabs, title=rheader_title)
+        rheader = rheader(r, table=resource.table, record=record)
 
     return rheader
 

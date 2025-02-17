@@ -188,6 +188,7 @@ class S3Config(Storage):
         self.L10n.languages = {"en": "English"}
         self.log = Storage()
         self.mail = Storage()
+        self.med = Storage()
         self.member = Storage()
         self.mobile = Storage()
         self.msg = Storage()
@@ -4509,6 +4510,15 @@ class S3Config(Storage):
             Use Vehicles to respond to Incident Reports?
         """
         return self.irs.get("vehicle", False)
+
+    # -------------------------------------------------------------------------
+    # MED module
+    #
+    def get_med_area_label(self):
+        """
+            Terminology to use for treatment areas (room|area)
+        """
+        return self.med.get("area_label", "room")
 
     # -------------------------------------------------------------------------
     # Members
