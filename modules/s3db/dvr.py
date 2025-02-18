@@ -77,7 +77,6 @@ __all__ = ("DVRCaseModel",
 import datetime
 
 from collections import OrderedDict
-from dateutil.relativedelta import relativedelta
 
 from gluon import *
 from gluon.storage import Storage
@@ -1274,7 +1273,6 @@ class DVRTaskModel(DataModel):
         # ---------------------------------------------------------------------
         # Tasks
         #
-        three_months = datetime.datetime.utcnow().date() + relativedelta(months=3)
         tablename = "dvr_task"
         define_table(tablename,
                      self.pr_person_id(
@@ -1326,11 +1324,16 @@ class DVRTaskModel(DataModel):
                          ),
                      DateField("due_date",
                                label = T("Date Due"),
-                               default = three_months,
-                               past = 0,
-                               empty = False,
+                               past = 0, # TODO move into onvalidation
                                # TODO represent as priority
                                ),
+                     # Sorting priority (see task_ondefine.due_date_dt_orderby)
+                     Field("sprio", "integer",
+                           default = 1,
+                           # set automatically onaccept
+                           readable = False,
+                           writable = False,
+                           ),
                      DateTimeField("status_date",
                                    readable = False,
                                    writable = False,
@@ -1344,9 +1347,10 @@ class DVRTaskModel(DataModel):
                                    writable = False,
                                    ),
                      CommentsField(),
+                     on_define = self.task_ondefine,
                      )
 
-        # TODO list fields (for primary controller)
+        # TODO list fields (default for case file tab)
 
         # Filter widgets
         filter_widgets = [TextFilter(["person_id$pe_label",
@@ -1367,6 +1371,7 @@ class DVRTaskModel(DataModel):
                           ]
 
         # Table configuration
+        # TODO onvalidation to check plausibility of due-date (should not be past for new tasks)
         self.configure(tablename,
                        filter_widgets = filter_widgets,
                        onaccept = self.task_onaccept,
@@ -1393,11 +1398,37 @@ class DVRTaskModel(DataModel):
 
     # -------------------------------------------------------------------------
     @staticmethod
+    def task_ondefine(table):
+        """
+            Ondefine-routine for task table:
+            - configure special datatable orderby-rule for due date
+
+            Args:
+                table: the dvr_task table
+        """
+
+        def due_date_dt_orderby(field, direction, orderby, left_joins):
+            """
+                Sorting the datatable by due-date maintains a constant
+                order of status groupings (using the sorting priority
+                which is set onaccept)
+            """
+
+            sorting = {"table": field.tablename,
+                       "direction": direction,
+                       }
+            orderby.append("%(table)s.sprio asc,%(table)s.due_date%(direction)s" % sorting)
+
+        table.due_date.represent.dt_orderby = due_date_dt_orderby
+
+    # -------------------------------------------------------------------------
+    @staticmethod
     def task_onaccept(form):
         """
             Onaccept-routine for tasks
             - detect status change and set status_date / closed_on
             - set case_id and organisation_id
+            - set sorting priority (combined ranking by status+due-date)
         """
 
         # Get form record ID
@@ -1417,6 +1448,7 @@ class DVRTaskModel(DataModel):
                                   table.case_id,
                                   table.organisation_id,
                                   table.status,
+                                  table.due_date,
                                   table.previous_status,
                                   table.status_date,
                                   table.closed_on,
@@ -1453,6 +1485,21 @@ class DVRTaskModel(DataModel):
                                                         limitby = (0, 1),
                                                         ).first()
             update["organisation_id"] = case.organisation_id
+
+        # Set sorting priority (1=top)
+        # - actionable tasks first, closed tasks last
+        sorting_priority = {"NEW": 1,
+                            "PROC": 1,
+                            "NA": 3,
+                            "DONE": 5,
+                            "DEF": 7,
+                            "OBS": 7,
+                            }
+        sprio = sorting_priority.get(record.status, 9)
+        # - tasks with due-date rank higher than those without
+        if not record.due_date:
+            sprio += 1
+        update["sprio"] = sprio
 
         record.update_record(**update)
 
