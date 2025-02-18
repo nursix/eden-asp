@@ -125,7 +125,7 @@ def dvr_task_resource(r, tablename):
 def dvr_task_controller(**attr):
 
     T = current.T
-    s3db = current.s3db
+    #s3db = current.s3db
     s3 = current.response.s3
 
     current.deployment_settings.base.bigtable = True
@@ -139,29 +139,17 @@ def dvr_task_controller(**attr):
 
         resource = r.resource
 
-        # Hide person_id from form (shown in rheader instead)
-        table = resource.table
-        field = table.person_id
-        field.readable = field.writable = False
-        field.represent = s3db.pr_PersonRepresent(linkto = URL(c = r.controller,
-                                                               f = "person",
-                                                               args = ["[id]", "case_task"],
-                                                               extension = "",
-                                                               ),
-                                                  show_link = True,
-                                                  )
-
         # List Fields
         list_fields = ["due_date",
                        (T("ID"), "person_id$pe_label"),
-                       "person_id",
+                       (T("Name"), "person_id"),
                        "name",
                        "human_resource_id",
                        "status",
                        "comments",
                        ]
 
-        # TODO Custom Filters
+        # TODO Customise filter widgets
 
         # Reconfigure resource
         resource.configure(list_fields = list_fields,

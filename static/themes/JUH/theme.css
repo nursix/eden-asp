@@ -195,6 +195,24 @@ button.toggle-text {
 }
 
 /* line 36, ../../default/scss/theme/_represent.scss */
+.due-date {
+  padding: 0 2px;
+}
+/* line 38, ../../default/scss/theme/_represent.scss */
+.due-date.due-now {
+  background-color: #ff010194;
+  color: black;
+}
+/* line 42, ../../default/scss/theme/_represent.scss */
+.due-date.due-next {
+  background-color: #ff54005c;
+}
+/* line 45, ../../default/scss/theme/_represent.scss */
+.due-date.due-soon {
+  background-color: #f7ff004a;
+}
+
+/* line 53, ../../default/scss/theme/_represent.scss */
 .avatar {
   background: none repeat scroll 0 0 #fff;
   border-bottom: 1px solid #d7d7d7;
@@ -205,66 +223,66 @@ button.toggle-text {
   padding: 4px;
   width: 55px;
 }
-/* line 45, ../../default/scss/theme/_represent.scss */
+/* line 62, ../../default/scss/theme/_represent.scss */
 [dir=rtl] .avatar {
   float: right;
 }
 
-/* line 53, ../../default/scss/theme/_represent.scss */
+/* line 70, ../../default/scss/theme/_represent.scss */
 .text-body {
   white-space: pre-wrap;
 }
 
 /* Truncated Texts */
-/* line 58, ../../default/scss/theme/_represent.scss */
+/* line 75, ../../default/scss/theme/_represent.scss */
 .s3-truncate-more,
 .s3-truncate-less {
   font-style: italic;
 }
 
-/* line 62, ../../default/scss/theme/_represent.scss */
+/* line 79, ../../default/scss/theme/_represent.scss */
 .s3-truncate-more:before,
 .s3-truncate-less:before {
   font-style: italic;
   content: "...";
 }
 
-/* line 72, ../../default/scss/theme/_represent.scss */
+/* line 89, ../../default/scss/theme/_represent.scss */
 .controls .bool {
   margin-left: 0.5rem;
 }
-/* line 74, ../../default/scss/theme/_represent.scss */
+/* line 91, ../../default/scss/theme/_represent.scss */
 [dir=rtl] .controls .bool {
   margin-left: 0;
   margin-right: 0.5rem;
 }
-/* line 79, ../../default/scss/theme/_represent.scss */
+/* line 96, ../../default/scss/theme/_represent.scss */
 .bool i {
   margin-right: 0.2rem;
 }
-/* line 81, ../../default/scss/theme/_represent.scss */
+/* line 98, ../../default/scss/theme/_represent.scss */
 [dir=rtl] .bool i {
   margin-right: 0;
   margin-left: 0.2rem;
 }
-/* line 86, ../../default/scss/theme/_represent.scss */
+/* line 103, ../../default/scss/theme/_represent.scss */
 .bool.bool-red {
   color: #d01717;
 }
-/* line 89, ../../default/scss/theme/_represent.scss */
+/* line 106, ../../default/scss/theme/_represent.scss */
 .bool.bool-green {
   color: #018801;
 }
-/* line 92, ../../default/scss/theme/_represent.scss */
+/* line 109, ../../default/scss/theme/_represent.scss */
 .bool.bool-blue {
   color: #1754b3;
 }
-/* line 95, ../../default/scss/theme/_represent.scss */
+/* line 112, ../../default/scss/theme/_represent.scss */
 .bool.bool-grey {
   color: #7f7f7f;
 }
 
-/* line 103, ../../default/scss/theme/_represent.scss */
+/* line 120, ../../default/scss/theme/_represent.scss */
 .prio {
   padding: 0 0.4rem;
   border: 1px solid #333;
@@ -274,68 +292,68 @@ button.toggle-text {
   white-space: pre;
 }
 
-/* line 111, ../../default/scss/theme/_represent.scss */
+/* line 128, ../../default/scss/theme/_represent.scss */
 .prio-red {
   color: #E0E0E0;
   background-color: #d10000;
 }
 
-/* line 115, ../../default/scss/theme/_represent.scss */
+/* line 132, ../../default/scss/theme/_represent.scss */
 .prio-amber {
   background-color: #ffaa00;
 }
 
-/* line 118, ../../default/scss/theme/_represent.scss */
+/* line 135, ../../default/scss/theme/_represent.scss */
 .prio-lightgreen {
   background-color: #a0d7a0;
 }
 
-/* line 121, ../../default/scss/theme/_represent.scss */
+/* line 138, ../../default/scss/theme/_represent.scss */
 .prio-green {
   color: #E0E0E0;
   background-color: #006100;
 }
 
-/* line 125, ../../default/scss/theme/_represent.scss */
+/* line 142, ../../default/scss/theme/_represent.scss */
 .prio-blue {
   color: white;
   background-color: #10427b;
 }
 
-/* line 129, ../../default/scss/theme/_represent.scss */
+/* line 146, ../../default/scss/theme/_represent.scss */
 .prio-lightblue {
   background-color: #b7ddff;
 }
 
-/* line 132, ../../default/scss/theme/_represent.scss */
+/* line 149, ../../default/scss/theme/_represent.scss */
 .prio-grey {
   background-color: silver;
 }
 
-/* line 135, ../../default/scss/theme/_represent.scss */
+/* line 152, ../../default/scss/theme/_represent.scss */
 .prio-black {
   color: #E0E0E0;
   background-color: #1f1f1f;
 }
 
-/* line 143, ../../default/scss/theme/_represent.scss */
+/* line 160, ../../default/scss/theme/_represent.scss */
 .wh-schedule {
   list-style: none;
   white-space: pre;
   margin: 0;
   font-size: 0.7rem;
 }
-/* line 148, ../../default/scss/theme/_represent.scss */
+/* line 165, ../../default/scss/theme/_represent.scss */
 .wh-schedule .wh-dayname {
   width: 1.5rem;
   display: inline-block;
 }
-/* line 152, ../../default/scss/theme/_represent.scss */
+/* line 169, ../../default/scss/theme/_represent.scss */
 .wh-schedule .wh-dayname::after {
   content: ":";
 }
 
-/* line 160, ../../default/scss/theme/_represent.scss */
+/* line 177, ../../default/scss/theme/_represent.scss */
 .showall {
   display: none;
   position: absolute;
@@ -345,7 +363,7 @@ button.toggle-text {
   margin: 0 20px 0 -50px;
 }
 
-/* line 172, ../../default/scss/theme/_represent.scss */
+/* line 189, ../../default/scss/theme/_represent.scss */
 .newsletter-text {
   white-space: pre-line;
   background: #fcfcfc;
@@ -358,90 +376,90 @@ button.toggle-text {
   font-size: 0.85rem;
 }
 
-/* line 188, ../../default/scss/theme/_represent.scss */
+/* line 205, ../../default/scss/theme/_represent.scss */
 .file-repr i.fa {
   font-size: 1.1rem;
 }
-/* line 191, ../../default/scss/theme/_represent.scss */
+/* line 208, ../../default/scss/theme/_represent.scss */
 .file-repr .file-size {
   padding: 0 0.4rem;
   font-size: 0.7rem;
 }
 
-/* line 197, ../../default/scss/theme/_represent.scss */
+/* line 214, ../../default/scss/theme/_represent.scss */
 .img-preview {
   max-width: 120px;
   max-height: 80px;
 }
 
-/* line 205, ../../default/scss/theme/_represent.scss */
+/* line 222, ../../default/scss/theme/_represent.scss */
 .contact-repr {
   background-color: #FFF0C1;
   border: 1px solid #E0E0E0;
   padding: 0.25rem 0.5rem;
 }
-/* line 209, ../../default/scss/theme/_represent.scss */
+/* line 226, ../../default/scss/theme/_represent.scss */
 .contact-repr .contact-name {
   display: block;
   font-weight: bold;
   margin-bottom: 0.2rem;
 }
-/* line 214, ../../default/scss/theme/_represent.scss */
+/* line 231, ../../default/scss/theme/_represent.scss */
 .contact-repr .contact-info {
   white-space: nowrap;
   font-size: 0.8rem;
 }
-/* line 217, ../../default/scss/theme/_represent.scss */
+/* line 234, ../../default/scss/theme/_represent.scss */
 .contact-repr .contact-info .fa {
   padding-right: 0.4rem;
 }
 
-/* line 226, ../../default/scss/theme/_represent.scss */
+/* line 243, ../../default/scss/theme/_represent.scss */
 .workflow-options {
   white-space: pre;
 }
-/* line 228, ../../default/scss/theme/_represent.scss */
+/* line 245, ../../default/scss/theme/_represent.scss */
 .workflow-options.workflow-grey {
   color: #555;
 }
-/* line 231, ../../default/scss/theme/_represent.scss */
+/* line 248, ../../default/scss/theme/_represent.scss */
 .workflow-options.workflow-red {
   color: #c42626;
 }
-/* line 234, ../../default/scss/theme/_represent.scss */
+/* line 251, ../../default/scss/theme/_represent.scss */
 .workflow-options.workflow-amber {
   color: #ec8d27;
 }
-/* line 237, ../../default/scss/theme/_represent.scss */
+/* line 254, ../../default/scss/theme/_represent.scss */
 .workflow-options.workflow-green {
   color: green;
 }
-/* line 240, ../../default/scss/theme/_represent.scss */
+/* line 257, ../../default/scss/theme/_represent.scss */
 .workflow-options.workflow-advice {
   border: 1px solid #c42626;
   background-color: #ffdede;
   padding: 0.3rem 0.7rem;
 }
-/* line 245, ../../default/scss/theme/_represent.scss */
+/* line 262, ../../default/scss/theme/_represent.scss */
 .workflow-options .fa {
   margin-right: 0.2rem;
 }
-/* line 247, ../../default/scss/theme/_represent.scss */
+/* line 264, ../../default/scss/theme/_represent.scss */
 [dir=rtl] .workflow-options .fa {
   margin-right: 0;
   margin-left: 0.2rem;
 }
-/* line 252, ../../default/scss/theme/_represent.scss */
+/* line 269, ../../default/scss/theme/_represent.scss */
 .controls .workflow-options {
   margin-left: 0.5rem;
 }
-/* line 254, ../../default/scss/theme/_represent.scss */
+/* line 271, ../../default/scss/theme/_represent.scss */
 [dir=rtl] .controls .workflow-options {
   margin-left: 0;
   margin-right: 0.5rem;
 }
 
-/* line 264, ../../default/scss/theme/_represent.scss */
+/* line 281, ../../default/scss/theme/_represent.scss */
 .hazard-neg, .hazard-pos {
   display: inline-block;
   width: 20px;
@@ -453,17 +471,17 @@ button.toggle-text {
   background-position: center;
 }
 
-/* line 275, ../../default/scss/theme/_represent.scss */
+/* line 292, ../../default/scss/theme/_represent.scss */
 .hazard-bio.hazard-pos {
   background-image: url(../../img/hazard/bio.png);
 }
 
-/* line 278, ../../default/scss/theme/_represent.scss */
+/* line 295, ../../default/scss/theme/_represent.scss */
 .hazard-tox.hazard-pos {
   background-image: url(../../img/hazard/tox.png);
 }
 
-/* line 281, ../../default/scss/theme/_represent.scss */
+/* line 298, ../../default/scss/theme/_represent.scss */
 .hazard-rad.hazard-pos {
   background-image: url(../../img/hazard/rad.png);
 }
