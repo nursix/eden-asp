@@ -1193,13 +1193,35 @@ def task():
     def prep(r):
 
         resource = r.resource
-        resource.configure(insertable = False,
+
+        # Hide person_id from form (shown in rheader instead)
+        table = resource.table
+        field = table.person_id
+        field.readable = field.writable = False
+        field.represent = s3db.pr_PersonRepresent(linkto = URL(c = r.controller,
+                                                               f = "person",
+                                                               args = ["[id]", "case_task"],
+                                                               extension = "",
+                                                               ),
+                                                  show_link = True,
+                                                  )
+
+        # List Fields
+        list_fields = ["due_date",
+                       (T("Name"), "person_id"),
+                       "name",
+                       "human_resource_id",
+                       "status",
+                       "comments",
+                       ]
+
+        resource.configure(list_fields = list_fields,
+                           insertable = False,
                            deletable = False,
                            )
 
-        # TODO prep:
-        # - configure suitable list_fields
-        # - filter hrm to case/task organisation
+        # TODO filter hrm to case/task organisation
+
         return True
     s3.prep = prep
 

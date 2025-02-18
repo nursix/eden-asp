@@ -1320,15 +1320,15 @@ class DVRTaskModel(DataModel):
                            represent = status_represent,
                            ),
                      self.hrm_human_resource_id(
-                         label = T("Assigned to"),
+                         label = T("Staff"),
                          ),
                      DateField("due_date",
                                label = T("Date Due"),
                                past = 0, # TODO move into onvalidation
-                               # TODO represent as priority
+                               represent = self.due_date_represent,
                                ),
-                     # Sorting priority (see task_ondefine.due_date_dt_orderby)
-                     Field("sprio", "integer",
+                     # Priority ranking (see task_ondefine.due_date_dt_orderby)
+                     Field("rank", "integer",
                            default = 1,
                            # set automatically onaccept
                            readable = False,
@@ -1350,7 +1350,15 @@ class DVRTaskModel(DataModel):
                      on_define = self.task_ondefine,
                      )
 
-        # TODO list fields (default for case file tab)
+        # List fields (default for case file tab)
+        list_fields = ["due_date",
+                       "person_id",
+                       "name",
+                       "description",
+                       "human_resource_id",
+                       "status",
+                       "comments",
+                       ]
 
         # Filter widgets
         filter_widgets = [TextFilter(["person_id$pe_label",
@@ -1364,9 +1372,11 @@ class DVRTaskModel(DataModel):
                                      label = T("Search"),
                                      ),
                            OptionsFilter("status",
-                                         options = dict(task_status),
+                                         options = OrderedDict(task_status),
                                          default = ["NEW", "PROC"],
                                          cols = 3,
+                                         orientation = "rows",
+                                         sort = False,
                                          ),
                           ]
 
@@ -1374,6 +1384,7 @@ class DVRTaskModel(DataModel):
         # TODO onvalidation to check plausibility of due-date (should not be past for new tasks)
         self.configure(tablename,
                        filter_widgets = filter_widgets,
+                       list_fields = list_fields,
                        onaccept = self.task_onaccept,
                        )
 
@@ -1417,7 +1428,7 @@ class DVRTaskModel(DataModel):
             sorting = {"table": field.tablename,
                        "direction": direction,
                        }
-            orderby.append("%(table)s.sprio asc,%(table)s.due_date%(direction)s" % sorting)
+            orderby.append("%(table)s.rank asc,%(table)s.due_date%(direction)s,%(table)s.created_on%(direction)s" % sorting)
 
         table.due_date.represent.dt_orderby = due_date_dt_orderby
 
@@ -1486,22 +1497,55 @@ class DVRTaskModel(DataModel):
                                                         ).first()
             update["organisation_id"] = case.organisation_id
 
-        # Set sorting priority (1=top)
+        # Set priority ranking (1=top)
         # - actionable tasks first, closed tasks last
-        sorting_priority = {"NEW": 1,
-                            "PROC": 1,
-                            "NA": 3,
-                            "DONE": 5,
-                            "DEF": 7,
-                            "OBS": 7,
-                            }
-        sprio = sorting_priority.get(record.status, 9)
+        status_priority = {"NEW": 1,
+                           "PROC": 1,
+                           "NA": 3,
+                           "DONE": 5,
+                           "DEF": 7,
+                           "OBS": 7,
+                           }
+        rank = status_priority.get(record.status, 9)
         # - tasks with due-date rank higher than those without
         if not record.due_date:
-            sprio += 1
-        update["sprio"] = sprio
+            rank += 1
+        update["rank"] = rank
 
         record.update_record(**update)
+
+    # -------------------------------------------------------------------------
+    @staticmethod
+    def due_date_represent(value, row=None):
+        """
+            Represent due-date with color marking indicating how close
+            the due date is
+
+            Args:
+                value: the field value
+                row: the Row (unused, for framework compatibility)
+
+            Returns:
+                SPAN.due-date
+        """
+
+        due = None
+        if value:
+            dtstr = S3DateTime.date_represent(value, utc=True)
+            distance = value - datetime.datetime.utcnow().date()
+            if distance.days <= 1:
+                due = "due-now"
+            elif distance.days <= 4:
+                due = "due-next"
+            elif distance.days <= 8:
+                due = "due-soon"
+        else:
+            dtstr = "-"
+
+        output = SPAN(dtstr, _class="due-date")
+        if due:
+            output.add_class(due)
+        return output
 
 # =============================================================================
 class DVRNotesModel(DataModel):

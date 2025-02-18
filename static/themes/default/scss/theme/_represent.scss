@@ -31,6 +31,23 @@
 }
 
 // ----------------------------------------------------------------------------
+// Due dates
+//
+.due-date {
+    padding: 0 2px;
+    &.due-now {
+        background-color: #ff010194;
+        color: black;
+    }
+    &.due-next {
+        background-color: #ff54005c;
+    }
+    &.due-soon {
+        background-color: #f7ff004a;
+    }
+}
+
+// ----------------------------------------------------------------------------
 // Avatars
 //
 .avatar {
