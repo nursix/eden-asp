@@ -54,6 +54,7 @@ __all__ = ("DVRCaseModel",
 
            "dvr_configure_vulnerability_types",
            "dvr_configure_case_vulnerabilities",
+           "dvr_configure_case_tasks",
 
            "dvr_case_activity_default_status",
            "dvr_case_activity_form",
@@ -1230,6 +1231,8 @@ class DVRTaskModel(DataModel):
     """ To-Do-lists for case files """
 
     names = ("dvr_task",
+             "dvr_task_category",
+             "dvr_task_status",
              )
 
     def model(self):
@@ -1324,7 +1327,6 @@ class DVRTaskModel(DataModel):
                          ),
                      DateField("due_date",
                                label = T("Date Due"),
-                               past = 0, # TODO move into onvalidation
                                represent = self.due_date_represent,
                                ),
                      # Priority ranking (see task_ondefine.due_date_dt_orderby)
@@ -1350,41 +1352,8 @@ class DVRTaskModel(DataModel):
                      on_define = self.task_ondefine,
                      )
 
-        # List fields (default for case file tab)
-        list_fields = ["due_date",
-                       "person_id",
-                       "name",
-                       "description",
-                       "human_resource_id",
-                       "status",
-                       "comments",
-                       ]
-
-        # Filter widgets
-        filter_widgets = [TextFilter(["person_id$pe_label",
-                                      "person_id$first_name",
-                                      "person_id$middle_name",
-                                      "person_id$last_name",
-                                      "name",
-                                      "description",
-                                      "comments"
-                                      ],
-                                     label = T("Search"),
-                                     ),
-                           OptionsFilter("status",
-                                         options = OrderedDict(task_status),
-                                         default = ["NEW", "PROC"],
-                                         cols = 3,
-                                         orientation = "rows",
-                                         sort = False,
-                                         ),
-                          ]
-
         # Table configuration
-        # TODO onvalidation to check plausibility of due-date (should not be past for new tasks)
         self.configure(tablename,
-                       filter_widgets = filter_widgets,
-                       list_fields = list_fields,
                        onaccept = self.task_onaccept,
                        )
 
@@ -1405,7 +1374,17 @@ class DVRTaskModel(DataModel):
         # ---------------------------------------------------------------------
         # Pass names back to global scope (s3.*)
         #
-        return None
+        return {"dvr_task_category": task_category,
+                "dvr_task_status": task_status,
+                }
+
+    # -------------------------------------------------------------------------
+    def defaults(self):
+        """ Safe defaults for names in case the module is disabled """
+
+        return {"dvr_task_category": {},
+                "dvr_task_status": {},
+                }
 
     # -------------------------------------------------------------------------
     @staticmethod
@@ -5729,6 +5708,156 @@ def dvr_configure_case_vulnerabilities(person_id):
         field.requires = IS_ONE_OF(dbset, "dvr_vulnerability.id",
                                    field.represent,
                                    )
+
+# -----------------------------------------------------------------------------
+def dvr_configure_case_tasks(r, categories=False, default_category=None):
+    """
+        Configures case tasks; to be called from prep()
+
+        Args:
+            r: the CRUDRequest
+            categories: list|set|tuple of categories to use,
+                        True to use all categories, False to use none
+            default_category: the default task category when using multiple
+
+        Note:
+            When using multiple task categories, the field will be exposed
+            in the form and list, and a category filter will be added. When
+            not using categories, all tasks will fall into the default
+            category (see DVRTaskModel).
+    """
+
+    T = current.T
+
+    db = current.db
+    s3db = current.s3db
+
+    record = r.record
+    organisation_id = None
+
+    if r.tablename == "dvr_task":
+        on_tab = False
+        resource = r.resource
+        if record:
+            # Use the task organisation
+            organisation_id = record.organisation_id
+    elif r.component_name == "case_task":
+        on_tab = True
+        resource = r.component
+        if r.component_id:
+            # Look up the task organisation
+            ttable = s3db.dvr_task
+            query = (ttable.id == r.component_id)
+            row = db(query).select(ttable.organisation_id, limitby=(0, 1)).first()
+            organisation_id = row.organisation_id if row else None
+        elif record:
+            # Look up the case organisation
+            organisation_id = s3db.dvr_case_organisation(record.id)
+    else:
+        return
+
+    table = resource.table
+
+    # Limit HR selection to relevant organisation
+    if organisation_id:
+        htable = s3db.hrm_human_resource
+        dbset = db((htable.organisation_id==organisation_id) & \
+                   (htable.status == 1))
+        field = table.human_resource_id
+        field.requires = IS_EMPTY_OR(IS_ONE_OF(dbset,
+                                               "hrm_human_resource.id",
+                                               field.represent,
+                                               ))
+
+    # Hide person_id from form (shown in rheader instead), show as link to ToDo-tab
+    field = table.person_id
+    field.readable = field.writable = False
+    field.represent = s3db.pr_PersonRepresent(linkto = URL(c = r.controller,
+                                                           f = "person",
+                                                           args = ["[id]", "case_task"],
+                                                           extension = "",
+                                                           ),
+                                               show_link = True,
+                                               )
+
+    if on_tab:
+        text_search_fields = ["name",
+                              "description",
+                              "comments",
+                              ]
+        list_fields = ["due_date",
+                       "name",
+                       "description",
+                       "human_resource_id",
+                       "status",
+                       "comments",
+                       ]
+
+    else:
+        text_search_fields = ["person_id$pe_label",
+                              "person_id$first_name",
+                              "person_id$middle_name",
+                              "person_id$last_name",
+                              "name",
+                              "description",
+                              "comments"
+                              ]
+        list_fields = ["due_date",
+                       (T("ID"), "person_id$pe_label"),
+                       (T("Name"), "person_id"),
+                       "name",
+                       "human_resource_id",
+                       "status",
+                       "comments",
+                       ]
+
+    # Filter widgets
+    task_status = s3db.dvr_task_status
+    filter_widgets = [TextFilter(text_search_fields,
+                                 label = T("Search"),
+                                 ),
+                      OptionsFilter("status",
+                                    options = OrderedDict(task_status),
+                                    default = ["NEW", "PROC", "NA"],
+                                    cols = 3,
+                                    orientation = "rows",
+                                    sort = False,
+                                    ),
+                      ]
+
+    # Expose category?
+    if categories:
+        hide_category = False
+
+        if categories is True:
+            task_category = s3db.dvr_task_category
+        else:
+            task_category = {k: v for k, v in s3db.dvr_task_category.items() if k in categories}
+            categories = list(task_category.keys())
+            if len(categories) == 1:
+                default_category = categories[0]
+                hide_category = True
+                resource.add_filter(FS("category") == default_category)
+            else:
+                resource.add_filter(FS("category").belongs(categories))
+
+        field = table.category
+        field.requires = IS_IN_SET(task_category, zero=None)
+
+        if default_category and default_category in task_category:
+            field.default = default_category
+
+        if not hide_category:
+            field.readable = field.writable = True
+            filter_widgets.append(OptionsFilter("category",
+                                                label = T("Category"),
+                                                options = task_category,
+                                                ))
+            list_fields.insert(1, "category")
+
+    resource.configure(filter_widgets = filter_widgets,
+                       list_fields = list_fields,
+                       )
 
 # =============================================================================
 def dvr_case_activity_default_status():

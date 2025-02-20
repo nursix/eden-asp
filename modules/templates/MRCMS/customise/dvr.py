@@ -119,13 +119,9 @@ def dvr_case_resource(r, tablename):
                 field.writable = False
 
 # -------------------------------------------------------------------------
-def dvr_task_resource(r, tablename):
-    pass
-
 def dvr_task_controller(**attr):
 
-    T = current.T
-    #s3db = current.s3db
+    s3db = current.s3db
     s3 = current.response.s3
 
     current.deployment_settings.base.bigtable = True
@@ -137,37 +133,21 @@ def dvr_task_controller(**attr):
         # Call standard prep
         result = standard_prep(r) if callable(standard_prep) else True
 
-        resource = r.resource
-
-        # List Fields
-        list_fields = ["due_date",
-                       (T("ID"), "person_id$pe_label"),
-                       (T("Name"), "person_id"),
-                       "name",
-                       "human_resource_id",
-                       "status",
-                       "comments",
-                       ]
-
-        # TODO Customise filter widgets
-
-        # Reconfigure resource
-        resource.configure(list_fields = list_fields,
-                           )
-
-        # Filter by Category
-        # TODO possibly more useful to filter by user role:
-        #      - Counselor = A and C
-        #      - Anyone else = A only
-        if r.controller == "dvr":
-            # Show only administrative TODOs
-            resource.add_filter(FS("category") == "A")
-        elif r.controller == "counsel":
-            # Show only counseling TODOs
-            resource.add_filter(FS("category") == "C")
+        if r.controller == "counsel":
+            categories = {"A", "C"}
+            default_category = "C"
         else:
-            resource.add_filter(FS("category") == None)
+            categories = {"A"}
+            default_category = "A"
 
+        s3db.dvr_configure_case_tasks(r,
+                                      categories = categories,
+                                      default_category = default_category,
+                                      )
+        resource = r.resource
+        resource.configure(insertable = False,
+                           deletable = False,
+                           )
         return result
     s3.prep = prep
 

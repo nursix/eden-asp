@@ -629,7 +629,7 @@ def account_status(record, represent=True):
 
     account = db(query).select(utable.id,
                                utable.registration_key,
-                               cache = s3db.cache,
+                               #cache = s3db.cache,
                                limitby = (0, 1),
                                ).first()
 
