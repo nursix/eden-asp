@@ -10,7 +10,12 @@ import json
 from gluon import current, URL, A, IS_EMPTY_OR, SPAN
 from gluon.storage import Storage
 
-from core import FS, IS_ONE_OF, S3CalendarWidget, s3_str
+from core import AgeFilter, DateFilter, OptionsFilter, TextFilter, get_filter_options, \
+                 Anonymize, AnonymizeWidget, \
+                 FS, IS_ONE_OF, IS_PERSON_GENDER, JSONSEPARATORS, \
+                 PersonSelector, S3CalendarWidget, \
+                 S3SQLCustomForm, S3SQLInlineComponent, S3SQLInlineLink, \
+                 s3_fullname, s3_str
 
 # Limit after which a checked-out resident is reported overdue (days)
 ABSENCE_LIMIT = 5
@@ -231,7 +236,6 @@ def pr_person_resource(r, tablename):
 
                 if auth.s3_has_role("ADMIN"):
                     # Configure anonymize-method
-                    from core import Anonymize
                     s3db.set_method("pr_person", method="anonymize", action=Anonymize)
 
                     # Configure anonymize-rules
@@ -434,8 +438,6 @@ def configure_case_form(resource,
             - Shelter registration only shown inline if case organisation is known
     """
 
-    from core import S3SQLCustomForm, S3SQLInlineComponent, S3SQLInlineLink
-
     T = current.T
 
     # Configure shelter registration component
@@ -625,8 +627,6 @@ def configure_case_filters(resource, organisation_id=None, privileged=False):
 
     db = current.db
     s3db = current.s3db
-
-    from core import AgeFilter, DateFilter, OptionsFilter, TextFilter, get_filter_options
 
     # Status filter options
     get_status_opts = s3db.dvr_case_status_filter_opts
@@ -984,7 +984,6 @@ def configure_dvr_person_controller(r, privileged=False, administration=False):
             # Make gender mandatory, remove "unknown"
             field = table.gender
             field.default = None
-            from core import IS_PERSON_GENDER
             options = dict(s3db.pr_gender_opts)
             del options[1] # Remove "unknown"
             field.requires = IS_PERSON_GENDER(options, sort = True)
@@ -1052,16 +1051,15 @@ def configure_dvr_person_controller(r, privileged=False, administration=False):
 
     elif r.component_name == "case_task":
 
-        component = r.component
-        ctable = component.table
+        if r.controller == "counsel":
+            categories, default_category = {"A", "C"}, "C"
+        else:
+            categories, default_category = {"A"}, "A"
 
-        # Default category for tasks
-        default_category = "C" if r.controller == "counsel" else "A"
-
-        component.add_filter(FS("category") == default_category)
-
-        field = ctable.category
-        field.default = default_category
+        s3db.dvr_configure_case_tasks(r,
+                                      categories = categories,
+                                      default_category = default_category,
+                                      )
 
     elif r.component_name == "case_appointment":
 
@@ -1170,7 +1168,6 @@ def configure_security_person_controller(r):
         atable.note.readable = atable.note.writable = False
 
     # Custom CRUD form
-    from core import S3SQLCustomForm, S3SQLInlineComponent
     crud_form = S3SQLCustomForm(
                     (T("ID"), "pe_label"),
                     "last_name",
@@ -1204,7 +1201,6 @@ def configure_security_person_controller(r):
     # Profile page (currently unused)
     if r.method == "profile":
         from gluon.html import DIV, H2, TABLE, TR, TD
-        from core import s3_fullname
         person_id = r.id
         record = r.record
         table = r.table
@@ -1286,7 +1282,6 @@ def configure_default_person_controller(r):
     if not r.component:
 
         # Reduce form to relevant fields
-        from core import S3SQLCustomForm
         crud_form = S3SQLCustomForm("pe_label",
                                     "last_name",
                                     "first_name",
@@ -1351,7 +1346,6 @@ def configure_hrm_person_controller(r):
         else:
             pe_label = None
 
-        from core import S3SQLCustomForm
         crud_form = S3SQLCustomForm(pe_label,
                                     "last_name",
                                     "first_name",
@@ -1409,7 +1403,6 @@ def configure_custom_actions(r, output, is_case_admin=False, is_org_admin=False)
 
             if controller == "dvr" and current.auth.s3_has_role("ADMIN"):
                 # Anonymize-button
-                from core import AnonymizeWidget
                 anonymize = AnonymizeWidget.widget(r, _class="button action-btn anonymize-btn")
                 inject_button(output, anonymize, before="delete_btn", alt=None)
 
@@ -1471,7 +1464,6 @@ def configure_custom_actions(r, output, is_case_admin=False, is_org_admin=False)
                     "labelClose": s3_str(T("Close")),
                     "labelExport": s3_str(T("Export Data")),
                     }
-            from core import JSONSEPARATORS
             script = '''$('#%(selector)s').registrationHistory(%(options)s);''' % \
                         {"selector": widget_id,
                          "options": json.dumps(opts, separators=JSONSEPARATORS),
@@ -1635,6 +1627,7 @@ def pr_person_controller(**attr):
     # Activate filters on component tabs
     attr["hide_filter"] = {"response_action": False,
                            "distribution_item": False,
+                           "case_task": False,
                            }
 
     return attr
@@ -1693,8 +1686,6 @@ def pr_group_membership_controller(**attr):
 
             if r.interactive:
                 table = resource.table
-
-                from core import PersonSelector
 
                 s3db.pr_person.pe_label.label = T("ID")
 

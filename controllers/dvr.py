@@ -354,6 +354,10 @@ def person():
                             field.writable = False
                             field.comment = None
 
+            elif r.component_name == "case_task":
+
+                s3db.dvr_configure_case_tasks(r)
+
         # Module-specific list fields (must be outside of r.interactive)
         list_fields = [#"dvr_case.reference",
                        #"pe_label",
@@ -1192,36 +1196,12 @@ def task():
 
     def prep(r):
 
+        s3db.dvr_configure_case_tasks(r)
+
         resource = r.resource
-
-        # Hide person_id from form (shown in rheader instead)
-        table = resource.table
-        field = table.person_id
-        field.readable = field.writable = False
-        field.represent = s3db.pr_PersonRepresent(linkto = URL(c = r.controller,
-                                                               f = "person",
-                                                               args = ["[id]", "case_task"],
-                                                               extension = "",
-                                                               ),
-                                                  show_link = True,
-                                                  )
-
-        # List Fields
-        list_fields = ["due_date",
-                       (T("Name"), "person_id"),
-                       "name",
-                       "human_resource_id",
-                       "status",
-                       "comments",
-                       ]
-
-        resource.configure(list_fields = list_fields,
-                           insertable = False,
-                           deletable = False,
-                           )
-
-        # TODO filter hrm to case/task organisation
-
+        r.resource.configure(insertable = False,
+                             deletable = False,
+                             )
         return True
     s3.prep = prep
 

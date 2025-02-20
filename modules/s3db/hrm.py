@@ -547,7 +547,7 @@ class HRModel(DataModel):
             msg_record_deleted = T("Volunteer deleted"),
             msg_list_empty = T("No Volunteers currently registered"))
 
-        hrm_human_resource_represent = hrm_HumanResourceRepresent(show_link=True)
+        hrm_human_resource_represent = hrm_HumanResourceRepresent()
 
         if group == "staff":
             label = STAFF

@@ -480,9 +480,8 @@ class OrgOrganisationModel(DataModel):
         crud_form = S3SQLCustomForm(*crud_fields)
 
         # CRUD strings
-        ADD_ORGANIZATION = T("Create Organization")
         crud_strings[tablename] = Storage(
-            label_create = ADD_ORGANIZATION,
+            label_create = T("Create Organization"),
             title_display = T("Organization Details"),
             title_list = T("Organizations"),
             title_update = T("Edit Organization"),
@@ -496,10 +495,8 @@ class OrgOrganisationModel(DataModel):
 
         # Default widget
         if settings.get_org_autocomplete():
-            tooltip = messages.AUTOCOMPLETE_HELP
             default_widget = S3OrganisationAutocompleteWidget(default_from_profile = True)
         else:
-            tooltip = T("If you don't see the Organization in the list, you can add a new one by clicking link 'Create Organization'.")
             default_widget = None
         org_widgets = {"default": default_widget}
 
@@ -543,15 +540,8 @@ class OrgOrganisationModel(DataModel):
             text_comment = T("You can search by name, acronym or comments")
 
         # Foreign Key Template
-        organisation_comment = PopupLink(c = "org",
-                                         f = "organisation",
-                                         label = ADD_ORGANIZATION,
-                                         title = ADD_ORGANIZATION,
-                                         tooltip = tooltip,
-                                         )
         auth = current.auth
         organisation_id = FieldTemplate("organisation_id", "reference %s" % tablename,
-                                        comment = organisation_comment,
                                         default = auth.user.organisation_id \
                                                   if auth.is_logged_in() else None,
                                         label = messages.ORGANISATION,

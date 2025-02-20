@@ -89,6 +89,10 @@ def hrm_human_resource_resource(r, tablename):
     T = current.T
     s3db = current.s3db
 
+    table = s3db.hrm_human_resource
+    field = table.job_title_id
+    field.comment = None
+
     phone_label = current.deployment_settings.get_ui_label_mobile_phone()
     list_fields = ["organisation_id",
                    "person_id",

@@ -393,7 +393,6 @@ def config(settings):
                                dvr_case_event_type_controller, \
                                dvr_case_flag_controller, \
                                dvr_note_resource, \
-                               dvr_task_resource, \
                                dvr_task_controller, \
                                dvr_service_contact_resource
 
@@ -414,7 +413,6 @@ def config(settings):
     settings.customise_dvr_case_flag_controller = dvr_case_flag_controller
 
     settings.customise_dvr_note_resource = dvr_note_resource
-    settings.customise_dvr_task_resource = dvr_task_resource
     settings.customise_dvr_task_controller = dvr_task_controller
     settings.customise_dvr_service_contact_resource = dvr_service_contact_resource
 
