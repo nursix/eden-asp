@@ -102,7 +102,7 @@ def dvr_rheader(r, tabs=None):
                         tabs.append((T("Family Members"), "group_membership/"))
                         if has_roles(("CASE_ADMIN", "CASE_MANAGER")):
                             tabs.extend([(T("Appointments"), "case_appointment"),
-                                         (T("ToDo"), "case_task"),
+                                         (T("Tasks"), "case_task"),
                                          (T("Vulnerabilities"), "vulnerability"),
                                          (T("Needs"), "case_activity"),
                                          (T("Measures"), "response_action"),
@@ -124,7 +124,7 @@ def dvr_rheader(r, tabs=None):
                                      (T("Appointments"), "case_appointment"),
                                      ])
                         if has_roles(("CASE_ADMIN",)):
-                            tabs.extend([(T("ToDo"), "case_task"),
+                            tabs.extend([(T("Tasks"), "case_task"),
                                          (T("Events"), "case_event"),
                                          ])
                         if has_roles(("SHELTER_ADMIN", "SHELTER_MANAGER")):

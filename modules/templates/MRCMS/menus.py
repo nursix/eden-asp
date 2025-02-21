@@ -207,7 +207,7 @@ class OptionsMenu(default.OptionsMenu):
 
         return M(c="counsel")(
                     M("Current Cases", c=("counsel", "pr"), f="person")(
-                        M("To Do", c="counsel", f="task"),
+                        M("Tasks", c="counsel", f="task"),
                         ),
                     M("Actions", c="counsel", f="response_action")(
                         M("Overview"),
@@ -303,7 +303,7 @@ class OptionsMenu(default.OptionsMenu):
                 M("Current Cases", c=("dvr", "pr"), f="person")(
                     M("Create", m="create", t="pr_person", p="create"),
                     M("All Cases", vars = {"closed": "include"}),
-                    M("To Do", c="dvr", f="task"),
+                    M("Tasks", c="dvr", f="task"),
                     ),
                 #M("Current Needs", f="case_activity")(
                 #    M("Emergencies", vars={"~.emergency": "True"}),
