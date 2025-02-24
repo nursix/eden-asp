@@ -29,6 +29,11 @@ def config(settings):
     settings.base.theme_layouts = "DRKCM"
     settings.base.theme_config = "DRKCM"
 
+    # Custom models/controllers
+    settings.base.models = "templates.DRKCM.models"
+    settings.base.rest_controllers = {("dvr", "diagnosis"): ("dvr", "diagnosis"),
+                                      }
+
     # Authentication settings
     # Should users be allowed to register themselves?
     settings.security.self_registration = False
