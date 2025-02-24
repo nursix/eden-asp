@@ -962,12 +962,6 @@ def termination_type():
     return crud_controller()
 
 # -----------------------------------------------------------------------------
-def diagnosis():
-    """ Diagnoses: RESTful CRUD Controller """
-
-    return crud_controller()
-
-# -----------------------------------------------------------------------------
 def case_activity_update_type():
     """ Case Activity Update Types: RESTful CRUD Controller """
 

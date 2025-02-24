@@ -688,7 +688,7 @@ def configure_inline_responses(person_id,
     return inline_responses
 
 # -------------------------------------------------------------------------
-def dvr_case_activity_resource(r, tablename):
+def configure_case_activity(r):
 
     T = current.T
     s3db = current.s3db
@@ -782,7 +782,7 @@ def dvr_case_activity_resource(r, tablename):
 
         # Configure sector_id
         field = table.sector_id
-        if ui_options_get("activity_use_sector"):
+        if activity_use_sector:
             configure_case_activity_sector(r, table, case_root_org)
         else:
             field.readable = field.writable = False
@@ -1010,6 +1010,27 @@ def dvr_case_activity_resource(r, tablename):
                    )
 
 # -------------------------------------------------------------------------
+def dvr_case_activity_resource(r, tablename):
+
+    s3db = current.s3db
+
+    # Add custom components
+    s3db.add_components("dvr_case_activity",
+                        dvr_diagnosis = (
+                                {"name": "suspected_diagnosis",
+                                 "link": "dvr_diagnosis_suspected",
+                                 "joinby": "case_activity_id",
+                                 "key": "diagnosis_id",
+                                 },
+                                {"name": "confirmed_diagnosis",
+                                 "link": "dvr_diagnosis_confirmed",
+                                 "joinby": "case_activity_id",
+                                 "key": "diagnosis_id",
+                                 },
+                                ),
+                        )
+
+# -------------------------------------------------------------------------
 def dvr_case_activity_controller(**attr):
 
     T = current.T
@@ -1025,16 +1046,12 @@ def dvr_case_activity_controller(**attr):
 
         resource = r.resource
 
-        # Retain list_fields from resource customisation
-        # - otherwise standard_prep would override
-        list_fields = resource.get_config("list_fields")
-
         # Call standard prep
         result = standard_prep(r) if callable(standard_prep) else True
 
-        # Restore list_fields
-        if list_fields:
-            resource.configure(list_fields=list_fields)
+        # Reconfigure dvr_case_activity
+        # - overriding some default prep modifications
+        configure_case_activity(r)
 
         # Configure person tags
         from .pr import configure_person_tags

@@ -718,6 +718,13 @@ def pr_person_controller(**attr):
                     r.interactive and r.method is None and not r.component_id:
                     r.method = "organize"
 
+            elif r.component_name == "case_activity":
+
+                # Reconfigure dvr_case_activity
+                # - overriding some default prep modifications
+                from .dvr import configure_case_activity
+                configure_case_activity(r)
+
             elif r.component_name == "response_action":
 
                 if response_tab_need_filter:

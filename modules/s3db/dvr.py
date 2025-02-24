@@ -39,7 +39,6 @@ __all__ = ("DVRCaseModel",
            "DVRReferralModel",
            "DVRResponseModel",
            "DVRVulnerabilityModel",
-           "DVRDiagnosisModel",
            "DVRServiceContactModel",
            "dvr_CaseActivityRepresent",
            "dvr_DocEntityRepresent",
@@ -3263,18 +3262,6 @@ class DVRCaseActivityModel(DataModel):
                             dvr_response_action = "case_activity_id",
                             dvr_response_action_theme = "case_activity_id",
                             dvr_case_activity_update = "case_activity_id",
-                            dvr_diagnosis = (
-                                    {"name": "suspected_diagnosis",
-                                     "link": "dvr_diagnosis_suspected",
-                                     "joinby": "case_activity_id",
-                                     "key": "diagnosis_id",
-                                     },
-                                    {"name": "confirmed_diagnosis",
-                                     "link": "dvr_diagnosis_confirmed",
-                                     "joinby": "case_activity_id",
-                                     "key": "diagnosis_id",
-                                     },
-                                    ),
                             dvr_vulnerability = {"link": "dvr_vulnerability_case_activity",
                                                  "joinby": "case_activity_id",
                                                  "key": "vulnerability_id",
@@ -5296,101 +5283,6 @@ class DVRVulnerabilityModel(DataModel):
                 form.errors.vulnerability_type_id = error
 
 # =============================================================================
-class DVRDiagnosisModel(DataModel):
-    """ Diagnoses, e.g. in Psychosocial Support """
-
-    names = ("dvr_diagnosis",
-             "dvr_diagnosis_suspected",
-             "dvr_diagnosis_confirmed",
-             )
-
-    def model(self):
-
-        T = current.T
-
-        db = current.db
-        s3 = current.response.s3
-
-        define_table = self.define_table
-        crud_strings = s3.crud_strings
-
-        # ---------------------------------------------------------------------
-        # Diagnoses
-        #
-        tablename = "dvr_diagnosis"
-        define_table(tablename,
-                     Field("name",
-                           label = T("Diagnosis"),
-                           requires = [IS_NOT_EMPTY(), IS_LENGTH(512, minsize=1)],
-                           ),
-                     CommentsField(),
-                     )
-
-        # Table configuration
-        self.configure(tablename,
-                       deduplicate = S3Duplicate(),
-                       )
-
-        # CRUD Strings
-        crud_strings[tablename] = Storage(
-            label_create = T("Create Diagnosis"),
-            title_display = T("Diagnosis Details"),
-            title_list = T("Diagnoses"),
-            title_update = T("Edit Diagnosis"),
-            label_list_button = T("List Diagnoses"),
-            label_delete_button = T("Delete Diagnosis"),
-            msg_record_created = T("Diagnosis created"),
-            msg_record_modified = T("Diagnosis updated"),
-            msg_record_deleted = T("Diagnosis deleted"),
-            msg_list_empty = T("No Diagnoses currently defined"),
-        )
-
-        # Foreign Key Template
-        represent = S3Represent(lookup=tablename, translate=True)
-        diagnosis_id = FieldTemplate("diagnosis_id",
-                                     "reference %s" % tablename,
-                                     label = T("Diagnosis"),
-                                     represent = represent,
-                                     requires = IS_EMPTY_OR(
-                                                 IS_ONE_OF(db, "%s.id" % tablename,
-                                                           represent,
-                                                           )),
-                                     sortby = "name",
-                                     )
-
-        # ---------------------------------------------------------------------
-        # Link tables for diagnosis <=> case activity (suspected and confirmed)
-        #
-        tablename = "dvr_diagnosis_suspected"
-        define_table(tablename,
-                     self.dvr_case_activity_id(
-                         empty = False,
-                         ondelete = "CASCADE",
-                         ),
-                     diagnosis_id(
-                         empty = False,
-                         ondelete = "RESTRICT",
-                         ),
-                     )
-
-        tablename = "dvr_diagnosis_confirmed"
-        define_table(tablename,
-                     self.dvr_case_activity_id(
-                         empty = False,
-                         ondelete = "CASCADE",
-                         ),
-                     diagnosis_id(
-                         empty = False,
-                         ondelete = "RESTRICT",
-                         ),
-                     )
-
-        # ---------------------------------------------------------------------
-        # Pass names back to global scope (s3.*)
-        #
-        return None
-
-# =============================================================================
 class DVRServiceContactModel(DataModel):
     """ Model to track external service contacts of beneficiaries """
 
@@ -5899,7 +5791,6 @@ def dvr_case_activity_form(r):
         Returns:
             S3SQLCustomForm
     """
-    # TODO call this from case activity controller
 
     T = current.T
     s3db = current.s3db
