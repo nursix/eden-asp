@@ -27,6 +27,9 @@
 
 __all__ = ("ActivityModel",
            "ActivityBeneficiaryModel",
+           "ActivityIssueModel",
+           "ActivityTaskModel",
+           "ActivityChecklistModel",
            "act_rheader",
            )
 
@@ -357,6 +360,166 @@ class ActivityBeneficiaryModel(DataModel):
                     error = T("Activity ended before that date")
             if error:
                 form.errors.date = error
+
+# =============================================================================
+class ActivityIssueModel(DataModel):
+    """
+        Data Model for Issue Reports (e.g. when managing sites or assets)
+    """
+
+    names = ("act_issue",
+             "act_issue_id",
+             )
+
+    def model(self):
+
+        T = current.T
+        db = current.db
+
+        s3 = current.response.s3
+        crud_strings = s3.crud_strings
+
+        define_table = self.define_table
+        #configure = self.configure
+
+        # ---------------------------------------------------------------------
+        # Issue status
+        #
+        issue_status = (("NEW", T("New")),
+                        ("PROGRESS", T("In Progress")),
+                        ("REVIEW", T("Review")),
+                        ("HOLD", T("On Hold")),
+                        ("RESOLVED", T("Resolved")),
+                        ("CLOSED", T("Closed")),
+                        )
+
+        status_represent = S3PriorityRepresent(issue_status,
+                                               {"NEW": "lightblue",
+                                                "PROGRESS": "blue",
+                                                "REVIEW": "amber",
+                                                "HOLD": "red",
+                                                "RESOLVED": "green",
+                                                "CLOSED": "black",
+                                                }).represent
+
+        # ---------------------------------------------------------------------
+        # Issue resolution
+        #
+        issue_resolution = (("UNRESOLVED", T("Unresolved")),
+                            ("PLANNED", T("Work Planned")),
+                            ("N/A", T("Not Actionable")),
+                            ("DONE", T("Actioned")),
+                            ("DEFER", T("No Action")),
+                            ("OBSOLETE", T("Obsolete")),
+                            )
+
+        resolution_represent = S3PriorityRepresent(issue_resolution,
+                                                   {"UNRESOLVED": "lightblue",
+                                                    "PLANNED": "blue",
+                                                    "N/A": "red",
+                                                    "DONE": "green",
+                                                    "DEFER": "grey",
+                                                    "OBSOLETE": "black",
+                                                    }).represent
+
+        # ---------------------------------------------------------------------
+        # Issue
+        #
+        tablename = "act_issue"
+        define_table(tablename,
+                     DateTimeField(
+                         label = T("Reported on"),
+                         default="now",
+                         ),
+                     self.org_organisation_id(comment=None),
+                     self.org_site_id(),
+                     # TODO asset_id?
+                     # TODO priority
+                     Field("name",
+                           label = T("Subject"),
+                           requires = IS_NOT_EMPTY(),
+                           ),
+                     CommentsField("description",
+                                   label = T("Details"),
+                                   ),
+                     Field("status",
+                           label = T("Status"),
+                           default = "NEW",
+                           requires = IS_IN_SET(issue_status, zero=None, sort=False),
+                           represent = status_represent,
+                           ),
+                     Field("resolution",
+                           label = T("Resolution"),
+                           default = "PND",
+                           requires = IS_IN_SET(issue_resolution, zero=None, sort=False),
+                           represent = resolution_represent,
+                           ),
+                     CommentsField(),
+                     )
+
+        # TODO Components
+
+        # TODO Table configuration
+        #configure(tablename,
+        #          )
+
+        # CRUD Strings
+        crud_strings[tablename] = Storage(
+            label_create = T("Add Issue Report"),
+            title_display = T("Issue Report"),
+            title_list = T("Issue Reports"),
+            title_update = T("Edit Issue Report"),
+            label_list_button = T("List Issue Reports"),
+            label_delete_button = T("Delete Issue Report"),
+            msg_record_created = T("Issue Report added"),
+            msg_record_modified = T("Issue Report updated"),
+            msg_record_deleted = T("Issue Report deleted"),
+            msg_list_empty = T("No Issue Reports currently defined"),
+            )
+
+        # Field Template
+        represent = S3Represent(lookup="act_issue")
+        issue_id = FieldTemplate("issue_id", "reference %s" % tablename,
+                                 label = T("Issue"),
+                                 #ondelete = "RESTRICT",
+                                 represent = represent,
+                                 requires = IS_EMPTY_OR(
+                                                IS_ONE_OF(db, "%s.id" % tablename,
+                                                          represent,
+                                                          )),
+                                 #sortby = "name",
+                                 )
+
+        # ---------------------------------------------------------------------
+        # Pass names back to global scope (s3.*)
+        #
+        return {"act_issue_id": issue_id,
+                }
+
+    # -------------------------------------------------------------------------
+    def defaults(self):
+        """ Safe defaults for names in case the module is disabled """
+
+        return {"act_issue_id": FieldTemplate.dummy("issue_id"),
+                }
+
+# =============================================================================
+class ActivityTaskModel(DataModel):
+    """
+        Model to track work orders in connection with issue reports
+    """
+
+    # TODO implement
+    pass
+
+# =============================================================================
+class ActivityChecklistModel(DataModel):
+    """
+        Model for checklists, for use in work orders
+    """
+
+    # TODO implement
+    pass
 
 # =============================================================================
 def act_rheader(r, tabs=None):
