@@ -179,6 +179,7 @@ class PRPersonEntityModel(DataModel):
                            hms_hospital = T("Hospital"),
                            hrm_training_event = T("Training Event"),
                            inv_warehouse = T("Warehouse"),
+                           med_unit = T("Medical Unit"),
                            org_organisation = messages.ORGANISATION,
                            org_group = org_group_label,
                            org_facility = T("Facility"),
@@ -8071,8 +8072,6 @@ def pr_remove_affiliation(master, affiliate, role=None):
                     all affiliations with all entities will be removed
             affiliate: the affiliated entity, either as PE-ID or as tuple
                        (instance_type, instance_id)
-            affiliate: the affiliated PE, either as pe_id or as tuple
-                       (instance_type, instance_id)
             role: name of the role to remove the affiliate from, if None,
                   the affiliate will be removed from all roles
     """
@@ -8093,7 +8092,6 @@ def pr_remove_affiliation(master, affiliate, role=None):
         rows = current.db(query).select(rtable.id)
         for row in rows:
             pr_remove_from_role(row.id, affiliate_pe)
-    return
 
 # =============================================================================
 # PE Helpers
@@ -8256,7 +8254,6 @@ def pr_add_to_role(role_id, pe_id):
         atable.insert(role_id=role_id, pe_id=pe_id)
         # Clear descendant paths (triggers lazy rebuild)
         pr_rebuild_path(pe_id, clear=True)
-    return
 
 # =============================================================================
 def pr_remove_from_role(role_id, pe_id):
@@ -8286,8 +8283,6 @@ def pr_remove_from_role(role_id, pe_id):
 
         # Clear descendant paths
         pr_rebuild_path(pe_id, clear=True)
-
-    return
 
 # =============================================================================
 # Hierarchy Lookup
@@ -8754,20 +8749,13 @@ def pr_get_descendants(pe_ids, entity_types=None, skip=None, ids=True):
     if entity_types is not None:
         query &= (etable.pe_id == atable.pe_id)
         rows = db(query).select(etable.pe_id, etable.instance_type)
-        # We still need to support Py 2.6
-        #result = {(r.pe_id, r.instance_type) for r in rows}
-        result = set((r.pe_id, r.instance_type) for r in rows)
-        # We still need to support Py 2.6
-        #node_ids = {i for i, t in result if i not in skip}
-        node_ids = set(i for i, t in result if i not in skip)
+        result = {(r.pe_id, r.instance_type) for r in rows}
+        node_ids = {i for i, t in result if i not in skip}
     else:
         rows = db(query).select(atable.pe_id)
-        # We still need to support Py 2.6
-        #result = {r.pe_id for r in rows}
-        result = set(r.pe_id for r in rows)
-        # We still need to support Py 2.6
-        #node_ids = {i for i in result if i not in skip}
-        node_ids = set(i for i in result if i not in skip)
+        result = {r.pe_id for r in rows}
+        node_ids = {i for i in result if i not in skip}
+
     # Recurse
     if node_ids:
         descendants = pr_get_descendants(node_ids,

@@ -7874,6 +7874,9 @@ def org_update_affiliations(table, record):
             record: the record
     """
 
+    db = current.db
+    s3db = current.s3db
+
     if hasattr(table, "_tablename"):
         rtype = table._tablename
     else:
@@ -7881,26 +7884,26 @@ def org_update_affiliations(table, record):
 
     if rtype == "org_organisation_branch":
 
-        ltable = current.s3db.org_organisation_branch
+        ltable = s3db.org_organisation_branch
         if not isinstance(record, Row):
-            record = current.db(ltable.id == record).select(ltable.branch_id,
-                                                            ltable.deleted,
-                                                            ltable.deleted_fk,
-                                                            limitby = (0, 1),
-                                                            ).first()
+            record = db(ltable.id == record).select(ltable.branch_id,
+                                                    ltable.deleted,
+                                                    ltable.deleted_fk,
+                                                    limitby = (0, 1),
+                                                    ).first()
         if not record:
             return
         organisation_update_affiliations(record)
 
     elif rtype == "org_group_membership":
 
-        mtable = current.s3db.org_group_membership
+        mtable = s3db.org_group_membership
         if not isinstance(record, Row):
-            record = current.db(mtable.id == record).select(mtable.organisation_id,
-                                                            mtable.deleted,
-                                                            mtable.deleted_fk,
-                                                            limitby = (0, 1),
-                                                            ).first()
+            record = db(mtable.id == record).select(mtable.organisation_id,
+                                                    mtable.deleted,
+                                                    mtable.deleted_fk,
+                                                    limitby = (0, 1),
+                                                    ).first()
         if not record:
             return
         org_group_update_affiliations(record)
@@ -7910,32 +7913,47 @@ def org_update_affiliations(table, record):
         if "organisation_id" not in record:
             # Probably created on component tab, so form does not have the
             # organisation_id => reload record to get it
-            rtable = current.s3db[rtype]
+            rtable = s3db[rtype]
             try:
                 query = (rtable._id == record[rtable._id.name])
             except (KeyError, AttributeError):
                 return
-            record = current.db(query).select(rtable.organisation_id,
-                                              rtable.pe_id,
-                                              limitby = (0, 1)
-                                              ).first()
+            record = db(query).select(rtable.organisation_id,
+                                      rtable.pe_id,
+                                      limitby = (0, 1)
+                                      ).first()
 
         org_site_update_affiliations(record)
 
     elif rtype == "org_organisation_team":
 
         if not isinstance(record, Row) or "group_id" not in record:
-            ltable = current.s3db.org_organisation_team
-            record = current.db(ltable.id == record).select(ltable.id,
-                                                            ltable.organisation_id,
-                                                            ltable.group_id,
-                                                            ltable.deleted,
-                                                            ltable.deleted_fk,
-                                                            limitby = (0, 1),
-                                                            ).first()
+            ltable = s3db.org_organisation_team
+            record = db(ltable.id == record).select(ltable.id,
+                                                    ltable.organisation_id,
+                                                    ltable.group_id,
+                                                    ltable.deleted,
+                                                    ltable.deleted_fk,
+                                                    limitby = (0, 1),
+                                                    ).first()
         if not record:
             return
         org_team_update_affiliations(record)
+
+    elif rtype == "med_unit":
+
+        if any(fn not in record for fn in ("pe_id", "organisation_id")):
+            rtable = current.s3db[rtype]
+            try:
+                query = (rtable.id == record.id)
+            except (KeyError, AttributeError):
+                return
+            record = current.db(query).select(rtable.id,
+                                              rtable.pe_id,
+                                              rtable.organisation_id,
+                                              limitby = (0, 1),
+                                              ).first()
+        org_unit_update_affiliations(record)
 
 # =============================================================================
 def organisation_update_affiliations(record):
@@ -8193,6 +8211,52 @@ def org_team_update_affiliations(record):
     add_affiliation = s3db.pr_add_affiliation
     for org_pe_id in new:
         add_affiliation(org_pe_id, team_pe_id, role=TEAMS, role_type=OU)
+
+# =============================================================================
+def org_unit_update_affiliations(record):
+    """
+        Update organisation affiliations of specialist units (e.g. med_unit)
+
+        Args:
+            record: the unit record (containing pe_id and organisation_id)
+    """
+
+    from .pr import OU
+    UNITS = "Units"
+
+    db = current.db
+    s3db = current.s3db
+
+    unit_pe_id = record.pe_id
+
+    atable = s3db.pr_affiliation
+    query = (atable.pe_id == unit_pe_id) & \
+            (atable.deleted == False)
+    roles = db(query)._select(atable.role_id)
+
+    etable = s3db.pr_pentity
+    rtable = s3db.pr_role
+    join = etable.on((etable.pe_id == rtable.pe_id) & \
+                     (etable.instance_type == "org_organisation"))
+    query = (rtable.id.belongs(roles)) & \
+            (rtable.role == UNITS) & \
+            (rtable.deleted == False)
+    entities = db(query).select(rtable.pe_id, join=join)
+    obsolete = {e["pe_id"] for e in entities}
+
+    otable = s3db.org_organisation
+    query = (otable.id == record.organisation_id)
+    organisation = db(query).select(otable.pe_id, limitby=(0, 1)).first()
+    org_pe_id = organisation.pe_id if organisation else None
+
+    if org_pe_id in obsolete:
+        obsolete.remove(org_pe_id)
+    else:
+        s3db.pr_add_affiliation(org_pe_id, unit_pe_id, role=UNITS, role_type=OU)
+
+    remove_affiliation = s3db.pr_remove_affiliation
+    for org_pe_id in obsolete:
+        remove_affiliation(org_pe_id, unit_pe_id, role=UNITS)
 
 # =============================================================================
 def org_update_root_organisation(organisation_id, root_org=None):
