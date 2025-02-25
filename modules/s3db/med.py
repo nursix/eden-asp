@@ -44,7 +44,7 @@ from ..core import *
 
 # =============================================================================
 class MedUnitModel(DataModel):
-    """ Treatment Area Data Model """
+    """ Medical Unit & Treatment Areas Model """
 
     names = ("med_unit",
              "med_unit_id",
@@ -62,13 +62,14 @@ class MedUnitModel(DataModel):
         crud_strings = s3.crud_strings
 
         define_table = self.define_table
-        # configure = self.configure
+        configure = self.configure
+        super_link = self.super_link
 
         # ---------------------------------------------------------------------
         tablename = "med_unit"
         define_table(tablename,
-                     # TODO make person entity
-                     # TODO make OU of organisation (=> onaccept)
+                     super_link("pe_id", "pr_pentity"),
+                     # TODO should be readonly in update-form (=>prep):
                      self.org_organisation_id(),
                      self.org_site_id(),
                      Field("name", length=64,
@@ -83,6 +84,12 @@ class MedUnitModel(DataModel):
         self.add_components(tablename,
                             med_area = "unit_id",
                             )
+
+        # Table configuration
+        configure(tablename,
+                  onaccept = self.unit_onaccept,
+                  super_entity = ("pr_pentity",),
+                  )
 
         # CRUD strings
         crud_strings[tablename] = Storage(
@@ -227,6 +234,15 @@ class MedUnitModel(DataModel):
         return {"med_unit_id": dummy("unit_id"),
                 "med_area_id": dummy("area_id"),
                 }
+
+    # -------------------------------------------------------------------------
+    @staticmethod
+    def unit_onaccept(form):
+        """
+            Update Affiliation, record ownership and component ownership
+        """
+
+        current.s3db.org_update_affiliations("med_unit", form.vars)
 
 # =============================================================================
 class MedPatientModel(DataModel):
