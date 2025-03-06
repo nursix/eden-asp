@@ -1,7 +1,5 @@
 # Configuration file for EdenTest
 
-# Admin password to capture web2py tickets
-WEB2PY_PASSWD = "iiit123"
 # Protocol (HTTP or HTTPs)
 PROTO = "http"
 # The server name, e.g. "localhost:8000"
@@ -11,6 +9,10 @@ APPNAME = "eden"
 # The browser, e.g. "Firefox" or "Chrome"
 # NB requires the corresponding WebDriver to be in PATH (e.g. Geckodriver, Chromedriver)
 BROWSER = "Chrome"
+# Web2py admin password to capture tickets
+WEB2PY_PASSWD = "iiit123"
+# Language
+LANGUAGE = "en"
 # The user name to test with
 VALID_USER = "admin@example.com"
 # The password for the test user
