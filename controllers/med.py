@@ -201,6 +201,9 @@ def anamnesis():
 
     def prep(r):
 
+        resource = r.resource
+        table = resource.table
+
         viewing = r.viewing
         if viewing:
 
@@ -208,23 +211,43 @@ def anamnesis():
 
             vtablename, record_id = viewing
             if vtablename == "med_patient" and record_id:
-                # Load person_id from patient record
+
+                # Look up the patient record
                 ptable = s3db.med_patient
                 query = (ptable.id == record_id) & (ptable.deleted == False)
-                row = db(query).select(ptable.person_id, limitby=(0, 1)).first()
-                person_id = row.person_id if row else None
+                patient = db(query).select(ptable.person_id, limitby=(0, 1)).first()
 
-            if person_id:
-                # Filter records by person_id
-                resource = r.resource
-                resource.add_filter((FS("person_id") == person_id))
+                # Look up existing anamnesis record
+                if patient:
+                    person_id = patient.person_id
+                    query = (table.person_id == person_id) & (table.deleted == False)
+                    record = db(query).select(table.ALL, limitby=(0, 1)).first()
+                else:
+                    record = None
 
-                # Default person ID and hide field
-                field = resource.table.person_id
-                field.default = person_id
-                field.writable = field.readable = False
+                # Set default person_id
+                if not person_id:
+                    r.error(404, current.ERROR.BAD_RECORD)
+                else:
+                    field = table.person_id
+                    field.default = person_id
+                    field.readable = field.writable = False
+
+                # Adjust target record and method
+                if r.record:
+                    if r.record.person_id != person_id:
+                        r.error(404, current.ERROR.BAD_RECORD)
+                elif record:
+                    r.record, r.id = record, record.id
+                    from core import set_last_record_id
+                    set_last_record_id(r.tablename, r.id)
+                elif r.interactive and not r.method and current.auth.s3_has_permission("create", table):
+                    r.method = "create"
+                else:
+                    resource.add_filter(FS("person_id") == person_id)
             else:
-                r.error(404, current.ERROR.BAD_RECORD)
+                # Invalid view
+                r.error(400, current.ERROR.BAD_REQUEST)
         else:
             # Viewing is required
             r.error(400, current.ERROR.BAD_REQUEST)
@@ -232,7 +255,13 @@ def anamnesis():
         return True
     s3.prep = prep
 
-    return crud_controller(rheader=s3db.med_rheader)
+    settings.ui.open_read_first = True
+
+    return crud_controller(rheader=s3db.med_rheader,
+                           custom_crud_buttons = {"list_btn": None,
+                                                  "delete_btn": None,
+                                                  },
+                           )
 
 # -----------------------------------------------------------------------------
 # Medication

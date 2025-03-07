@@ -1147,14 +1147,29 @@ class MedAnamnesisModel(DataModel):
 
     def model(self):
 
-        #T = current.T
+        T = current.T
         # db = current.db
 
-        #s3 = current.response.s3
-        #crud_strings = s3.crud_strings
+        s3 = current.response.s3
+        crud_strings = s3.crud_strings
 
         define_table = self.define_table
-        # configure = self.configure
+        configure = self.configure
+
+        UNKNOWN = current.messages.UNKNOWN_OPT
+
+        # ---------------------------------------------------------------------
+        # Blood types
+        #
+        blood_types = {"A+": "A RhD pos",
+                       "A-": "A RhD neg",
+                       "B+": "B RhD pos",
+                       "B-": "B RhD neg",
+                       "AB+": "AB RhD pos",
+                       "AB-": "AB RhD neg",
+                       "O+": "O RhD pos",
+                       "O-": "O RhD neg",
+                       }
 
         # ---------------------------------------------------------------------
         # Anamnesis
@@ -1164,13 +1179,41 @@ class MedAnamnesisModel(DataModel):
                      self.pr_person_id(
                          comment = None,
                          ),
-                     # TODO Allergies
-                     # TODO Disabilities
-                     # TODO Blood Type
+                     CommentsField("allergies",
+                                   label = T("Allergies"),
+                                   comment = None,
+                                   ),
+                     CommentsField("chronic",
+                                   label = T("Chronic Conditions"),
+                                   comment = None,
+                                   ),
+                     CommentsField("disabilities",
+                                   label = T("Disabilities"),
+                                   comment = None,
+                                   ),
+                     Field("blood_type",
+                           label = T("Blood Type"),
+                           requires = IS_EMPTY_OR(IS_IN_SET(blood_types, zero=UNKNOWN)),
+                           represent = represent_option(blood_types, default=UNKNOWN),
+                           ),
                      CommentsField(),
                      )
 
-        # TODO CRUD Strings
+        # Table configuration
+        configure(tablename,
+                  deletable = False,
+                  )
+
+        # CRUD strings
+        crud_strings[tablename] = Storage(
+            label_create = T("Add Medical Background"),
+            title_display = T("Medical Background"),
+            title_update = T("Edit Medical Background"),
+            label_delete_button = T("Delete Medical Background"),
+            msg_record_created = T("Medical Background added"),
+            msg_record_modified = T("Medical Background updated"),
+            msg_record_deleted = T("Medical Background deleted"),
+            )
 
         # ---------------------------------------------------------------------
         # Pass names back to global scope (s3.*)
