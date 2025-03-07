@@ -865,6 +865,19 @@ class PRPersonModel(DataModel):
                       future = 0,
                       past = 1320,  # Months, so 110 years
                       ),
+            Field("deceased", "boolean",
+                  default = False,
+                  label = T("Deceased"),
+                  readable = False,
+                  writable = False,
+                  ),
+            DateField("date_of_death",
+                      label = T("Date of Death"),
+                      future = 0,
+                      past = 1320,
+                      readable = False,
+                      writable = False,
+                      ),
             Field.Method("age", self.pr_person_age),
             Field.Method("age_group", self.pr_person_age_group),
             CommentsField(),
@@ -905,7 +918,6 @@ class PRPersonModel(DataModel):
                                     "last_name",
                                     "person_details.year_of_birth",
                                     "date_of_birth",
-                                    #"initials",
                                     "gender",
                                     "person_details.marital_status",
                                     "person_details.nationality",
@@ -1368,7 +1380,8 @@ class PRPersonModel(DataModel):
     def pr_person_onaccept(cls, form):
         """
             Onaccept callback
-                - update any user record associated with this person
+                - remove implausible date of death
+                - update associated user record for name changes
                 - generate a unique PE label
         """
 
@@ -1376,16 +1389,27 @@ class PRPersonModel(DataModel):
         s3db = current.s3db
         settings = current.deployment_settings
 
-        form_vars_get = form.vars.get
-        person_id = form_vars_get("id")
+        person_id = get_form_record_id(form)
+        if not person_id:
+            return
 
-        ptable = s3db.pr_person
+        table = s3db.pr_person
+
+        form_vars = form.vars
+        DOB, DOD = "date_of_birth", "date_of_death"
+        if any(fn in form_vars for fn in (DOB, DOD)):
+            data = get_form_record_data(form, table, ["deceased", DOB, DOD])
+            dob = data.get(DOB)
+            dod = data.get(DOD)
+            if not data.get("deceased") or dob and dod and dob > dod:
+                db(table.id == person_id).update(date_of_death=None)
+
         ltable = s3db.pr_person_user
         utable = current.auth.settings.table_user
 
         # Check if this person has a User account
-        query = (ptable.id == person_id) & \
-                (ltable.pe_id == ptable.pe_id) & \
+        query = (table.id == person_id) & \
+                (ltable.pe_id == table.pe_id) & \
                 (utable.id == ltable.user_id)
         user = db(query).select(utable.id,
                                 utable.first_name,
@@ -1393,7 +1417,8 @@ class PRPersonModel(DataModel):
                                 limitby = (0, 1),
                                 ).first()
         if user:
-            # Update in case Names have changed
+            # Update in case names have changed
+            form_vars_get = form_vars.get
             first_name = form_vars_get("first_name")
             middle_name = form_vars_get("middle_name")
             last_name = form_vars_get("last_name")
@@ -1404,7 +1429,6 @@ class PRPersonModel(DataModel):
                 update["first_name"] = first_name
 
             middle_as_last = settings.get_L10n_mandatory_middlename()
-
             name = middle_name if middle_as_last else last_name
             if first_name and user.last_name != name:
                 update["last_name"] = name
