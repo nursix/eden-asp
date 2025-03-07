@@ -133,7 +133,35 @@ def person():
                 msg_list_empty = T("No Care Occasions currently registered"),
                 )
 
-        r.resource.configure(insertable = False,
+        resource = r.resource
+        table = resource.table
+
+        # Expose deceased-flag and date_of_death
+        fields = ["deceased", "date_of_death"]
+        for fn in fields:
+            field = table[fn]
+            field.readable = field.writable = True
+
+
+        # CRUD Form
+        from core import S3SQLCustomForm
+        crud_form = S3SQLCustomForm("first_name",
+                                    "middle_name",
+                                    "last_name",
+                                    "person_details.year_of_birth",
+                                    "date_of_birth",
+                                    "gender",
+                                    # "person_details.marital_status",
+                                    # "person_details.nationality",
+                                    # "person_details.religion",
+                                    # "person_details.occupation",
+                                    "deceased",
+                                    "date_of_death",
+                                    "comments",
+                                    )
+
+        r.resource.configure(crud_form = crud_form,
+                             insertable = False,
                              deletable = False,
                              )
         return True
