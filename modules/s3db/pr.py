@@ -899,7 +899,7 @@ class PRPersonModel(DataModel):
                        ),
             ]
 
-        # Custom Form
+        # CRUD Form
         crud_form = S3SQLCustomForm("first_name",
                                     "middle_name",
                                     "last_name",
@@ -910,9 +910,6 @@ class PRPersonModel(DataModel):
                                     "person_details.marital_status",
                                     "person_details.nationality",
                                     "person_details.religion",
-                                    "person_details.mother_name",
-                                    "person_details.father_name",
-                                    "person_details.grandfather_name",
                                     "person_details.occupation",
                                     "comments",
                                     )
