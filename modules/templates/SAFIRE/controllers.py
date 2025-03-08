@@ -1,5 +1,3 @@
-# -*- coding: utf-8 -*-
-
 from gluon import *
 from core import CustomController
 
