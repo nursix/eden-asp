@@ -201,4 +201,14 @@
     padding-top: 0.5rem;
 }
 
+.checkpoint-advise {
+    background: #fff0f0 none repeat scroll 0 0;
+    border: 2px solid red;
+    margin-bottom: 1rem;
+    padding: 0.6rem;
+    p {
+        white-space: pre-wrap;
+    }
+}
+
 // END ========================================================================

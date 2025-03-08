@@ -1231,39 +1231,39 @@ div.s3-groupedopts-widget input.s3-groupedopts-option {
   color: #c00;
 }
 
-/* line 672, ../scss/theme/_widgets.scss */
+/* line 673, ../scss/theme/_widgets.scss */
 .qrinput {
   display: inline-block;
 }
-/* line 674, ../scss/theme/_widgets.scss */
+/* line 675, ../scss/theme/_widgets.scss */
 .qrinput .qrscan-btn {
   vertical-align: top;
   padding: 0.4rem 0.8rem;
   text-align: center;
   margin: 0 0.5rem;
 }
-/* line 679, ../scss/theme/_widgets.scss */
+/* line 680, ../scss/theme/_widgets.scss */
 .qrinput .qrscan-btn .fa {
   font-size: 16px;
   margin: 0 0.2rem;
   vertical-align: middle;
 }
-/* line 685, ../scss/theme/_widgets.scss */
+/* line 686, ../scss/theme/_widgets.scss */
 .qrinput .postfix.clear-btn {
   cursor: pointer;
   display: inline-block;
   width: 1.2rem;
 }
-/* line 687, ../scss/theme/_widgets.scss */
+/* line 688, ../scss/theme/_widgets.scss */
 .qrinput .postfix.clear-btn .fa {
   color: #B0B0B0;
 }
-/* line 693, ../scss/theme/_widgets.scss */
+/* line 694, ../scss/theme/_widgets.scss */
 .qrinput input {
   max-width: 14rem;
 }
 
-/* line 697, ../scss/theme/_widgets.scss */
+/* line 698, ../scss/theme/_widgets.scss */
 .qrinput-success, .qrinput-invalid {
   text-align: center;
   font-size: 4rem;
@@ -1271,63 +1271,63 @@ div.s3-groupedopts-widget input.s3-groupedopts-option {
   color: darkgreen;
 }
 
-/* line 703, ../scss/theme/_widgets.scss */
+/* line 704, ../scss/theme/_widgets.scss */
 .qrinput-invalid {
   color: #b31c1f;
 }
 
-/* line 710, ../scss/theme/_widgets.scss */
+/* line 711, ../scss/theme/_widgets.scss */
 form.anonymize-form,
 .anonymize-success {
   padding: 1rem;
 }
 
-/* line 714, ../scss/theme/_widgets.scss */
+/* line 715, ../scss/theme/_widgets.scss */
 .anonymize-select,
 .anonymize-confirm {
   margin-left: 1rem;
 }
-/* line 717, ../scss/theme/_widgets.scss */
+/* line 718, ../scss/theme/_widgets.scss */
 [dir=rtl] .anonymize-select, [dir=rtl]
 .anonymize-confirm {
   margin-left: 0;
   margin-right: 1rem;
 }
 
-/* line 722, ../scss/theme/_widgets.scss */
+/* line 723, ../scss/theme/_widgets.scss */
 .anonymize-buttons {
   margin-top: 1rem;
 }
-/* line 724, ../scss/theme/_widgets.scss */
+/* line 725, ../scss/theme/_widgets.scss */
 .anonymize-buttons .button {
   margin-bottom: 0.3rem;
 }
 
-/* line 728, ../scss/theme/_widgets.scss */
+/* line 729, ../scss/theme/_widgets.scss */
 .anonymize-btn {
   background-color: #b31c1f;
 }
-/* line 730, ../scss/theme/_widgets.scss */
+/* line 731, ../scss/theme/_widgets.scss */
 .anonymize-btn:hover {
   background-color: #8f1619;
 }
 
-/* line 734, ../scss/theme/_widgets.scss */
+/* line 735, ../scss/theme/_widgets.scss */
 .s3-anonymize {
   display: inline-block;
   margin: 0.2rem;
 }
 
-/* line 742, ../scss/theme/_widgets.scss */
+/* line 743, ../scss/theme/_widgets.scss */
 .consent-widget {
   border: 1px solid #E0E0E0;
   padding: 0.5rem 1rem;
 }
-/* line 745, ../scss/theme/_widgets.scss */
+/* line 746, ../scss/theme/_widgets.scss */
 .consent-widget .consent-option {
   margin-top: 0.3rem;
 }
-/* line 748, ../scss/theme/_widgets.scss */
+/* line 749, ../scss/theme/_widgets.scss */
 .consent-widget .consent-explanation {
   white-space: pre-wrap;
   padding: 0.3rem 1.7rem;
@@ -1335,19 +1335,19 @@ form.anonymize-form,
   font-style: italic;
   color: #7F7F7F;
 }
-/* line 755, ../scss/theme/_widgets.scss */
+/* line 756, ../scss/theme/_widgets.scss */
 .consent-widget .consent-title {
   font-weight: bold;
 }
-/* line 758, ../scss/theme/_widgets.scss */
+/* line 759, ../scss/theme/_widgets.scss */
 .consent-widget .consent-checkbox {
   margin-right: 0.5rem !important;
 }
-/* line 761, ../scss/theme/_widgets.scss */
+/* line 762, ../scss/theme/_widgets.scss */
 .consent-widget .req {
   padding: 0 0.2rem;
 }
-/* line 764, ../scss/theme/_widgets.scss */
+/* line 765, ../scss/theme/_widgets.scss */
 .consent-widget .req_key {
   font-size: 0.7rem;
   font-weight: normal;
@@ -1355,45 +1355,45 @@ form.anonymize-form,
   margin: 0 0.5rem;
 }
 
-/* line 775, ../scss/theme/_widgets.scss */
+/* line 776, ../scss/theme/_widgets.scss */
 .wh-raster {
   margin-top: 0.3rem;
 }
-/* line 777, ../scss/theme/_widgets.scss */
+/* line 778, ../scss/theme/_widgets.scss */
 .wh-raster tr {
   border-bottom: 1px solid #ccc;
 }
-/* line 780, ../scss/theme/_widgets.scss */
+/* line 781, ../scss/theme/_widgets.scss */
 .wh-raster td {
   border-left: 1px solid #ccc;
 }
-/* line 782, ../scss/theme/_widgets.scss */
+/* line 783, ../scss/theme/_widgets.scss */
 .wh-raster td.wh-tick {
   border-left-width: 2px;
 }
-/* line 787, ../scss/theme/_widgets.scss */
+/* line 788, ../scss/theme/_widgets.scss */
 .wh-raster thead td {
   min-width: 1.8rem;
   padding-right: 0.6rem !important;
   font-size: 0.6rem;
   font-weight: normal;
 }
-/* line 796, ../scss/theme/_widgets.scss */
+/* line 797, ../scss/theme/_widgets.scss */
 .wh-raster tbody td.wh-hour {
   text-align: center;
   font-weight: normal;
 }
-/* line 799, ../scss/theme/_widgets.scss */
+/* line 800, ../scss/theme/_widgets.scss */
 .wh-raster tbody td.wh-hour.wh-on {
   color: darkgreen;
 }
-/* line 803, ../scss/theme/_widgets.scss */
+/* line 804, ../scss/theme/_widgets.scss */
 .wh-raster tbody td.wh-day {
   text-align: left;
   font-size: 0.7rem;
   padding: 0.2rem 0.4rem;
 }
-/* line 810, ../scss/theme/_widgets.scss */
+/* line 811, ../scss/theme/_widgets.scss */
 .wh-raster .wh-hour {
   -webkit-touch-callout: none;
   -webkit-user-select: none;
@@ -1402,35 +1402,35 @@ form.anonymize-form,
   -ms-user-select: none;
   user-select: none;
 }
-/* line 818, ../scss/theme/_widgets.scss */
+/* line 819, ../scss/theme/_widgets.scss */
 .wh-raster .wh-hour.wh-on {
   background-color: lightgreen;
 }
-/* line 821, ../scss/theme/_widgets.scss */
+/* line 822, ../scss/theme/_widgets.scss */
 .wh-raster .wh-hour.wh-off {
   background-color: transparent;
 }
 
-/* line 830, ../scss/theme/_widgets.scss */
+/* line 831, ../scss/theme/_widgets.scss */
 #comments {
   margin: 0;
   padding: 0;
   list-style: none outside none;
 }
-/* line 834, ../scss/theme/_widgets.scss */
+/* line 835, ../scss/theme/_widgets.scss */
 #comments ul, #comments ol {
   padding-left: 20px;
   list-style: none outside none;
 }
-/* line 838, ../scss/theme/_widgets.scss */
+/* line 839, ../scss/theme/_widgets.scss */
 #comments li {
   padding: 10px 0 0;
 }
-/* line 840, ../scss/theme/_widgets.scss */
+/* line 841, ../scss/theme/_widgets.scss */
 #comments li a.jcollapsible:hover {
   background: none;
 }
-/* line 844, ../scss/theme/_widgets.scss */
+/* line 845, ../scss/theme/_widgets.scss */
 #comments .comment-box {
   overflow: hidden;
   padding: 15px 0;
@@ -1439,82 +1439,82 @@ form.anonymize-form,
   overflow: hidden;
   padding: 10px;
 }
-/* line 851, ../scss/theme/_widgets.scss */
+/* line 852, ../scss/theme/_widgets.scss */
 #comments .comment-box .avatar {
   display: inline-block;
   vertical-align: top;
 }
-/* line 856, ../scss/theme/_widgets.scss */
+/* line 857, ../scss/theme/_widgets.scss */
 #comments .comment-text {
   padding: 0 0 0 0.5rem;
   display: inline-block;
 }
-/* line 859, ../scss/theme/_widgets.scss */
+/* line 860, ../scss/theme/_widgets.scss */
 #comments .comment-text ul {
   list-style: disc outside none;
 }
-/* line 862, ../scss/theme/_widgets.scss */
+/* line 863, ../scss/theme/_widgets.scss */
 #comments .comment-text ol {
   list-style: decimal outside none;
 }
-/* line 865, ../scss/theme/_widgets.scss */
+/* line 866, ../scss/theme/_widgets.scss */
 #comments .comment-text li {
   padding: 0;
 }
-/* line 868, ../scss/theme/_widgets.scss */
+/* line 869, ../scss/theme/_widgets.scss */
 #comments .comment-text div {
   white-space: pre-line;
 }
-/* line 871, ../scss/theme/_widgets.scss */
+/* line 872, ../scss/theme/_widgets.scss */
 #comments .comment-text .comment-header {
   font-size: 0.8rem;
 }
-/* line 875, ../scss/theme/_widgets.scss */
+/* line 876, ../scss/theme/_widgets.scss */
 #comments .comment-text .comment-body p, #comments .comment-text .comment-body li {
   font-size: 0.9rem;
 }
-/* line 880, ../scss/theme/_widgets.scss */
+/* line 881, ../scss/theme/_widgets.scss */
 #comments .fright {
   float: right;
   text-align: right;
 }
-/* line 884, ../scss/theme/_widgets.scss */
+/* line 885, ../scss/theme/_widgets.scss */
 #comments .comment-date {
   font-size: 0.7rem;
   margin-bottom: 0.5rem;
 }
-/* line 889, ../scss/theme/_widgets.scss */
+/* line 890, ../scss/theme/_widgets.scss */
 #comments .comment-footer {
   clear: left;
 }
-/* line 893, ../scss/theme/_widgets.scss */
+/* line 894, ../scss/theme/_widgets.scss */
 #comments em {
   font-style: italic;
 }
-/* line 896, ../scss/theme/_widgets.scss */
+/* line 897, ../scss/theme/_widgets.scss */
 #comments strong {
   font-weight: bold;
 }
-/* line 900, ../scss/theme/_widgets.scss */
+/* line 901, ../scss/theme/_widgets.scss */
 [dir=rtl] #comments ul, [dir=rtl] #comments ol {
   padding-left: 0;
   padding-right: 20px;
 }
-/* line 904, ../scss/theme/_widgets.scss */
+/* line 905, ../scss/theme/_widgets.scss */
 [dir=rtl] #comments .comment-text {
   padding: 0 0.5rem 0 0;
 }
-/* line 907, ../scss/theme/_widgets.scss */
+/* line 908, ../scss/theme/_widgets.scss */
 [dir=rtl] #comments .fright {
   float: left;
   text-align: left;
 }
-/* line 911, ../scss/theme/_widgets.scss */
+/* line 912, ../scss/theme/_widgets.scss */
 [dir=rtl] #comments .comment-footer {
   clear: right;
 }
 
-/* line 916, ../scss/theme/_widgets.scss */
+/* line 917, ../scss/theme/_widgets.scss */
 #comment-form {
   width: 40rem;
   max-width: 100%;
@@ -1523,28 +1523,28 @@ form.anonymize-form,
   margin-top: 0.5rem;
 }
 
-/* line 927, ../scss/theme/_widgets.scss */
+/* line 928, ../scss/theme/_widgets.scss */
 .ajax_more {
   float: right;
   margin: 0 2px 2px 0;
   width: 16px;
   height: 16px;
 }
-/* line 930, ../scss/theme/_widgets.scss */
+/* line 931, ../scss/theme/_widgets.scss */
 [dir=rtl] .ajax_more {
   float: left;
   margin: 0 0 2px 2px;
 }
-/* line 936, ../scss/theme/_widgets.scss */
+/* line 937, ../scss/theme/_widgets.scss */
 .ajax_more.collapsed {
   background: url(../../img/icon_blue_plus15px.png) no-repeat left top;
 }
-/* line 939, ../scss/theme/_widgets.scss */
+/* line 940, ../scss/theme/_widgets.scss */
 .ajax_more.expanded {
   background: url(../../img/icon_blue_minus15px.png) no-repeat left top;
 }
 
-/* line 947, ../scss/theme/_widgets.scss */
+/* line 948, ../scss/theme/_widgets.scss */
 .rfilter {
   float: left;
   padding: 10px 20px 10px 10px;
@@ -4965,4 +4965,16 @@ h4.profile-sub-header {
 /* line 197, ../scss/theme/_checkpoint.scss */
 .event-bottom .username {
   padding: 0;
+}
+
+/* line 204, ../scss/theme/_checkpoint.scss */
+.checkpoint-advise {
+  background: #fff0f0 none repeat scroll 0 0;
+  border: 2px solid red;
+  margin-bottom: 1rem;
+  padding: 0.6rem;
+}
+/* line 209, ../scss/theme/_checkpoint.scss */
+.checkpoint-advise p {
+  white-space: pre-wrap;
 }
