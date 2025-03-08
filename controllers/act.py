@@ -55,6 +55,11 @@ def activity():
 def issue():
     """ Issue Reports: CRUD Controller """
 
+    return crud_controller(rheader=s3db.act_rheader)
+
+def task():
+    """ Work Orders: CRUD Controller """
+
     return crud_controller()
 
 # END =========================================================================

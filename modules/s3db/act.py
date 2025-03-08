@@ -457,7 +457,10 @@ class ActivityIssueModel(DataModel):
                      CommentsField(),
                      )
 
-        # TODO Components
+        # Components
+        self.add_components(tablename,
+                            act_task = "issue_id",
+                            )
 
         # TODO Table configuration
         #configure(tablename,
@@ -509,8 +512,102 @@ class ActivityTaskModel(DataModel):
         Model to track work orders in connection with issue reports
     """
 
-    # TODO implement
-    pass
+
+    names = ("act_task",
+             )
+
+    def model(self):
+
+        T = current.T
+        # db = current.db
+
+        s3 = current.response.s3
+        crud_strings = s3.crud_strings
+
+        define_table = self.define_table
+        #configure = self.configure
+
+        # ---------------------------------------------------------------------
+        # Task Status
+        #
+        task_status = (("NEW", T("New")),
+                       ("ASSIGNED", T("Assigned")),
+                       ("STARTED", T("Started")),
+                       ("FEEDBACK", T("Feedback")),
+                       ("DONE", T("Done")),
+                       ("CANCELED", T("Canceled")),
+                       ("OBSOLETE", T("Obsolete")),
+                       )
+
+        status_represent = S3PriorityRepresent(task_status,
+                                               {"NEW": "lightblue",
+                                                "ASSIGNED": "blue",
+                                                "STARTED": "amber",
+                                                "FEEDBACK": "red",
+                                                "DONE": "green",
+                                                "CANCELED": "black",
+                                                "OBSOLETE": "grey",
+                                                }).represent
+
+        # ---------------------------------------------------------------------
+        # Task
+        #
+        tablename = "act_task"
+        define_table(tablename,
+                     self.act_issue_id(),
+                     DateTimeField(
+                         default = "now",
+                         writable = False,
+                         ),
+                     Field("name",
+                           label = T("Subject"),
+                           requires = IS_NOT_EMPTY(),
+                           ),
+                     CommentsField("details",
+                                   label = T("Details"),
+                                   comment = None,
+                                   ),
+                     Field("status",
+                           default = "NEW",
+                           label = T("Status"),
+                           requires = IS_IN_SET(task_status, zero=None, sort=False),
+                           represent = status_represent,
+                           ),
+                     self.hrm_human_resource_id(),
+                     CommentsField(),
+                     )
+
+        # TODO Components
+
+        # TODO Table configuration
+        #configure(tablename,
+        #          )
+
+        # CRUD Strings
+        crud_strings[tablename] = Storage(
+            label_create = T("Add Work Order"),
+            title_display = T("Work Order"),
+            title_list = T("Work Orders"),
+            title_update = T("Edit Work Order"),
+            label_list_button = T("List Work Orders"),
+            label_delete_button = T("Delete Work Order"),
+            msg_record_created = T("Work Order added"),
+            msg_record_modified = T("Work Order updated"),
+            msg_record_deleted = T("Work Order deleted"),
+            msg_list_empty = T("No Work Orders currently defined"),
+            )
+
+        # ---------------------------------------------------------------------
+        # Pass names back to global scope (s3.*)
+        #
+        return None #{}
+
+    # -------------------------------------------------------------------------
+    def defaults(self):
+        """ Safe defaults for names in case the module is disabled """
+
+        return None #{}
+
 
 # =============================================================================
 class ActivityChecklistModel(DataModel):
@@ -553,6 +650,22 @@ def act_rheader(r, tabs=None):
                               ["time_info"],
                               ]
             rheader_title = "name"
+
+            rheader = S3ResourceHeader(rheader_fields, tabs, title=rheader_title)
+            rheader = rheader(r, table=resource.table, record=record)
+
+        elif tablename == "act_issue":
+            if not tabs:
+                tabs = [(T("Basic Details"), None),
+                        (T("Work Orders"), "task"),
+                        ]
+
+            rheader_fields = [["date", "organisation_id"],
+                              ["status"],
+                              ["resolution"],
+                              ]
+            rheader_title = "name"
+
 
             rheader = S3ResourceHeader(rheader_fields, tabs, title=rheader_title)
             rheader = rheader(r, table=resource.table, record=record)
