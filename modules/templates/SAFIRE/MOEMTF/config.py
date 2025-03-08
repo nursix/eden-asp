@@ -1,5 +1,3 @@
-# -*- coding: utf-8 -*-
-
 #from collections import OrderedDict
 
 from gluon import current, URL

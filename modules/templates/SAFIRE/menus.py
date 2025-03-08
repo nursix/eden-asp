@@ -1,5 +1,3 @@
-# -*- coding: utf-8 -*-
-
 from gluon import current
 from core import *
 from core.ui.layouts import *
