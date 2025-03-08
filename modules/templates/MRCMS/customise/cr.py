@@ -10,7 +10,7 @@ from gluon import current, URL, DIV, H4, P, TAG, IS_EMPTY_OR
 
 from core import BasicCRUD, FS, IS_ONE_OF, \
                  LocationSelector, PresenceRegistration, S3SQLCustomForm, \
-                 get_form_record_id, s3_fieldmethod, s3_str
+                 get_form_record_id, s3_fieldmethod, s3_str, represent_occupancy
 
 # -------------------------------------------------------------------------
 def client_site_status(person_id, site_id, site_type, case_status):
@@ -560,7 +560,7 @@ def cr_shelter_unit_resource(r, tablename):
 
     table.occupancy = s3_fieldmethod("occupancy",
                                      shelter_unit_occupancy,
-                                     represent = occupancy_represent,
+                                     represent = represent_occupancy,
                                      )
 
     list_fields = [(T("Name"), "name"),
@@ -624,34 +624,6 @@ def shelter_unit_occupancy(row):
         # still indicative of even small free capacity (=show 100%
         # only once it is actually reached, not by rounding)
         return (population * 100 // available)
-
-# -------------------------------------------------------------------------
-def occupancy_represent(value):
-    """
-        Represents occupancy% as progress bar
-
-        Args:
-            value - the occupancy in % (integer >= 0)
-        Returns:
-            DIV.occupancy-bar
-    """
-
-    if value is None:
-        return DIV("?", _class="occupancy-bar")
-    elif not value:
-        value = 0
-        css_class = "occupancy-0"
-    else:
-        reprval = (value - 1) // 10 * 10 + 10
-        if reprval > 100:
-            css_class = "occupancy-exc"
-        else:
-            css_class = "occupancy-%s" % reprval
-
-    return DIV("%s%%" % value,
-               DIV(_class="occupancy %s" % css_class),
-               _class="occupancy-bar",
-               )
 
 # -------------------------------------------------------------------------
 def cr_shelter_unit_controller(**attr):

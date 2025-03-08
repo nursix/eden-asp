@@ -45,7 +45,7 @@ from core import CustomController, CRUDMethod, DataModel, DateField, FS, \
                  S3Represent, FieldTemplate, S3SQLCustomForm, \
                  IS_ONE_OF, IS_PHONE_NUMBER_MULTI, \
                  get_form_record_id, CommentsField, \
-                 s3_str, get_filter_options, \
+                 s3_str, get_filter_options, represent_occupancy, \
                  LocationFilter, OptionsFilter, TextFilter
 
 COMPUTE_ALLOCABLE_CAPACITY = False
@@ -224,13 +224,13 @@ class CRReceptionCenterModel(DataModel):
                      # Utilization Rates
                      Field("utilization_rate", "integer",
                            label = T("Utilization %"),
-                           represent = self.occupancy_represent,
+                           represent = represent_occupancy,
                            readable = False,
                            writable = False,
                            ),
                      Field("occupancy_rate", "integer",
                            label = T("Occupancy %"),
-                           represent = self.occupancy_represent,
+                           represent = represent_occupancy,
                            readable = False,
                            writable = False,
                            ),
@@ -447,11 +447,11 @@ class CRReceptionCenterModel(DataModel):
                                 ),
                      Field("utilization_rate", "integer",
                            label = T("Utilization %"),
-                           represent = self.occupancy_represent,
+                           represent = represent_occupancy,
                            ),
                      Field("occupancy_rate", "integer",
                            label = T("Occupancy %"),
-                           represent = self.occupancy_represent,
+                           represent = represent_occupancy,
                            ),
 
                      # TODO deprecate:
@@ -706,35 +706,6 @@ class CRReceptionCenterModel(DataModel):
         if status:
             status.update_record(date_until = today-datetime.timedelta(days=1))
 
-    # -------------------------------------------------------------------------
-    @staticmethod
-    def occupancy_represent(value, row=None):
-        """
-            Representation of utilization/occupancy rate as decision aid,
-            progress-bar style
-
-            Args:
-                value: the occupancy value (percentage, integer 0..>100)
-
-            Returns:
-                stylable DIV
-        """
-
-        if not value:
-            value = 0
-            css_class = "occupancy-0"
-        else:
-            reprval = value // 10 * 10 + 10
-            if reprval > 100:
-                css_class = "occupancy-exc"
-            else:
-                css_class = "occupancy-%s" % reprval
-
-        return DIV("%s%%" % value,
-                   DIV(_class="occupancy %s" % css_class),
-                   _class = "occupancy-bar",
-                   )
-
 # =============================================================================
 class CapacityOverview(CRUDMethod):
     """
@@ -909,14 +880,13 @@ class CapacityOverview(CRUDMethod):
                  "allocable_capacity": "occupancy_rate",
                  "allocable_capacity_estimate": "occupancy_rate_estimate",
                  }
-        represent = CRReceptionCenterModel.occupancy_represent
         for fname, rname in rates.items():
             capacity = totals[fname]
             if capacity > 0:
                 rate = population * 100 // capacity
             else:
                 rate = 100
-            totals[rname] = represent(rate)
+            totals[rname] = represent_occupancy(rate)
 
         # Footer with totals
         tr = TR()

@@ -48,6 +48,7 @@ __all__ = ("BooleanRepresent",
            "represent_image",
            "represent_option",
            "represent_hours",
+           "represent_occupancy",
            )
 
 import os
@@ -1021,7 +1022,7 @@ class XMLContentsRepresent:
         for token in tokens:
             if not token:
                 continue
-            elif ":" in token:
+            if ":" in token:
                 collect_args = False
                 key, value = token.split(":")
             else:
@@ -1216,6 +1217,39 @@ def represent_hours(colon=False):
         return SPAN("%s" % round(value, 2), _title=title, _class="hours-formatted")
 
     return represent
+
+# -------------------------------------------------------------------------
+def represent_occupancy(value, row=None):
+    """
+        Representation of utilization/occupancy rate as decision aid
+        in progress-bar style
+
+        Args:
+            value: the utilization/occupancy in % (integer > 0)
+
+        Returns:
+            stylable DIV
+    """
+
+
+    if value is None:
+        return DIV("?", _class="occupancy-bar")
+
+    elif not value:
+        value = 0
+        css_class = "occupancy-0"
+
+    else:
+        reprval = (value - 1) // 10 * 10 + 10
+        if reprval > 100:
+            css_class = "occupancy-exc"
+        else:
+            css_class = "occupancy-%s" % reprval
+
+    return DIV("%s%%" % value,
+               DIV(_class="occupancy %s" % css_class),
+               _class="occupancy-bar",
+               )
 
 # =============================================================================
 def s3_comments_represent(text, show_link=True):
