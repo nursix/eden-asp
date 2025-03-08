@@ -13,3 +13,5 @@ Eden ASP is for application developers and service providers.
 
 The developer handbook is included in the repository, or you can
 read it on [ReadTheDocs](https://eden-asp.readthedocs.io).
+
+You can also ask questions on our [mailing list](https://groups.google.com/g/eden-asp).
