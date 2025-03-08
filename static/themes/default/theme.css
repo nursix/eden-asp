@@ -330,23 +330,103 @@ button.toggle-text {
 }
 
 /* line 160, ../scss/theme/_represent.scss */
+.occupancy-bar {
+  border: 1px solid black;
+  position: relative;
+  padding: 0 2px;
+  min-width: 4rem;
+}
+/* line 165, ../scss/theme/_represent.scss */
+.occupancy-bar .occupancy {
+  display: block;
+  position: absolute;
+  top: 0;
+  left: 0;
+}
+/* line 166, ../scss/theme/_represent.scss */
+.occupancy-bar .occupancy:before {
+  content: "-";
+  visibility: hidden;
+}
+/* line 174, ../scss/theme/_represent.scss */
+.occupancy-bar .occupancy.occupancy-0 {
+  width: 1%;
+  background-color: rgba(0, 85, 0, 0.5);
+}
+/* line 178, ../scss/theme/_represent.scss */
+.occupancy-bar .occupancy.occupancy-10 {
+  width: 10%;
+  background-color: rgba(0, 115, 0, 0.5);
+}
+/* line 182, ../scss/theme/_represent.scss */
+.occupancy-bar .occupancy.occupancy-20 {
+  width: 20%;
+  background-color: rgba(0, 145, 0, 0.5);
+}
+/* line 186, ../scss/theme/_represent.scss */
+.occupancy-bar .occupancy.occupancy-30 {
+  width: 30%;
+  background-color: rgba(70, 160, 0, 0.5);
+}
+/* line 190, ../scss/theme/_represent.scss */
+.occupancy-bar .occupancy.occupancy-40 {
+  width: 40%;
+  background-color: rgba(100, 160, 0, 0.5);
+}
+/* line 194, ../scss/theme/_represent.scss */
+.occupancy-bar .occupancy.occupancy-50 {
+  width: 50%;
+  background-color: rgba(160, 160, 0, 0.5);
+}
+/* line 198, ../scss/theme/_represent.scss */
+.occupancy-bar .occupancy.occupancy-60 {
+  width: 60%;
+  background-color: rgba(175, 145, 0, 0.5);
+}
+/* line 202, ../scss/theme/_represent.scss */
+.occupancy-bar .occupancy.occupancy-70 {
+  width: 70%;
+  background-color: rgba(190, 120, 0, 0.5);
+}
+/* line 206, ../scss/theme/_represent.scss */
+.occupancy-bar .occupancy.occupancy-80 {
+  width: 80%;
+  background-color: rgba(205, 80, 0, 0.5);
+}
+/* line 210, ../scss/theme/_represent.scss */
+.occupancy-bar .occupancy.occupancy-90 {
+  width: 90%;
+  background-color: rgba(220, 40, 0, 0.5);
+}
+/* line 214, ../scss/theme/_represent.scss */
+.occupancy-bar .occupancy.occupancy-100 {
+  width: 100%;
+  background-color: rgba(235, 20, 0, 0.5);
+}
+/* line 218, ../scss/theme/_represent.scss */
+.occupancy-bar .occupancy.occupancy-exc {
+  width: 100%;
+  background-color: rgba(200, 0, 0, 0.6);
+}
+
+/* line 228, ../scss/theme/_represent.scss */
 .wh-schedule {
   list-style: none;
   white-space: pre;
   margin: 0;
   font-size: 0.7rem;
 }
-/* line 165, ../scss/theme/_represent.scss */
+/* line 233, ../scss/theme/_represent.scss */
 .wh-schedule .wh-dayname {
   width: 1.5rem;
   display: inline-block;
 }
-/* line 169, ../scss/theme/_represent.scss */
+/* line 237, ../scss/theme/_represent.scss */
 .wh-schedule .wh-dayname::after {
   content: ":";
 }
 
-/* line 177, ../scss/theme/_represent.scss */
+/* line 245, ../scss/theme/_represent.scss */
 .showall {
   display: none;
   position: absolute;
@@ -356,7 +436,7 @@ button.toggle-text {
   margin: 0 20px 0 -50px;
 }
 
-/* line 189, ../scss/theme/_represent.scss */
+/* line 257, ../scss/theme/_represent.scss */
 .newsletter-text {
   white-space: pre-line;
   background: #fcfcfc;
@@ -369,90 +449,90 @@ button.toggle-text {
   font-size: 0.85rem;
 }
 
-/* line 205, ../scss/theme/_represent.scss */
+/* line 273, ../scss/theme/_represent.scss */
 .file-repr i.fa {
   font-size: 1.1rem;
 }
-/* line 208, ../scss/theme/_represent.scss */
+/* line 276, ../scss/theme/_represent.scss */
 .file-repr .file-size {
   padding: 0 0.4rem;
   font-size: 0.7rem;
 }
 
-/* line 214, ../scss/theme/_represent.scss */
+/* line 282, ../scss/theme/_represent.scss */
 .img-preview {
   max-width: 120px;
   max-height: 80px;
 }
 
-/* line 222, ../scss/theme/_represent.scss */
+/* line 290, ../scss/theme/_represent.scss */
 .contact-repr {
   background-color: #FFF0C1;
   border: 1px solid #E0E0E0;
   padding: 0.25rem 0.5rem;
 }
-/* line 226, ../scss/theme/_represent.scss */
+/* line 294, ../scss/theme/_represent.scss */
 .contact-repr .contact-name {
   display: block;
   font-weight: bold;
   margin-bottom: 0.2rem;
 }
-/* line 231, ../scss/theme/_represent.scss */
+/* line 299, ../scss/theme/_represent.scss */
 .contact-repr .contact-info {
   white-space: nowrap;
   font-size: 0.8rem;
 }
-/* line 234, ../scss/theme/_represent.scss */
+/* line 302, ../scss/theme/_represent.scss */
 .contact-repr .contact-info .fa {
   padding-right: 0.4rem;
 }
 
-/* line 243, ../scss/theme/_represent.scss */
+/* line 311, ../scss/theme/_represent.scss */
 .workflow-options {
   white-space: pre;
 }
-/* line 245, ../scss/theme/_represent.scss */
+/* line 313, ../scss/theme/_represent.scss */
 .workflow-options.workflow-grey {
   color: #555;
 }
-/* line 248, ../scss/theme/_represent.scss */
+/* line 316, ../scss/theme/_represent.scss */
 .workflow-options.workflow-red {
   color: #c42626;
 }
-/* line 251, ../scss/theme/_represent.scss */
+/* line 319, ../scss/theme/_represent.scss */
 .workflow-options.workflow-amber {
   color: #ec8d27;
 }
-/* line 254, ../scss/theme/_represent.scss */
+/* line 322, ../scss/theme/_represent.scss */
 .workflow-options.workflow-green {
   color: green;
 }
-/* line 257, ../scss/theme/_represent.scss */
+/* line 325, ../scss/theme/_represent.scss */
 .workflow-options.workflow-advice {
   border: 1px solid #c42626;
   background-color: #ffdede;
   padding: 0.3rem 0.7rem;
 }
-/* line 262, ../scss/theme/_represent.scss */
+/* line 330, ../scss/theme/_represent.scss */
 .workflow-options .fa {
   margin-right: 0.2rem;
 }
-/* line 264, ../scss/theme/_represent.scss */
+/* line 332, ../scss/theme/_represent.scss */
 [dir=rtl] .workflow-options .fa {
   margin-right: 0;
   margin-left: 0.2rem;
 }
-/* line 269, ../scss/theme/_represent.scss */
+/* line 337, ../scss/theme/_represent.scss */
 .controls .workflow-options {
   margin-left: 0.5rem;
 }
-/* line 271, ../scss/theme/_represent.scss */
+/* line 339, ../scss/theme/_represent.scss */
 [dir=rtl] .controls .workflow-options {
   margin-left: 0;
   margin-right: 0.5rem;
 }
 
-/* line 281, ../scss/theme/_represent.scss */
+/* line 349, ../scss/theme/_represent.scss */
 .hazard-neg, .hazard-pos {
   display: inline-block;
   width: 20px;
@@ -464,17 +544,17 @@ button.toggle-text {
   background-position: center;
 }
 
-/* line 292, ../scss/theme/_represent.scss */
+/* line 360, ../scss/theme/_represent.scss */
 .hazard-bio.hazard-pos {
   background-image: url(../../img/hazard/bio.png);
 }
 
-/* line 295, ../scss/theme/_represent.scss */
+/* line 363, ../scss/theme/_represent.scss */
 .hazard-tox.hazard-pos {
   background-image: url(../../img/hazard/tox.png);
 }
 
-/* line 298, ../scss/theme/_represent.scss */
+/* line 366, ../scss/theme/_represent.scss */
 .hazard-rad.hazard-pos {
   background-image: url(../../img/hazard/rad.png);
 }
