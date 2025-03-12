@@ -56,7 +56,7 @@ class MainMenu(default.MainMenu):
             organisation_id = get_default_organisation()
 
         # Organisation menu
-        c = ("org", "hrm") if is_admin else ("org", "hrm", "cms")
+        c = ("org", "hrm", "act") if is_admin else ("org", "hrm", "act", "cms")
         f = ("organisation", "*")
         if organisation_id:
             org_menu = MM("Organization", c=c, f=f, args=[organisation_id], ignore_args=True)
@@ -86,6 +86,7 @@ class MainMenu(default.MainMenu):
             shelter_menu,
             org_menu,
             MM("Security", c="security", f="seized_item"),
+            MM("To Do", c="act", f=("issue", "task")),
             ]
 
     # -------------------------------------------------------------------------
@@ -195,7 +196,15 @@ class OptionsMenu(default.OptionsMenu):
     @classmethod
     def act(cls):
 
-        return cls.org()
+        if current.request.function == "activity":
+            menu = cls.org()
+        else:
+            menu = M(c="act")(
+                    M("Issue Reports", f="issue"),
+                    M("Work Orders", f="task"),
+                    )
+
+        return menu
 
     # -------------------------------------------------------------------------
     @classmethod

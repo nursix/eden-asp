@@ -31,6 +31,8 @@ __all__ = ("ActivityModel",
            "ActivityTaskModel",
            "ActivityChecklistModel",
            "act_rheader",
+           "act_issue_set_status_opts",
+           "act_task_set_status_opts",
            )
 
 import datetime
@@ -369,6 +371,7 @@ class ActivityIssueModel(DataModel):
 
     names = ("act_issue",
              "act_issue_id",
+             "act_issue_status_opts",
              )
 
     def model(self):
@@ -380,47 +383,37 @@ class ActivityIssueModel(DataModel):
         crud_strings = s3.crud_strings
 
         define_table = self.define_table
-        #configure = self.configure
+        configure = self.configure
 
         # ---------------------------------------------------------------------
         # Issue status
         #
         issue_status = (("NEW", T("New")),
+                        ("PLANNED", T("Work Planned")),
                         ("PROGRESS", T("In Progress")),
                         ("REVIEW", T("Review")),
-                        ("HOLD", T("On Hold")),
-                        ("RESOLVED", T("Resolved")),
-                        ("CLOSED", T("Closed")),
+                        ("ONHOLD", T("On Hold")),
+                        ("CLOSED", T("Closed##status")),
                         )
 
         status_represent = S3PriorityRepresent(issue_status,
                                                {"NEW": "lightblue",
-                                                "PROGRESS": "blue",
+                                                "PLANNED": "blue",
+                                                "PROGRESS": "lightgreen",
                                                 "REVIEW": "amber",
-                                                "HOLD": "red",
-                                                "RESOLVED": "green",
-                                                "CLOSED": "black",
+                                                "ONHOLD": "red",
+                                                "CLOSED": "green",
                                                 }).represent
 
         # ---------------------------------------------------------------------
         # Issue resolution
         #
-        issue_resolution = (("UNRESOLVED", T("Unresolved")),
-                            ("PLANNED", T("Work Planned")),
+        issue_resolution = (("PENDING", "-"),
                             ("N/A", T("Not Actionable")),
-                            ("DONE", T("Actioned")),
                             ("DEFER", T("No Action")),
+                            ("RESOLVED", T("Resolved")),
                             ("OBSOLETE", T("Obsolete")),
                             )
-
-        resolution_represent = S3PriorityRepresent(issue_resolution,
-                                                   {"UNRESOLVED": "lightblue",
-                                                    "PLANNED": "blue",
-                                                    "N/A": "red",
-                                                    "DONE": "green",
-                                                    "DEFER": "grey",
-                                                    "OBSOLETE": "black",
-                                                    }).represent
 
         # ---------------------------------------------------------------------
         # Issue
@@ -450,9 +443,9 @@ class ActivityIssueModel(DataModel):
                            ),
                      Field("resolution",
                            label = T("Resolution"),
-                           default = "PND",
+                           default = "PENDING",
                            requires = IS_IN_SET(issue_resolution, zero=None, sort=False),
-                           represent = resolution_represent,
+                           represent = represent_option(dict(issue_resolution)),
                            ),
                      CommentsField(),
                      )
@@ -462,9 +455,11 @@ class ActivityIssueModel(DataModel):
                             act_task = "issue_id",
                             )
 
-        # TODO Table configuration
-        #configure(tablename,
-        #          )
+        # Table configuration
+        configure(tablename,
+                  onvalidation = self.issue_onvalidation,
+                  onaccept = self.issue_onaccept,
+                  )
 
         # CRUD Strings
         crud_strings[tablename] = Storage(
@@ -497,6 +492,7 @@ class ActivityIssueModel(DataModel):
         # Pass names back to global scope (s3.*)
         #
         return {"act_issue_id": issue_id,
+                "act_issue_status_opts": issue_status,
                 }
 
     # -------------------------------------------------------------------------
@@ -504,7 +500,82 @@ class ActivityIssueModel(DataModel):
         """ Safe defaults for names in case the module is disabled """
 
         return {"act_issue_id": FieldTemplate.dummy("issue_id"),
+                "act_issue_status_opts": [],
                 }
+
+    # -------------------------------------------------------------------------
+    @staticmethod
+    def issue_onvalidation(form):
+        """
+            Form validation for issues
+            - closing an issue requires a resolution
+        """
+
+        T = current.T
+        table = current.s3db.act_issue
+
+        data = get_form_record_data(form, table, ["status", "resolution"])
+
+        status = data.get("status")
+        resolution = data.get("resolution")
+
+        form_vars = form.vars
+
+        if status == "CLOSED" and resolution in (None, "PENDING"):
+            form.errors.resolution = T("Resolution required when closing issue")
+
+    # -------------------------------------------------------------------------
+    @staticmethod
+    def issue_onaccept(form):
+        """
+            Onaccept-routine for issues
+            - update tasks when issue is closed or put on hold
+            - otherwise, update issue status from statuses of related tasks
+            - remove the resolution when the issue is not closed
+        """
+
+        db = current.db
+        s3db = current.s3db
+
+        record_id = get_form_record_id(form)
+        if not record_id:
+            return
+
+        # Get the current record
+        table = s3db.act_issue
+        record = db(table.id == record_id).select(table.id,
+                                                  table.status,
+                                                  limitby = (0, 1),
+                                                  ).first()
+        if not record:
+            return
+
+        update = {}
+        if record.status != "CLOSED":
+            update["resolution"] = "PENDING"
+
+        status = record.status
+        if status in ("ONHOLD", "CLOSED"):
+            # Update status of all related tasks
+            # TODO refactor for task status history
+            task_open = ("PENDING", "STARTED", "FEEDBACK")
+            new_status = "ONHOLD" if status == "ONHOLD" else "OBSOLETE"
+            ttable = s3db.act_task
+            query = (ttable.issue_id == record_id) & \
+                    (ttable.status.belongs(task_open)) & \
+                    (ttable.deleted == False)
+            db(query).update(status=new_status)
+
+        else:
+            # Update issue status based on task status
+            act_issue_update_status(record.id)
+
+        # TODO status history
+        # - if status has changed, add history entry
+        # - record previous status
+
+        if update:
+            record.update_record(**update)
 
 # =============================================================================
 class ActivityTaskModel(DataModel):
@@ -514,6 +585,7 @@ class ActivityTaskModel(DataModel):
 
 
     names = ("act_task",
+             "act_task_status_opts",
              )
 
     def model(self):
@@ -525,26 +597,26 @@ class ActivityTaskModel(DataModel):
         crud_strings = s3.crud_strings
 
         define_table = self.define_table
-        #configure = self.configure
+        configure = self.configure
 
         # ---------------------------------------------------------------------
         # Task Status
         #
-        task_status = (("NEW", T("New")),
-                       ("ASSIGNED", T("Assigned")),
+        task_status = (("PENDING", T("Pending")),
                        ("STARTED", T("Started")),
                        ("FEEDBACK", T("Feedback")),
                        ("DONE", T("Done")),
+                       ("ONHOLD", T("On Hold")),
                        ("CANCELED", T("Canceled")),
                        ("OBSOLETE", T("Obsolete")),
                        )
 
         status_represent = S3PriorityRepresent(task_status,
-                                               {"NEW": "lightblue",
-                                                "ASSIGNED": "blue",
-                                                "STARTED": "amber",
-                                                "FEEDBACK": "red",
+                                               {"PENDING": "lightblue",
+                                                "STARTED": "lightgreen",
+                                                "FEEDBACK": "amber",
                                                 "DONE": "green",
+                                                "ONHOLD": "red",
                                                 "CANCELED": "black",
                                                 "OBSOLETE": "grey",
                                                 }).represent
@@ -554,7 +626,9 @@ class ActivityTaskModel(DataModel):
         #
         tablename = "act_task"
         define_table(tablename,
-                     self.act_issue_id(),
+                     self.act_issue_id(
+                         writable = False,
+                         ),
                      DateTimeField(
                          default = "now",
                          writable = False,
@@ -579,9 +653,10 @@ class ActivityTaskModel(DataModel):
 
         # TODO Components
 
-        # TODO Table configuration
-        #configure(tablename,
-        #          )
+        # Table configuration
+        configure(tablename,
+                  onaccept = self.task_onaccept,
+                  )
 
         # CRUD Strings
         crud_strings[tablename] = Storage(
@@ -600,14 +675,43 @@ class ActivityTaskModel(DataModel):
         # ---------------------------------------------------------------------
         # Pass names back to global scope (s3.*)
         #
-        return None #{}
+        return {"act_task_status_opts": task_status,
+                }
 
     # -------------------------------------------------------------------------
     def defaults(self):
         """ Safe defaults for names in case the module is disabled """
 
-        return None #{}
+        return {"act_task_status_opts": [],
+                }
 
+    # -------------------------------------------------------------------------
+    @staticmethod
+    def task_onaccept(form):
+        # TODO docstring
+
+        db = current.db
+        s3db = current.s3db
+
+        # Get the record ID
+        record_id = get_form_record_id(form)
+        if not record_id:
+            return
+
+        # Get the current record data
+        table = s3db.act_task
+        record = db(table.id == record_id).select(table.id,
+                                                  table.issue_id,
+                                                  limitby = (0, 1),
+                                                  ).first()
+        if record:
+            # Update the issue status
+            # TODO refactor for issue status history
+            act_issue_update_status(record.issue_id)
+
+        # TODO status history
+        # - if status has changed, write a history entry
+        # - record last status
 
 # =============================================================================
 class ActivityChecklistModel(DataModel):
@@ -617,6 +721,158 @@ class ActivityChecklistModel(DataModel):
 
     # TODO implement
     pass
+
+# =============================================================================
+def act_issue_set_status_opts(table, issue_id, record=None):
+    """
+        Configures the selectable status options for an issue depending
+        on its current status
+
+        Args:
+            table: the act_issue table (or aliased pendant)
+            issue_id: the issue ID
+            record: the act_issue record, if available (must contain status)
+
+        Returns:
+            the selectable options (as ordered tuple of option tuples)
+    """
+
+    db = current.db
+    s3db = current.s3db
+
+    field = table.status
+
+    if not record and issue_id:
+        record = db(table.id==issue_id).select(table.status,
+                                               limitby = (0, 1),
+                                               ).first()
+
+    status_opts = s3db.act_issue_status_opts
+    if record:
+        status = record.status
+        if status == "CLOSED":
+            # Cannot change status, except by updating tasks
+            field.writable = False
+        else:
+            # Can change to ONHOLD|CLOSED from any status
+            selectable = {"ONHOLD", "CLOSED"}
+            selectable.add(status)
+            status_opts = {k: v for k, v in status_opts if k in selectable}
+    else:
+        # New issues always have status NEW
+        field.default = "NEW"
+        field.writable = False
+
+    field.requires = IS_IN_SET(status_opts, zero=None, sort=False)
+
+    return status_opts
+
+# =============================================================================
+def act_issue_update_status(issue_id):
+    """
+        Updates the status of an issue depending on the statuses of
+        any related tasks; to be called onaccept
+
+        Args:
+            issue_id: the issue ID
+    """
+
+    db = current.db
+    s3db = current.s3db
+
+    # Look up the current issue status
+    itable = s3db.act_issue
+    query = (itable.id == issue_id) & (itable.deleted == False)
+    issue = db(query).select(itable.id,
+                             itable.status,
+                             limitby = (0, 1),
+                             ).first()
+    if not issue:
+        return
+
+    ttable = s3db.act_task
+    query = (ttable.issue_id == issue_id) & (ttable.deleted == False)
+    rows = db(query).select(ttable.status, distinct=True)
+    task_status = {row.status for row in rows}
+
+    # NOTE new_issue_status cannot be CLOSED (closing requires a resolution)
+    if "STARTED" in task_status:
+        new_issue_status = "PROGRESS"
+    elif "PENDING" in task_status:
+        new_issue_status = "PLANNED"
+    elif "ONHOLD" in task_status:
+        new_issue_status = "ONHOLD"
+    elif issue.status != "CLOSED":
+        new_issue_status = "REVIEW"
+
+    if issue.status != new_issue_status:
+        # TODO set status date, and possibly previous status
+        issue.update_record(status = new_issue_status,
+                            resolution = None,
+                            )
+
+# =============================================================================
+def act_task_set_status_opts(table, task_id, record=None):
+    """
+        Configures the selectable status options for a task, depending
+        on its current status
+
+        Args:
+            table: the act_task table (or aliased pendant)
+            task_id: the task ID
+            record: the task record, if available (must contain status)
+
+        Returns:
+            the selectable options (as ordered tuple of option tuples)
+    """
+
+    db = current.db
+    s3db = current.s3db
+
+    field = table.status
+
+    if not task_id and not record:
+        # Set default status for new records
+        status_opts = s3db.act_task_status_opts
+        field.default = "PENDING"
+        field.writable = False
+
+    else:
+        # Is the user a task manager?
+        # TODO make this a configurable callback
+        is_manager = current.auth.s3_has_permission("create", "act_task")
+
+        # Get the current record status
+        if not record:
+            query = (table.id == task_id) & \
+                    (table.deleted == False)
+            record = db(query).select(field, limitby=(0, 1)).first()
+        status = record[field] if record else None
+
+        # Determine the next status options
+        actionable = ("PENDING", "STARTED", "FEEDBACK")
+        closed = ("DONE", "CANCELED", "OBSOLETE")
+
+        if status in actionable:
+            if is_manager:
+                next_status = None # any status
+            else:
+                next_status = actionable + ("DONE",)
+        elif status == "ONHOLD" and is_manager:
+            next_status = ("PENDING", "ONHOLD") + closed
+        elif status in closed and is_manager:
+            next_status = closed
+        else:
+            next_status = (status,)
+            field.writable = False
+
+        if next_status:
+            status_opts = [(k, v) for k, v in s3db.act_task_status_opts if k in next_status]
+        else:
+            status_opts = s3db.act_task_status_opts
+
+    field.requires = IS_IN_SET(status_opts, zero=None, sort=False)
+    return status_opts
 
 # =============================================================================
 def act_rheader(r, tabs=None):
