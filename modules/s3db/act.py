@@ -803,7 +803,7 @@ def act_issue_update_status(issue_id):
     elif "ONHOLD" in task_status:
         new_issue_status = "ONHOLD"
     elif issue.status != "CLOSED":
-        new_issue_status = "REVIEW"
+        new_issue_status = "REVIEW" if len(rows) else "NEW"
 
     if issue.status != new_issue_status:
         # TODO set status date, and possibly previous status
