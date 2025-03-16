@@ -30,6 +30,7 @@ __all__ = ("ActivityModel",
            "ActivityIssueModel",
            "ActivityTaskModel",
            "ActivityChecklistModel",
+           "act_IssueRepresent",
            "act_issue_set_status_opts",
            "act_issue_configure_form",
            "act_task_is_manager",
@@ -489,7 +490,7 @@ class ActivityIssueModel(DataModel):
             )
 
         # Field Template
-        represent = S3Represent(lookup="act_issue")
+        represent = act_IssueRepresent()
         issue_id = FieldTemplate("issue_id", "reference %s" % tablename,
                                  label = T("Issue"),
                                  #ondelete = "RESTRICT",
@@ -827,6 +828,88 @@ class ActivityChecklistModel(DataModel):
 
     # TODO implement
     pass
+
+# =============================================================================
+class act_IssueRepresent(S3Represent):
+    """ Representation of Issues """
+
+    def __init__(self,
+                 full_text=False,
+                 show_link=True,
+                 ):
+
+        super().__init__(lookup="act_issue", show_link=show_link)
+
+        self.full_text = full_text
+
+    # -------------------------------------------------------------------------
+    def lookup_rows(self, key, values, fields=None):
+        """
+            Custom rows lookup
+
+            Args:
+                key: the key Field
+                values: the values
+                fields: unused (retained for API compatibility)
+        """
+
+        db = current.db
+        s3db = current.s3db
+
+        table = self.table
+
+        count = len(values)
+        if count == 1:
+            query = (key == values[0])
+        else:
+            query = key.belongs(values)
+
+        fields = [table.id, table.date, table.name]
+        if self.full_text:
+            fields.append(table.description)
+
+        rows = db(query).select(*fields, limitby=(0, count))
+        self.queries += 1
+
+        return rows
+
+    # -------------------------------------------------------------------------
+    def represent_row(self, row):
+        """
+            Represent a row
+
+            Args:
+                row: the Row
+        """
+
+        table = self.table
+
+        date = SPAN(table.date.represent(row.date), _class="issue-date")
+
+        subject = row.name
+        if self.show_link:
+            if not current.auth.permission.has_permission("read", c="act", f="issue"):
+                self.show_link = False
+        if self.show_link:
+            subject = A(subject, _href=URL(c="act", f="issue", args=[row.id]))
+
+        if self.full_text:
+            issue_repr = DIV(H4(date, subject), _class="issue-full")
+
+            description = row.description
+            if description:
+                description = s3_text_represent(description)
+                description.add_class("issue-description")
+                issue_repr.append(description)
+        else:
+            issue_repr = DIV(date, subject, _class="issue-brief")
+
+        return issue_repr
+
+    # -------------------------------------------------------------------------
+    def link(self, k, v, row=None):
+
+        return v
 
 # =============================================================================
 def act_configure_org_site(table, record_id, site_type=None, hide_single_choice=True):

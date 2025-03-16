@@ -344,6 +344,27 @@
 }
 
 // ----------------------------------------------------------------------------
+// ACT Issues
+//
+.issue-date {
+    display: block;
+    font-size: 0.75rem;
+    color: #666;
+}
+.issue-full {
+    border: 1px solid #ccc;
+    background-color: #fdf7de;
+    padding: 0.5rem 0.75rem;
+    h4 {
+        font-size: 1rem;
+    }
+    .issue-description {
+        font-size: 0.85rem;
+        font-style: italic;
+    }
+}
+
+// ----------------------------------------------------------------------------
 // MED Hazards
 //
 .hazard-neg, .hazard-pos {

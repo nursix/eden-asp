@@ -108,6 +108,13 @@ def task_prep(r):
     record = r.record
 
     if not r.component:
+        table = resource.table
+
+        # Configure extended issue representation
+        if record:
+            field = table.issue_id
+            field.represent = s3db.act_IssueRepresent(full_text=True)
+
         # Configure task form
         s3db.act_task_configure_form(resource.table,
                                      r.id,
