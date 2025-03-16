@@ -4,11 +4,15 @@
     License: MIT
 """
 
+from collections import OrderedDict
+
 from gluon import current
 from gluon.storage import Storage
 
 from core import IS_ONE_OF, S3PersonAutocompleteWidget, \
                  DateFilter, OptionsFilter, TextFilter
+
+from ..helpers import permitted_orgs
 
 # =============================================================================
 def act_beneficiary_resource(r, tablename):
@@ -103,7 +107,6 @@ def act_activity_resource(r, tablename):
 
     # Configure organisation_id and insertable depending on which
     # organisations the user has permission to create activities for
-    from ..helpers import permitted_orgs
     organisation_ids = permitted_orgs("create", "act_activity")
     if not organisation_ids:
         # No organisations => not insertable
@@ -130,7 +133,6 @@ def act_activity_controller(**attr):
     # Custom prep
     standard_prep = s3.prep
     def prep(r):
-
         # Call standard prep
         result = standard_prep(r) if callable(standard_prep) else True
 
@@ -147,7 +149,6 @@ def act_activity_controller(**attr):
                            "place",
                            ]
 
-            from ..helpers import permitted_orgs
             organisation_ids = permitted_orgs("read", "act_activity")
             if len(organisation_ids) != 1:
                 # Include organisation_id in list_fields
@@ -176,6 +177,125 @@ def act_activity_controller(**attr):
     # Activate filters on component tabs
     attr["hide_filter"] = {"beneficiary": False,
                            }
+
+    return attr
+
+# =============================================================================
+def act_issue_controller(**attr):
+
+    s3 = current.response.s3
+
+    T = current.T
+
+    db = current.db
+    s3db = current.s3db
+
+    # Custom prep
+    standard_prep = s3.prep
+    def prep(r):
+        # Call standard prep
+        result = standard_prep(r) if callable(standard_prep) else True
+
+        resource = r.resource
+        table = resource.table
+
+        if not r.component:
+            # Configure the issue form
+            s3db.act_issue_configure_form(table,
+                                          r.id,
+                                          issue = r.record,
+                                          site_type = "cr_shelter",
+                                          )
+
+            # Lookup the organisations and sites the user can read issues for
+            organisation_ids = permitted_orgs("read", "act_issue")
+            multiple_orgs = len(organisation_ids) > 1
+            if organisation_ids:
+                stable = s3db.cr_shelter
+                query = (stable.organisation_id.belongs(organisation_ids)) & \
+                        (stable.deleted == False)
+                shelters = db(query).select(stable.id, limitby=(0, 2))
+                any_shelters = bool(shelters)
+                multiple_shelters = len(shelters) > 1
+            else:
+                any_shelters = multiple_shelters = False
+
+            # Configure list fields and filters, accordingly
+            list_fields = ["date",
+                           "status",
+                           "name",
+                           "resolution",
+                           ]
+            if multiple_orgs:
+                list_fields.insert(2, "organisation_id")
+            if multiple_orgs and any_shelters or multiple_shelters:
+                list_fields.insert(3, "site_id")
+
+            if not r.record and r.interactive:
+                # Base filters
+                filter_widgets = [TextFilter(["name",
+                                              # "details",
+                                              # "comments",
+                                              "site_id$name",
+                                              ],
+                                              label = T("Search"),
+                                              ),
+                                  OptionsFilter("status",
+                                                options = OrderedDict(s3db.act_issue_status_opts),
+                                                cols = 3,
+                                                sort = False,
+                                                ),
+                                  DateFilter("date",
+                                             hidden = True,
+                                             ),
+                                  ]
+                if multiple_orgs:
+                    filter_widgets.insert(2, OptionsFilter("organisation_id", hidden=True))
+                if multiple_orgs and any_shelters or multiple_shelters:
+                    filter_widgets.insert(3, OptionsFilter("site_id", hidden=True))
+            else:
+                filter_widgets = None
+            resource.configure(filter_widgets = filter_widgets,
+                               list_fields = list_fields,
+                               )
+
+        elif r.component_name == "task":
+            # Configure task form
+            s3db.act_task_configure_form(r.component.table,
+                                         r.component_id,
+                                         issue = r.record,
+                                         site_type = "cr_shelter",
+                                         )
+        return result
+    s3.prep = prep
+
+    return attr
+
+# =============================================================================
+def act_task_controller(**attr):
+
+    s3 = current.response.s3
+
+    # T = current.T
+
+    # db = current.db
+    s3db = current.s3db
+
+    # Custom prep
+    standard_prep = s3.prep
+    def prep(r):
+        # Call standard prep
+        result = standard_prep(r) if callable(standard_prep) else True
+
+        if not r.component:
+            # Configure task form
+            s3db.act_task_configure_form(r.resource.table,
+                                         r.id,
+                                         task = r.record,
+                                         site_type = "cr_shelter",
+                                         )
+        return result
+    s3.prep = prep
 
     return attr
 

@@ -86,7 +86,7 @@ class MainMenu(default.MainMenu):
             shelter_menu,
             org_menu,
             MM("Security", c="security", f="seized_item"),
-            MM("To Do", c="act", f=("issue", "task")),
+            MM("To Do", c="act", f=("my_open_tasks", "task", "issue")),
             ]
 
     # -------------------------------------------------------------------------
@@ -199,10 +199,20 @@ class OptionsMenu(default.OptionsMenu):
         if current.request.function == "activity":
             menu = cls.org()
         else:
+            if current.s3db.act_task_is_manager():
+                tasks = M("Work Orders", link=False)(
+                            M("Overview", f="task"),
+                            M("My Work Orders", f="my_open_tasks"),
+                            )
+            else:
+                tasks = M("My Work Orders", f="my_open_tasks")
+
             menu = M(c="act")(
-                    M("Issue Reports", f="issue"),
-                    M("Work Orders", f="task"),
-                    )
+                        tasks,
+                        M("Issue Reports", f="issue")(
+                            M("Create", m="create"),
+                            ),
+                        )
 
         return menu
 
@@ -446,8 +456,7 @@ class OptionsMenu(default.OptionsMenu):
                 )
 
     # -------------------------------------------------------------------------
-    @classmethod
-    def supply(cls):
+    def supply(self):
 
         return M(c="supply")(
                 M("Current Cases", c=("supply", "pr"), f="person"),
