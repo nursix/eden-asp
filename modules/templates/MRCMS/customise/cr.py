@@ -418,6 +418,16 @@ def cr_shelter_controller(**attr):
             else:
                 resource.configure(deletable = is_admin)
 
+            if r.representation == "json":
+                # Make sure list_fields include site_id
+                # - required by site_id filterOptionsS3 lookup (e.g. act/issue)
+                list_fields = resource.get_config("list_fields")
+                if not list_fields:
+                    list_fields = ["id", "site_id"]
+                elif "site_id" not in list_fields:
+                    list_fields.append("site_id")
+                resource.configure(list_fields=list_fields)
+
         elif r.component_name != "document":
             # Customise doc_document in any case (for inline-attachments)
             r.customise_resource("doc_document")

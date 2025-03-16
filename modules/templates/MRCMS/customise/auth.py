@@ -66,6 +66,10 @@ def realm_entity(table, row):
         table = s3db.table(tablename)
         realm_entity = person_realm_entity(table, row, default=realm_entity)
 
+    #elif tablename in ("act_issue", "act_task"):
+    #    # Owned by the organisation managing them (default okay)
+    #    pass
+
     #elif tablename in ("dvr_case_flag",
     #                   "dvr_appointment_type",
     #                   "dvr_case_event_type",

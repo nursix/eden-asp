@@ -158,6 +158,7 @@ def config(settings):
                                       "CASE_MANAGER": "ORG_ADMIN",
                                       "SECURITY": "ORG_ADMIN",
                                       "CATERING": "ORG_ADMIN",
+                                      "ISSUE_REPORTER": "ORG_ADMIN",
                                       "SHELTER_ADMIN": ("ORG_GROUP_ADMIN", "SHELTER_ADMIN"),
                                       "SHELTER_MANAGER": ("ORG_GROUP_ADMIN", "SHELTER_ADMIN"),
                                       "SUPPLY_ADMIN": ("ORG_GROUP_ADMIN", "SUPPLY_ADMIN"),
@@ -177,11 +178,15 @@ def config(settings):
     # ACT Settings and Customizations
     from .customise.act import act_activity_resource, \
                                act_activity_controller, \
-                               act_beneficiary_resource
+                               act_beneficiary_resource, \
+                               act_issue_controller, \
+                               act_task_controller
 
     settings.customise_act_activity_resource = act_activity_resource
     settings.customise_act_activity_controller = act_activity_controller
     settings.customise_act_beneficiary_resource = act_beneficiary_resource
+    settings.customise_act_issue_controller = act_issue_controller
+    settings.customise_act_task_controller = act_task_controller
 
     # -------------------------------------------------------------------------
     # CMS Settings and Customizations

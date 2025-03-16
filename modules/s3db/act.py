@@ -30,12 +30,17 @@ __all__ = ("ActivityModel",
            "ActivityIssueModel",
            "ActivityTaskModel",
            "ActivityChecklistModel",
-           "act_rheader",
            "act_issue_set_status_opts",
+           "act_issue_configure_form",
+           "act_task_is_manager",
            "act_task_set_status_opts",
+           "act_task_configure_form",
+           "act_rheader",
            )
 
 import datetime
+
+from collections import OrderedDict
 
 from gluon import *
 from gluon.storage import Storage
@@ -372,6 +377,7 @@ class ActivityIssueModel(DataModel):
     names = ("act_issue",
              "act_issue_id",
              "act_issue_status_opts",
+             "act_issue_resolution_opts",
              )
 
     def model(self):
@@ -409,10 +415,12 @@ class ActivityIssueModel(DataModel):
         # Issue resolution
         #
         issue_resolution = (("PENDING", "-"),
-                            ("N/A", T("Not Actionable")),
                             ("DEFER", T("No Action")),
                             ("RESOLVED", T("Resolved")),
                             ("OBSOLETE", T("Obsolete")),
+                            ("N/A", T("Not Actionable")),
+                            ("DUPLICATE", T("Duplicate")),
+                            ("INVALID", T("Invalid")),
                             )
 
         # ---------------------------------------------------------------------
@@ -422,7 +430,8 @@ class ActivityIssueModel(DataModel):
         define_table(tablename,
                      DateTimeField(
                          label = T("Reported on"),
-                         default="now",
+                         default = "now",
+                         writable = False,
                          ),
                      self.org_organisation_id(comment=None),
                      self.org_site_id(),
@@ -434,6 +443,7 @@ class ActivityIssueModel(DataModel):
                            ),
                      CommentsField("description",
                                    label = T("Details"),
+                                   comment = None,
                                    ),
                      Field("status",
                            label = T("Status"),
@@ -459,6 +469,9 @@ class ActivityIssueModel(DataModel):
         configure(tablename,
                   onvalidation = self.issue_onvalidation,
                   onaccept = self.issue_onaccept,
+                  orderby = "%s.date desc" % tablename,
+                  realm_components = ["task",],
+                  update_realm = True,
                   )
 
         # CRUD Strings
@@ -493,6 +506,7 @@ class ActivityIssueModel(DataModel):
         #
         return {"act_issue_id": issue_id,
                 "act_issue_status_opts": issue_status,
+                "act_issue_resolution_opts": issue_resolution,
                 }
 
     # -------------------------------------------------------------------------
@@ -501,6 +515,7 @@ class ActivityIssueModel(DataModel):
 
         return {"act_issue_id": FieldTemplate.dummy("issue_id"),
                 "act_issue_status_opts": [],
+                "act_issue_resolution_opts": [],
                 }
 
     # -------------------------------------------------------------------------
@@ -518,8 +533,6 @@ class ActivityIssueModel(DataModel):
 
         status = data.get("status")
         resolution = data.get("resolution")
-
-        form_vars = form.vars
 
         if status == "CLOSED" and resolution in (None, "PENDING"):
             form.errors.resolution = T("Resolution required when closing issue")
@@ -544,6 +557,8 @@ class ActivityIssueModel(DataModel):
         # Get the current record
         table = s3db.act_issue
         record = db(table.id == record_id).select(table.id,
+                                                  table.organisation_id,
+                                                  table.site_id,
                                                   table.status,
                                                   limitby = (0, 1),
                                                   ).first()
@@ -554,26 +569,43 @@ class ActivityIssueModel(DataModel):
         if record.status != "CLOSED":
             update["resolution"] = "PENDING"
 
+        ttable = s3db.act_task
+        related_tasks = (ttable.issue_id == record_id)
+
+        # Update organisation/site ID in all related tasks
+        if record.organisation_id:
+            query = (ttable.organisation_id == None) | (ttable.organisation_id != record.organisation_id)
+        else:
+            query = (ttable.organisation_id != None)
+        if record.site_id:
+            query |= (ttable.site_id == None) | (ttable.site_id != record.site_id)
+        else:
+            query |= (ttable.site_id != None)
+        query = related_tasks & query & (ttable.deleted == False)
+        db(query).update(organisation_id = record.organisation_id,
+                         site_id = record.site_id,
+                         )
+
+        # Status update
         status = record.status
         if status in ("ONHOLD", "CLOSED"):
             # Update status of all related tasks
             # TODO refactor for task status history
             task_open = ("PENDING", "STARTED", "FEEDBACK")
             new_status = "ONHOLD" if status == "ONHOLD" else "OBSOLETE"
-            ttable = s3db.act_task
-            query = (ttable.issue_id == record_id) & \
+            query = related_tasks & \
                     (ttable.status.belongs(task_open)) & \
                     (ttable.deleted == False)
             db(query).update(status=new_status)
-
         else:
             # Update issue status based on task status
-            act_issue_update_status(record.id)
+            act_issue_update_status(record_id)
 
         # TODO status history
         # - if status has changed, add history entry
         # - record previous status
 
+        # Update record, if required
         if update:
             record.update_record(**update)
 
@@ -626,19 +658,23 @@ class ActivityTaskModel(DataModel):
         #
         tablename = "act_task"
         define_table(tablename,
-                     self.act_issue_id(
-                         writable = False,
-                         ),
                      DateTimeField(
                          default = "now",
                          writable = False,
                          ),
+                     self.org_organisation_id(comment=None),
+                     self.org_site_id(),
+                     # TODO asset_id?
+                     self.act_issue_id(
+                         ondelete = "RESTRICT",
+                         writable = False,
+                         ),
                      Field("name",
-                           label = T("Subject"),
+                           label = T("Task"),
                            requires = IS_NOT_EMPTY(),
                            ),
                      CommentsField("details",
-                                   label = T("Details"),
+                                   label = T("Instructions"),
                                    comment = None,
                                    ),
                      Field("status",
@@ -653,9 +689,40 @@ class ActivityTaskModel(DataModel):
 
         # TODO Components
 
+        # List fields (on tab of issue)
+        list_fields = ["date",
+                       "name",
+                       "status",
+                       "human_resource_id",
+                       "comments",
+                       ]
+
+        # Filter widgets
+        # TODO alter options for status filter on my_open_tasks
+        filter_widgets = [TextFilter(["name",
+                                      # "details",
+                                      ],
+                                     label = T("Search"),
+                                     ),
+                          OptionsFilter("status",
+                                        options = OrderedDict(task_status),
+                                        default = ["PENDING", "STARTED", "FEEDBACK", "ONHOLD"],
+                                        cols = 4,
+                                        sort = False,
+                                        ),
+                          DateFilter("date",
+                                     hidden = True,
+                                     ),
+                          ]
+
         # Table configuration
         configure(tablename,
+                  deletable = False,
+                  filter_widgets = filter_widgets,
+                  list_fields = list_fields,
                   onaccept = self.task_onaccept,
+                  ondelete = self.task_ondelete,
+                  orderby = "%s.date desc" % tablename,
                   )
 
         # CRUD Strings
@@ -688,7 +755,14 @@ class ActivityTaskModel(DataModel):
     # -------------------------------------------------------------------------
     @staticmethod
     def task_onaccept(form):
-        # TODO docstring
+        """
+            Onaccept-routine for tasks
+            - inherit organisation/site IDs from issue
+            - update issue status
+
+            Args:
+                form: the FORM
+        """
 
         db = current.db
         s3db = current.s3db
@@ -702,16 +776,48 @@ class ActivityTaskModel(DataModel):
         table = s3db.act_task
         record = db(table.id == record_id).select(table.id,
                                                   table.issue_id,
+                                                  table.organisation_id,
+                                                  table.site_id,
                                                   limitby = (0, 1),
                                                   ).first()
-        if record:
+        if not record:
+            return
+
+        update = {}
+
+        issue_id = record.issue_id
+        if issue_id:
+            itable = s3db.act_issue
+            issue = db(itable.id == issue_id).select(itable.id,
+                                                     itable.organisation_id,
+                                                     itable.site_id,
+                                                     limitby = (0, 1),
+                                                     ).first()
+            for fn in ("organisation_id", "site_id"):
+                if record[fn] != issue[fn]:
+                    update[fn] = issue[fn]
+
             # Update the issue status
             # TODO refactor for issue status history
-            act_issue_update_status(record.issue_id)
+            act_issue_update_status(issue_id)
 
         # TODO status history
         # - if status has changed, write a history entry
         # - record last status
+
+        if update:
+            record.update_record(**update)
+
+    # -------------------------------------------------------------------------
+    @staticmethod
+    def task_ondelete(row):
+        """
+            On-delete actions for tasks:
+            - update status of context issue
+        """
+
+        if row.issue_id:
+            act_issue_update_status(row.issue_id)
 
 # =============================================================================
 class ActivityChecklistModel(DataModel):
@@ -721,6 +827,128 @@ class ActivityChecklistModel(DataModel):
 
     # TODO implement
     pass
+
+# =============================================================================
+def act_configure_org_site(table, record_id, site_type=None, hide_single_choice=True):
+    """
+        Configure organisation/site selection for act_issue or act_task
+
+        Args:
+            table: the target Table (act_issue or act_task)
+            record_id: the current record_id
+            site_type: the tablename of the selectable sites (e.g. "cr_shelter")
+            hide_single_choice: whether to hide selectors when there only is
+                                a single choice
+    """
+
+    from s3dal import original_tablename
+    tablename = original_tablename(table)
+
+    db = current.db
+    s3db = current.s3db
+    auth = current.auth
+
+    s3 = current.response.s3
+
+    # Get the organisation the user is permitted to create records in this table for
+    otable = s3db.org_organisation
+    permitted_realms = auth.permission.permitted_realms(tablename, "create")
+    query = (otable.deleted == False)
+    if permitted_realms is not None:
+        query = (otable.pe_id.belongs(permitted_realms)) & query
+    orgs = db(query).select(otable.id)
+    organisation_ids = [o.id for o in orgs]
+
+    # Configure organisation_id
+    field = table.organisation_id
+    dbset = db(otable.id.belongs(organisation_ids))
+    field.requires = IS_ONE_OF(dbset, "org_organisation.id", field.represent)
+    if len(organisation_ids) > 1:
+        # Multiple choices => expose selector
+        field.readable = field.writable = True
+    else:
+        # No or single permitted organisation => default + set read-only
+        field.default = organisation_ids[0] if organisation_ids else None
+        field.readable = not hide_single_choice
+        field.writable = False
+
+    # Configure site_id
+    field = table.site_id
+    stable = s3db.table(site_type) if site_type else None
+    if stable:
+        # Check if there are no, one or multiple sites managed
+        # by the permitted organisations
+        query = (stable.organisation_id != None) & \
+                (stable.organisation_id.belongs(organisation_ids))
+        sites = db(query).select(stable.site_id, limitby=(0, 2))
+
+        # Configure requires to match this dbset
+        field.requires = IS_EMPTY_OR(
+                            IS_ONE_OF(db(query), "%s.site_id" % site_type,
+                                      field.represent,
+                                      ))
+        if not len(sites):
+            # No selectable sites at all
+            field.default = None
+            field.readable = field.writable = False
+        elif len(organisation_ids) > 1:
+            # Multiple organisations => configure filterOptionsS3
+            prefix, name = site_type.split("_", 1)
+            script = '''
+$.filterOptionsS3({
+    'trigger':'organisation_id',
+    'target':'site_id',
+    'lookupPrefix':'%s',
+    'lookupResource':'%s',
+    'lookupField': 'site_id',
+    'optional': true
+})''' % (prefix, name)
+            if script not in s3.jquery_ready:
+                s3.jquery_ready.append(script)
+            field.readable = field.writable = True
+        elif len(sites) == 1:
+            # Single site => default + set read-only
+            field.default = sites.first().site_id
+            field.readable = not hide_single_choice
+            field.writable = False
+        else:
+            # Multiple sites for this organisation => expose selector
+            field.readable = field.writable = True
+    else:
+        # Site not used (i.e. site_type is either None or invalid)
+        field.default = None
+        field.readable = field.writable = False
+
+    # Limit human_resource_id too, if present
+    if "human_resource_id" in table.fields:
+
+        field = table.human_resource_id
+        htable = s3db.hrm_human_resource
+        if len(organisation_ids) == 1:
+            # Limit to staff of this organisation
+            dbset = db(htable.organisation_id == organisation_ids[0])
+        elif not organisation_ids:
+            # Can't set or change staff assignment
+            field.writable = False
+        else:
+            # Configure filterOptionsS3
+            dbset = db(htable.organisation_id.belongs(organisation_ids))
+            script = '''
+$.filterOptionsS3({
+    'trigger':'organisation_id',
+    'target':'human_resource_id',
+    'lookupPrefix':'hrm',
+    'lookupResource':'human_resource',
+    'fncRepresent':function(record){return record.person_id;},
+    'optional': true
+})'''
+            if script not in s3.jquery_ready:
+                s3.jquery_ready.append(script)
+
+        field.requires = IS_EMPTY_OR(
+                            IS_ONE_OF(dbset, "hrm_human_resource.id",
+                                      field.represent,
+                                      ))
 
 # =============================================================================
 def act_issue_set_status_opts(table, issue_id, record=None):
@@ -768,6 +996,53 @@ def act_issue_set_status_opts(table, issue_id, record=None):
     return status_opts
 
 # =============================================================================
+def act_issue_configure_form(table, issue_id, issue=None, site_type=None, hide_single_choice=True):
+    """
+        Configure the issue form
+
+        Args:
+            table: the Table (act_issue)
+            issue_id: the issue ID (can be None when creating a new issue)
+            issue: the issue Row (must contain status)
+            site_type: the tablename of the selectable sites
+            hide_single_choice: hide organisation/site selectors when there is only
+                                one choice
+    """
+
+    db = current.db
+    # s3db = current.s3db
+
+    if not issue and issue_id:
+        # Look up the issue
+        issue = db(table.id == issue_id).select(table.id,
+                                                table.status,
+                                                limitby = (0, 1),
+                                                ).first()
+
+    # Configure organisation_id/site_id choices
+    act_configure_org_site(table,
+                           issue_id,
+                           site_type = site_type,
+                           hide_single_choice = hide_single_choice,
+                           )
+
+    # Configure status options
+    act_issue_set_status_opts(table, issue_id, record=issue)
+
+    # Configure other fields
+    if not act_task_is_manager():
+        readonly = ("status", "resolution")
+        status = issue.status if issue else "NEW"
+        if status != "NEW":
+            readonly += ("organisation_id", "site_id", "name", "description")
+        if status == "CLOSED":
+            readonly += ("comments",)
+        for fn in readonly:
+            field = table[fn]
+            field.writable = False
+            field.comment = None
+
+# =============================================================================
 def act_issue_update_status(issue_id):
     """
         Updates the status of an issue depending on the statuses of
@@ -812,6 +1087,20 @@ def act_issue_update_status(issue_id):
                             )
 
 # =============================================================================
+def act_task_is_manager():
+    """
+        Checks whether the current user can manage issues/tasks
+
+        Returns:
+            boolean
+    """
+
+    # TODO make configurable in settings
+    is_manager = current.auth.s3_has_permission("create", "act_task")
+
+    return is_manager
+
+# =============================================================================
 def act_task_set_status_opts(table, task_id, record=None):
     """
         Configures the selectable status options for a task, depending
@@ -831,16 +1120,16 @@ def act_task_set_status_opts(table, task_id, record=None):
 
     field = table.status
 
+    all_statuses = s3db.act_task_status_opts
     if not task_id and not record:
         # Set default status for new records
-        status_opts = s3db.act_task_status_opts
+        status_opts = all_statuses
         field.default = "PENDING"
         field.writable = False
 
     else:
         # Is the user a task manager?
-        # TODO make this a configurable callback
-        is_manager = current.auth.s3_has_permission("create", "act_task")
+        is_manager = act_task_is_manager()
 
         # Get the current record status
         if not record:
@@ -853,26 +1142,96 @@ def act_task_set_status_opts(table, task_id, record=None):
         actionable = ("PENDING", "STARTED", "FEEDBACK")
         closed = ("DONE", "CANCELED", "OBSOLETE")
 
-        if status in actionable:
+        if status in actionable or status not in dict(all_statuses):
             if is_manager:
                 next_status = None # any status
             else:
                 next_status = actionable + ("DONE",)
-        elif status == "ONHOLD" and is_manager:
+        elif is_manager and status in ("ONHOLD",) + closed:
             next_status = ("PENDING", "ONHOLD") + closed
-        elif status in closed and is_manager:
-            next_status = closed
         else:
             next_status = (status,)
             field.writable = False
 
         if next_status:
-            status_opts = [(k, v) for k, v in s3db.act_task_status_opts if k in next_status]
+            status_opts = [(k, v) for k, v in all_statuses if k in next_status]
         else:
-            status_opts = s3db.act_task_status_opts
+            status_opts = all_statuses
 
     field.requires = IS_IN_SET(status_opts, zero=None, sort=False)
     return status_opts
+
+# =============================================================================
+def act_task_configure_form(table, task_id, task=None, issue=None, site_type=None, hide_single_choice=True):
+    """
+        Configure the act_task form
+
+        Args:
+            table: the Table (act_task, or aliased instance)
+            task_id: the task ID, if known
+            task: the task Row (must contain issue_id and status)
+            issue: the context issue Row, if on component tab
+                   (must contain organisation_id, site_id and status)
+            site_type: the tablename of the selectable sites (e.g. "cr_shelter")
+            hide_single_choice: hide org/site selectors if there is only a single choice
+    """
+
+    db = current.db
+    s3db = current.s3db
+
+    on_tab = bool(issue)
+
+    if not task and task_id:
+        # Look up the task
+        task = db(table.id == task_id).select(table.id,
+                                              table.issue_id,
+                                              table.status,
+                                              limitby = (0, 1),
+                                              ).first()
+
+    if not issue and task and task.issue_id:
+        # Look up the context issue
+        itable = s3db.act_issue
+        issue = db(itable.id == task.issue_id).select(itable.id,
+                                                      itable.organisation_id,
+                                                      itable.site_id,
+                                                      itable.status,
+                                                      limitby = (0, 1),
+                                                      ).first()
+
+    # Configure org/site selectors
+    act_configure_org_site(table,
+                           task_id,
+                           site_type = site_type,
+                           hide_single_choice = hide_single_choice,
+                           )
+    if issue:
+        # Set read-only + hide on tab
+        for fn in ("organisation_id", "site_id"):
+            field = table[fn]
+            if on_tab:
+                field.readable = False
+            field.writable = False
+
+    # Configure status selector
+    act_task_set_status_opts(table, task_id, record=task)
+
+    # Configure other fields
+    if on_tab or not issue:
+        # Hide issue_id
+        field = table.issue_id
+        field.readable = field.writable = False
+    if task:
+        if act_task_is_manager():
+            if task.status != "PENDING":
+                table.name.writable = False
+            if task.status not in ("PENDING", "FEEDBACK", "ONHOLD"):
+                table.details.writable = False
+                table.human_resource_id.writable = False
+        else:
+            for fn in ("name", "details", "human_resource_id"):
+                field = table[fn]
+                field.writable = False
 
 # =============================================================================
 def act_rheader(r, tabs=None):
