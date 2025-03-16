@@ -225,6 +225,8 @@ def act_issue_controller(**attr):
 
             if not r.record and r.interactive:
                 # Base filters
+                status_opts = s3db.act_issue_status_opts
+                open_status = [k for k, _ in status_opts if k != "CLOSED"]
                 filter_widgets = [TextFilter(["name",
                                               # "details",
                                               # "comments",
@@ -233,7 +235,8 @@ def act_issue_controller(**attr):
                                               label = T("Search"),
                                               ),
                                   OptionsFilter("status",
-                                                options = OrderedDict(s3db.act_issue_status_opts),
+                                                options = OrderedDict(status_opts),
+                                                default = open_status,
                                                 cols = 3,
                                                 sort = False,
                                                 ),
