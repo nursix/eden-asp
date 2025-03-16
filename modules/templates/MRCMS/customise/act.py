@@ -197,16 +197,8 @@ def act_issue_controller(**attr):
         result = standard_prep(r) if callable(standard_prep) else True
 
         resource = r.resource
-        table = resource.table
 
         if not r.component:
-            # Configure the issue form
-            s3db.act_issue_configure_form(table,
-                                          r.id,
-                                          issue = r.record,
-                                          site_type = "cr_shelter",
-                                          )
-
             # Lookup the organisations and sites the user can read issues for
             organisation_ids = permitted_orgs("read", "act_issue")
             multiple_orgs = len(organisation_ids) > 1
@@ -255,17 +247,11 @@ def act_issue_controller(**attr):
                     filter_widgets.insert(3, OptionsFilter("site_id", hidden=True))
             else:
                 filter_widgets = None
+
             resource.configure(filter_widgets = filter_widgets,
                                list_fields = list_fields,
                                )
 
-        elif r.component_name == "task":
-            # Configure task form
-            s3db.act_task_configure_form(r.component.table,
-                                         r.component_id,
-                                         issue = r.record,
-                                         site_type = "cr_shelter",
-                                         )
         return result
     s3.prep = prep
 
@@ -279,7 +265,7 @@ def act_task_controller(**attr):
     # T = current.T
 
     # db = current.db
-    s3db = current.s3db
+    # s3db = current.s3db
 
     # Custom prep
     standard_prep = s3.prep
@@ -287,13 +273,8 @@ def act_task_controller(**attr):
         # Call standard prep
         result = standard_prep(r) if callable(standard_prep) else True
 
-        if not r.component:
-            # Configure task form
-            s3db.act_task_configure_form(r.resource.table,
-                                         r.id,
-                                         task = r.record,
-                                         site_type = "cr_shelter",
-                                         )
+        # TODO Configure filters and list fields (see issue)
+
         return result
     s3.prep = prep
 
