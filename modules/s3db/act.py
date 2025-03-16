@@ -1199,12 +1199,7 @@ def act_task_configure_form(table, task_id, task=None, issue=None, site_type=Non
                                                       limitby = (0, 1),
                                                       ).first()
 
-    # Configure org/site selectors
-    act_configure_org_site(table,
-                           task_id,
-                           site_type = site_type,
-                           hide_single_choice = hide_single_choice,
-                           )
+    # Configure org/site/staff selectors
     if issue:
         # Set read-only + hide on tab
         for fn in ("organisation_id", "site_id"):
@@ -1212,6 +1207,24 @@ def act_task_configure_form(table, task_id, task=None, issue=None, site_type=Non
             if on_tab:
                 field.readable = False
             field.writable = False
+
+        organisation_id = issue.organisation_id
+
+        # Filter human_resource_id
+        htable = s3db.hrm_human_resource
+        dbset = db(htable.organisation_id == issue.organisation_id)
+        field = table.human_resource_id
+        field.requires = IS_EMPTY_OR(
+                            IS_ONE_OF(dbset, "hrm_human_resource.id",
+                                      field.represent,
+                                      ))
+        field.readable = field.writable = bool(organisation_id)
+    else:
+        act_configure_org_site(table,
+                               task_id,
+                               site_type = site_type,
+                               hide_single_choice = hide_single_choice,
+                               )
 
     # Configure status selector
     act_task_set_status_opts(table, task_id, record=task)

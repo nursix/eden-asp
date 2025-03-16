@@ -152,6 +152,7 @@ class S3Config(Storage):
 
         super().__init__()
 
+        self.act = Storage()
         self.asset = Storage()
         self.auth = Storage()
         self.auth.email_domains = []
@@ -1301,7 +1302,18 @@ class S3Config(Storage):
         return airegex
 
     # -------------------------------------------------------------------------
+    # Activity settings
+    #
+    def get_act_issue_site_type(self):
+        """
+            Type of site (tablename) issue reports and tasks can be linked to
+            - None to not link issues or tasks to sites (default)
+        """
+        return self.act.get("issue_site_type", None)
+
+    # -------------------------------------------------------------------------
     # Finance settings
+    #
     def get_fin_currency_writable(self):
         """
             Can the user select a Currency?

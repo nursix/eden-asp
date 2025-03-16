@@ -59,25 +59,39 @@ def issue():
 
     def prep(r):
 
-        if not r.component:
+        resource = r.resource
+        record = r.record
 
-            record = r.record
+        if not r.component:
+            # Configure the issue form
+            s3db.act_issue_configure_form(resource.table,
+                                          r.id,
+                                          issue = record,
+                                          site_type = settings.get_act_issue_site_type(),
+                                          )
+
+            # Configure selectable status options
+            s3db.act_issue_set_status_opts(resource.table,
+                                           r.id,
+                                           record = record,
+                                           )
 
             # Closed records cannot be modified
             if record and record.status == "CLOSED":
-                r.resource.configure(editable=False)
+                resource.configure(editable=False)
 
             # Can only delete NEW records
             if not r.record or record.status != "NEW":
-                r.resource.configure(deletable=False)
-
-            # Configure selectable status options
-            s3db.act_issue_set_status_opts(r.table,
-                                           r.id,
-                                           record = r.record,
-                                           )
+                resource.configure(deletable=False)
 
         elif r.component_name == "task":
+            # Configure task form
+            s3db.act_task_configure_form(r.component.table,
+                                         r.component_id,
+                                         issue = record,
+                                         site_type = settings.get_act_issue_site_type(),
+                                         )
+
             # Configure selectable status options
             s3db.act_task_set_status_opts(r.component.table,
                                           r.component_id,
@@ -94,6 +108,13 @@ def task_prep(r):
     record = r.record
 
     if not r.component:
+        # Configure task form
+        s3db.act_task_configure_form(resource.table,
+                                     r.id,
+                                     task = record,
+                                     site_type = settings.get_act_issue_site_type(),
+                                     )
+
         # Configure selectable status options
         s3db.act_task_set_status_opts(resource.table,
                                       record.id if record else None,
