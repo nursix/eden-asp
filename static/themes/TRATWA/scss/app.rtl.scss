@@ -1,0 +1,24 @@
+@charset 'utf-8';
+
+@import 'settings';
+
+// Override settings for right-to-left
+$global-text-direction: rtl;
+
+@import 'components';
+
+// Patches for right-to-left support:
+.top-bar-section {
+    ul li > a {
+        padding-right: 0.75rem!important;
+    }
+}
+label.inline {
+    &.left {
+        float: none !important;
+        text-align: right;
+    }
+    &.right {
+        float: left;
+    }
+}

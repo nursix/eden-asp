@@ -1,0 +1,50 @@
+// ============================================================================
+// THEME Imports and Mixins
+// ============================================================================
+// Foundation Settings for the THEME
+@import '../settings';
+
+// THEME Config
+@import 'theme/config';
+
+// ============================================================================
+// GLOBAL VARIABLES
+// ============================================================================
+
+// -- global variables and their defaults go here --
+
+// ============================================================================
+// MIXINS
+// ============================================================================
+// Tiny button style (e.g. action buttons)
+@mixin tiny_button_style() {
+    display: inline-block;
+    margin: 0.15rem;
+    padding: 0.3rem 0.5rem;
+    border: 0;
+    border-radius: 0;
+    line-height: 1;
+    font-size: 0.6875rem;
+    text-decoration: none !important;
+    white-space: nowrap;
+    cursor: pointer;
+    vertical-align: middle;
+}
+
+// Empty-sections (data tables, data lists)
+@mixin empty_section() {
+    font-style: italic;
+    font-size: 0.825rem;
+}
+
+// Flash messages (alert box)
+@mixin alert_style($fgcolor, $bgcolor, $bgimage, $bordercolor: $fgcolor) {
+    border: 1px solid $bordercolor;
+    background: $bgimage $bgcolor no-repeat 0.8rem 50%;
+    color: $fgcolor;
+    p em {
+        color: $fgcolor;
+    }
+}
+
+// END ========================================================================
