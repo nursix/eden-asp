@@ -1,0 +1,39 @@
+// THEME MODULES
+@import "theme/base";           // required, includes theme/config
+
+// ----------------------------------------------------------------------------
+// 1. Basic UI Elements
+// ----------------------------------------------------------------------------
+@import "theme/buttons";
+@import "theme/represent";
+@import "theme/widgets";
+
+// ----------------------------------------------------------------------------
+// 2. Layouts and Representations
+// ----------------------------------------------------------------------------
+@import "theme/page";
+@import "theme/menus";
+@import "theme/rheader";
+@import "theme/forms";
+@import "theme/filters";
+@import "theme/tables";
+@import "theme/datalists";
+
+// ----------------------------------------------------------------------------
+// 3. Specific Pages / Contents
+// ----------------------------------------------------------------------------
+//@import "theme/dashboard";
+@import "theme/summary";
+@import "theme/organizer";
+@import "theme/profile";
+@import "theme/reports";
+@import "theme/rolemgr";
+@import "theme/sysinfo";
+@import "theme/homepage";
+
+// ----------------------------------------------------------------------------
+// 4. Other / Custom
+// ----------------------------------------------------------------------------
+@import "theme/misc";
+
+// END ------------------------------------------------------------------------

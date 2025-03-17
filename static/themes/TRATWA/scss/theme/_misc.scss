@@ -1,0 +1,476 @@
+// ============================================================================
+// Styles for Theme-specific Elements and Layouts
+// ============================================================================
+// VARIABLES
+
+// -- variables and their defaults go here --
+
+// ============================================================================
+// STYLES
+
+// OrgMenu Logo ***************************************************************
+.org-menu-logo {
+    height: 49px;
+}
+
+// Case file header ***********************************************************
+.overdue {
+    color: red;
+}
+.invalid-case {
+    border: 1px solid red;
+    color: red;
+    font-size: 1.1rem;
+    font-weight: bold;
+    line-height: 1.9rem;
+    margin-bottom: 0.25rem;
+    padding: 0.1rem 0.2rem;
+    text-transform: uppercase;
+}
+.client-gender-age {
+    font-size: 0.7rem;
+    vertical-align: top;
+    color: #999;
+    .fa {
+        margin: 0 0.2rem;
+    }
+    margin: 0 1rem;
+}
+
+.last-seen-critical, .last-seen-warning {
+    .fa {
+        margin: 0.2rem;
+    }
+    cursor: pointer;
+}
+.last-seen-critical {
+    color: #c10031;
+}
+.last-seen-warning {
+    color: #bd5900;
+}
+
+// Response Theme Selector ****************************************************
+#dvr_response_action_response_theme_ids__row,
+#sub-defaultresponse_action {
+    .ui-multiselect.ui-widget {
+        width: 28rem!important;
+        max-width: 100%;
+    }
+}
+.ui-widget-content {
+    max-width: 100%;
+}
+
+.dvr-response-action-theme {
+    font-size: 0.8rem;
+    h6 {
+        font-size: 0.9rem;
+        font-weight: bold;
+        color: black;
+        margin: 0;
+    }
+    .text-body {
+        margin: 0.125rem 0.25rem 0.5rem 0.25rem;
+    }
+}
+
+.file-repr {
+    i.fa {
+        font-size: 1.1rem;
+    }
+    .file-size {
+        padding: 0 0.4rem;
+        font-size: 0.7rem;
+    }
+}
+
+// Shelter overview / resident list *******************************************
+.shelter-overview-stats {
+    font-size: 0.8rem;
+    background-color: #eaeaea;
+    padding: 0.2rem;
+    border: 1px solid #e0e0e0;
+    .spacer {
+        background-color: #eaeaea;
+    }
+    h5 {
+        font-size: 0.9rem;
+        font-weight: bold;
+        text-align: center;
+    }
+    table {
+        width: 100%;
+        border: 0;
+        border-collapse: collapse;
+        th {
+            font-weight: normal;
+        }
+        td {
+            font-weight: bold;
+        }
+        .stats-excess {
+            background-color: #ffced5;
+        }
+        .stats-total {
+            font-size: 1.0rem;
+            th {
+                font-weight: bold;
+            }
+        }
+    }
+}
+.shelter-overview-residents {
+    h4 {
+        //text-align: center;
+        border-top: 1px solid #ccc;
+        padding: 0.5rem 0;
+        margin-top: 0.75rem;
+        font-size: 1.1rem;
+        font-weight: bold;
+    }
+    .units-actions {
+        .units-search, .units-expand {
+            display: inline-block;
+            margin-bottom: 0.6rem;
+        }
+        .units-search {
+            margin-right: 5%;
+            input {
+                margin-left: 0.6rem;
+                margin-right: 0;
+                &.filtered {
+                    border: 1px solid black;
+                    background-color: #e5ffe5;
+                }
+            }
+            .clear-search {
+                padding: 0 0.3rem;
+                line-height: inherit;
+                font-size: 0.9rem;
+                margin: 0;
+                border: 1px solid #ccc;
+                cursor: pointer;
+                vertical-align: top;
+                color: #666;
+                background-color: #ccc;
+            }
+        }
+        .units-expand {
+            .action-lnk {
+                margin-right: 0.6rem;
+            }
+        }
+    }
+    .units-list { // table
+
+        min-width: 71%;
+
+        .unit { // tbody
+
+            .unit-data {
+                position: relative;
+                .capacity {
+                    position: absolute;
+                    top: 0.4rem;
+                    right: 6rem;
+                    padding: 0.2rem 0.5rem;
+                    span {
+                        font-size: 0.9rem;
+                        margin-right: 0.3rem;
+                        &.c-free,
+                        &.c-blocked,
+                        &.c-planned {
+                            margin-left: 0.7rem;
+                        }
+                        &.c-free {
+                            color: green;
+                        }
+                        &.c-blocked {
+                            color: red;
+                        }
+                        &.c-zero {
+                            color: #aaa;
+                        }
+                        &.c-total {
+                            font-size: 0.7rem;
+                        }
+                        .fa {
+                            margin-right: 0.3rem;
+                        }
+                    }
+                }
+                .unit-expand {
+                    position: absolute;
+                    top: 0.8rem;
+                    right: 1.5rem;
+                    .expand {
+                        display: none;
+                    }
+                    .collapse {
+                        display: block;
+                    }
+                }
+            }
+
+            tr {
+                border-left: 2px solid #AAA;
+                border-right: 2px solid #AAA;
+            }
+
+            &.collapsed {
+                .details {
+                    visibility: collapse;
+                }
+                .unit-expand {
+                    .expand {
+                        display: block;
+                    }
+                    .collapse {
+                        display: none;
+                    }
+                }
+            }
+
+            .unit-header { // tr unit header
+                padding: 0;
+                background-color: #DDD;
+                border-top: 3px solid #AAA;
+                border-collapse: separate;
+                .unit-label  { /* div */
+                    padding: 0.3rem 0.1rem;
+                    font-size: 1.1rem;
+                    font-weight: bold;
+                }
+                .unit-link {
+                    i.fa {
+                        margin-right: 1.2rem;
+                        &.fa-ban {
+                            color: #d71919;
+                        }
+                        &.fa-check {
+                            color: #070;
+                        }
+                    }
+                }
+            }
+
+            .resident-header { // tr residents header
+                th {
+                    font-size: 0.9rem;
+                    color: #777;
+                    padding: 0.2rem 0.5rem
+                }
+            }
+
+            .resident { // tr resident
+                td {
+                    padding: 0.2rem 0.5rem;
+                    font-size: 0.9rem;
+                    color: #333;
+                    &.resident-name {
+                        font-weight: bold;
+                    }
+                    &.resident-presence {
+                        text-align: center;
+                    }
+                }
+                &.checked-in {
+
+                }
+                &.planned {
+                    td {
+                        font-style: italic;
+                        color: #888;
+                        a {
+                            color: #888;
+                        }
+                    }
+                }
+                &.group-even {
+                    background-color: #fdfdfd
+                }
+                &.group-odd {
+                    background-color: #f9f9f9;
+                }
+            }
+
+            .capacity-free { // tr free capacity
+                td {
+                    padding: 0.2rem 0.5rem;
+                    font-size: 0.9rem;
+                }
+                background-color: #b9ffb9;
+            }
+            .capacity-blocked { // tr blocked capacity
+                td {
+                    padding: 0.2rem 0.5rem;
+                    font-size: 0.9rem;
+                }
+                background-color: #ffced5;
+            }
+
+            .unit-subheader { // subheader tr
+                border-top: 2px solid #AAA;
+                .residents-planned { // div
+                    font-size: 0.7rem;
+                    padding: 0.2rem;
+                    color: #666;
+                }
+            }
+
+            .unit-spacer { // tr spacer
+                border: none;
+                border-top: 3px solid #AAA;
+                td {
+                    border: none;
+                    min-height: 0.5rem;
+                }
+            }
+        }
+    }
+}
+
+// Registration card dialog ***************************************************
+.id-card-data {
+    border: 1px solid #ccc;
+    padding: 1rem;
+    .button i.fa {
+        margin-right: 0.5rem;
+    }
+}
+.id-card-warning {
+    border: 1px solid red;
+    padding: 0.5rem;
+    margin: 1rem;
+    background: #fff1df;
+    font-size: 1rem;
+}
+
+// Registration history (on presence tab) *************************************
+.rhist {
+    border: 1px solid #ccc;
+    margin-bottom: 0.7rem;
+    padding: 0.5rem;
+    background-color: #fafafa;
+    .action-btn .fa {
+        margin-left: 0.3rem;
+        font-size: 10px;
+    }
+    table {
+        border: 1px solid #ccc;
+        border-collapse: collapse;
+        margin: 1rem 3rem;
+        th, td {
+            padding: 0.2rem 0.7rem;
+            border: 0;
+            cursor: default;
+        }
+        th {
+            font-size: 0.8rem;
+            font-weight: normal;
+            font-style: italic;
+            color: grey;
+            border-bottom: 1px solid #ccc;
+        }
+        td {
+            font-size: 0.9rem;
+            font-weight: bold;
+        }
+        td.rhist-planned {
+            font-size: 0.7rem;
+            font-weight: normal;
+            color: grey;
+        }
+        .rhist-headers {
+            background-color: #eee;
+        }
+        .rhist-current {
+            background-color: #dff4bf;
+        }
+    }
+    .empty {
+        margin: 0.7rem 1.4rem;
+    }
+}
+
+// Table reports **************************************************************
+.table-report-form {
+    width: auto;
+    border: 1px solid #eee;
+    padding: 0.5rem;
+}
+.table-report-data {
+    font-size: 0.875rem;
+    max-height: 80vh;
+    overflow: scroll;
+    padding: 0.3rem;
+    margin-top: 0.7rem;
+    table, th, td {
+        border: 1px solid #ccc;
+    }
+    thead th {
+        text-align: center;
+    }
+    tbody {
+        tr:nth-child(even) {
+            background: #fafafa;
+        }
+    }
+}
+
+// Case file perspective switch ***********************************************
+.case-file-perspectives {
+    font-size: 0.7rem;
+    vertical-align: top;
+    border: 1px solid #ccc;
+    padding: 0.2rem 0;
+    margin-top: -0.3rem;
+    margin-bottom: 0.5rem;
+    background-color: #eeeeee;
+    i.fa {
+        font-size: 0.8rem;
+        margin-right: 0.2rem;
+        vertical-align: middle;
+    }
+    a, span {
+        margin: 0 0.4rem;
+    }
+    .current-perspective {
+        color: #970000;
+    }
+}
+
+// Bulk checkout/closure ******************************************************
+.bulk-checkout-form {
+
+    padding: 1rem;
+    .checkout-info {
+        font-size: 0.8rem;
+        font-weight: bold;
+    }
+    .checkout-question {
+        font-size: 0.8rem;
+        font-weight: bold;
+        border-top: 1px solid #eee;
+        padding-top: 0.5rem;
+    }
+    label {
+        font-size: 0.825rem;
+    }
+    .label-above {
+        font-weight: bold;
+        select {
+            display: block;
+            margin-bottom: 1rem;
+            min-width: 12rem;
+        }
+    }
+    .checkout-buttons {
+        button, a.cancel-form-btn {
+            margin-bottom: 0
+        }
+    }
+}
+
+// END ========================================================================
