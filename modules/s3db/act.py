@@ -430,7 +430,6 @@ class ActivityIssueModel(DataModel):
         tablename = "act_issue"
         define_table(tablename,
                      DateTimeField(
-                         label = T("Reported on"),
                          default = "now",
                          writable = False,
                          ),
