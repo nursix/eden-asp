@@ -129,10 +129,11 @@ def task_prep(r):
                                       )
 
         # Configure list fields for perspective
+        human_resource_id = None if r.function == "my_open_tasks" else "human_resource_id"
         list_fields = ["date",
-                       "issue_id",
                        "name",
-                       "human_resource_id",
+                       "issue_id",
+                       human_resource_id,
                        "status",
                        "comments",
                        ]
