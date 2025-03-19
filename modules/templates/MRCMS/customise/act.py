@@ -315,8 +315,8 @@ def act_task_controller(**attr):
                 status_filter_opts = s3db.act_task_status_opts
                 if my_open_tasks:
                     status_filter_opts = [(k, v) for k, v in status_filter_opts
-                                                 if k in {"PENDING", "STARTED", "FEEDBACK"}]
-                    default_status_filter = None
+                                                 if k in {"PENDING", "STARTED", "FEEDBACK", "ONHOLD"}]
+                    default_status_filter = ["PENDING", "STARTED", "FEEDBACK"]
                 else:
                     default_status_filter = ["PENDING", "STARTED", "FEEDBACK", "ONHOLD"]
 
