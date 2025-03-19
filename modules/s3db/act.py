@@ -452,7 +452,7 @@ class ActivityIssueModel(DataModel):
                            represent = status_represent,
                            ),
                      Field("resolution",
-                           label = T("Resolution#issue"),
+                           label = T("Resolution##issue"),
                            default = "PENDING",
                            requires = IS_IN_SET(issue_resolution, zero=None, sort=False),
                            represent = represent_option(dict(issue_resolution)),
@@ -590,13 +590,13 @@ class ActivityIssueModel(DataModel):
         status = record.status
         if status in ("ONHOLD", "CLOSED"):
             # Update status of all related tasks
-            # TODO refactor for task status history
             task_open = ("PENDING", "STARTED", "FEEDBACK")
             new_status = "ONHOLD" if status == "ONHOLD" else "OBSOLETE"
             query = related_tasks & \
                     (ttable.status.belongs(task_open)) & \
                     (ttable.deleted == False)
             db(query).update(status=new_status)
+            act_task_update_history(None, query=related_tasks)
         else:
             # Update issue status based on task status
             act_issue_update_status(record_id)
@@ -683,11 +683,18 @@ class ActivityTaskModel(DataModel):
                            requires = IS_IN_SET(task_status, zero=None, sort=False),
                            represent = status_represent,
                            ),
+                     Field("last_status",
+                           readable = False,
+                           writable = False,
+                           ),
                      self.hrm_human_resource_id(),
                      CommentsField(),
                      )
 
-        # TODO Components
+        # Components
+        self.add_components(tablename,
+                            act_task_history = "task_id",
+                            )
 
         # List fields (on tab of issue)
         list_fields = ["date",
@@ -741,6 +748,41 @@ class ActivityTaskModel(DataModel):
             )
 
         # ---------------------------------------------------------------------
+        # Task History
+        #
+        tablename = "act_task_history"
+        define_table(tablename,
+                     Field("task_id", "reference act_task",
+                           represent = S3Represent(lookup="act_task"),
+                           writable = False,
+                           ),
+                     DateTimeField(
+                           default = "now",
+                           writable = False,
+                           ),
+                     Field("status",
+                           label = T("Status"),
+                           represent = status_represent,
+                           writable = False,
+                           ),
+                     Field("user_id", current.auth.settings.table_user,
+                           label = T("User"),
+                           requires = None,
+                           default = MetaFields._current_user(),
+                           represent = MetaFields._represent_user(),
+                           ondelete = "RESTRICT",
+                           writable = False,
+                           ),
+                     )
+
+        configure(tablename,
+                  deletable = False,
+                  editable = False,
+                  insertable = False,
+                  orderby = "%s.date desc" % tablename,
+                  )
+
+        # ---------------------------------------------------------------------
         # Pass names back to global scope (s3.*)
         #
         return {"act_task_status_opts": task_status,
@@ -779,6 +821,8 @@ class ActivityTaskModel(DataModel):
                                                   table.issue_id,
                                                   table.organisation_id,
                                                   table.site_id,
+                                                  table.status,
+                                                  table.last_status,
                                                   limitby = (0, 1),
                                                   ).first()
         if not record:
@@ -802,9 +846,9 @@ class ActivityTaskModel(DataModel):
             # TODO refactor for issue status history
             act_issue_update_status(issue_id)
 
-        # TODO status history
-        # - if status has changed, write a history entry
-        # - record last status
+        # Update status history
+        if record.status != record.last_status:
+            act_task_update_history(record.id)
 
         if update:
             record.update_record(**update)
@@ -854,7 +898,7 @@ class act_IssueRepresent(S3Represent):
         """
 
         db = current.db
-        s3db = current.s3db
+        # s3db = current.s3db
 
         table = self.table
 
@@ -1330,6 +1374,61 @@ def act_task_configure_form(table, task_id, task=None, issue=None, site_type=Non
                 field.writable = False
 
 # =============================================================================
+def act_task_update_history(record_id, query=None):
+    """
+        Update status history of tasks
+
+        Args:
+            record_id: a task record ID or a list|tuple|set of IDs
+            query: a query for tasks (with record_id=None)
+
+        Returns:
+            the number of history entries added
+    """
+
+    db = current.db
+    s3db = current.s3db
+
+    ttable = s3db.act_task
+
+    if isinstance(record_id, (list, tuple, set)):
+        query = (ttable.id.belongs(record_id))
+    elif record_id:
+        query = (ttable.id == record_id)
+    elif query is None:
+        return None
+
+    q = query & \
+        ((ttable.last_status == None) |
+         (ttable.status != ttable.last_status)) & \
+        (ttable.deleted == False)
+
+    rows = db(q).select(ttable.id,
+                        ttable.status,
+                        ttable.modified_by,
+                        ttable.modified_on,
+                        )
+    if not rows:
+        return 0
+
+    htable = s3db.act_task_history
+    updated = 0
+    for row in rows:
+        entry = {"task_id": row.id,
+                 "status": row.status,
+                 "date": row.modified_on,
+                 "user_id": row.modified_by,
+                 }
+        htable.insert(**entry)
+        row.update_record(last_status = row.status,
+                          modified_on = ttable.modified_on,
+                          modified_by = ttable.modified_by,
+                          )
+        updated += 1
+
+    return updated
+
+# =============================================================================
 def act_rheader(r, tabs=None):
     """ ACT resource headers """
 
@@ -1362,9 +1461,6 @@ def act_rheader(r, tabs=None):
                               ]
             rheader_title = "name"
 
-            rheader = S3ResourceHeader(rheader_fields, tabs, title=rheader_title)
-            rheader = rheader(r, table=resource.table, record=record)
-
         elif tablename == "act_issue":
             if not tabs:
                 tabs = [(T("Basic Details"), None),
@@ -1377,9 +1473,19 @@ def act_rheader(r, tabs=None):
                               ]
             rheader_title = "name"
 
+        elif tablename == "act_task":
+            if not tabs:
+                tabs = [(T("Basic Details"), None),
+                        # (T("Status History"), "task_history"),
+                        ]
 
-            rheader = S3ResourceHeader(rheader_fields, tabs, title=rheader_title)
-            rheader = rheader(r, table=resource.table, record=record)
+            rheader_fields = [["date", "organisation_id"],
+                              ["status"],
+                              ]
+            rheader_title = "name"
+
+        rheader = S3ResourceHeader(rheader_fields, tabs, title=rheader_title)
+        rheader = rheader(r, table=resource.table, record=record)
 
     return rheader
 
