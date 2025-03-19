@@ -214,8 +214,8 @@ def act_issue_controller(**attr):
 
             # Configure list fields and filters, accordingly
             list_fields = ["date",
-                           "status",
                            "name",
+                           "status",
                            "resolution",
                            ]
             if multiple_orgs:
