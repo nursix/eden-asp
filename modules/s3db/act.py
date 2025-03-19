@@ -452,7 +452,7 @@ class ActivityIssueModel(DataModel):
                            represent = status_represent,
                            ),
                      Field("resolution",
-                           label = T("Resolution"),
+                           label = T("Resolution#issue"),
                            default = "PENDING",
                            requires = IS_IN_SET(issue_resolution, zero=None, sort=False),
                            represent = represent_option(dict(issue_resolution)),
@@ -476,7 +476,7 @@ class ActivityIssueModel(DataModel):
 
         # CRUD Strings
         crud_strings[tablename] = Storage(
-            label_create = T("Add Issue Report"),
+            label_create = T("Create Issue Report"),
             title_display = T("Issue Report"),
             title_list = T("Issue Reports"),
             title_update = T("Edit Issue Report"),
@@ -485,7 +485,7 @@ class ActivityIssueModel(DataModel):
             msg_record_created = T("Issue Report added"),
             msg_record_modified = T("Issue Report updated"),
             msg_record_deleted = T("Issue Report deleted"),
-            msg_list_empty = T("No Issue Reports currently defined"),
+            msg_list_empty = T("No Issue Reports currently registered"),
             )
 
         # Field Template
@@ -535,7 +535,7 @@ class ActivityIssueModel(DataModel):
         resolution = data.get("resolution")
 
         if status == "CLOSED" and resolution in (None, "PENDING"):
-            form.errors.resolution = T("Resolution required when closing issue")
+            form.errors.resolution = T("Resolution required##issue")
 
     # -------------------------------------------------------------------------
     @staticmethod
@@ -637,8 +637,8 @@ class ActivityTaskModel(DataModel):
         task_status = (("PENDING", T("Pending")),
                        ("STARTED", T("Started")),
                        ("FEEDBACK", T("Feedback")),
-                       ("DONE", T("Done")),
                        ("ONHOLD", T("On Hold")),
+                       ("DONE", T("Done")),
                        ("CANCELED", T("Canceled")),
                        ("OBSOLETE", T("Obsolete")),
                        )
@@ -708,6 +708,7 @@ class ActivityTaskModel(DataModel):
                                         options = OrderedDict(task_status),
                                         default = ["PENDING", "STARTED", "FEEDBACK", "ONHOLD"],
                                         cols = 4,
+                                        orientation = "rows",
                                         sort = False,
                                         ),
                           DateFilter("date",
@@ -727,7 +728,7 @@ class ActivityTaskModel(DataModel):
 
         # CRUD Strings
         crud_strings[tablename] = Storage(
-            label_create = T("Add Work Order"),
+            label_create = T("Create Work Order"),
             title_display = T("Work Order"),
             title_list = T("Work Orders"),
             title_update = T("Edit Work Order"),
@@ -736,7 +737,7 @@ class ActivityTaskModel(DataModel):
             msg_record_created = T("Work Order added"),
             msg_record_modified = T("Work Order updated"),
             msg_record_deleted = T("Work Order deleted"),
-            msg_list_empty = T("No Work Orders currently defined"),
+            msg_list_empty = T("No Work Orders currently registered"),
             )
 
         # ---------------------------------------------------------------------

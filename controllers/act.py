@@ -174,9 +174,12 @@ def my_open_tasks():
         resource.add_filter(query)
 
         # Reconfigure resource
-        resource.configure(#insertable = False,
+        resource.configure(insertable = False,
                            deletable = False,
                            )
+
+        # Adjust list title for perspective
+        response.s3.crud_strings["act_task"]["title_list"] = T("My Work Orders")
 
         return result
     s3.prep = prep
