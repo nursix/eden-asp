@@ -186,7 +186,7 @@ def config(settings):
     settings.customise_act_activity_controller = act_activity_controller
     settings.customise_act_beneficiary_resource = act_beneficiary_resource
     settings.customise_act_issue_controller = act_issue_controller
-    # settings.customise_act_task_controller = act_task_controller
+    settings.customise_act_task_controller = act_task_controller
 
     settings.act.issue_site_type = "cr_shelter"
 

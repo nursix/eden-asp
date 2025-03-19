@@ -238,6 +238,7 @@ def act_issue_controller(**attr):
                                                 options = OrderedDict(status_opts),
                                                 default = open_status,
                                                 cols = 3,
+                                                orientation = "rows",
                                                 sort = False,
                                                 ),
                                   DateFilter("date",
@@ -265,10 +266,10 @@ def act_task_controller(**attr):
 
     s3 = current.response.s3
 
-    # T = current.T
+    T = current.T
 
-    # db = current.db
-    # s3db = current.s3db
+    db = current.db
+    s3db = current.s3db
 
     # Custom prep
     standard_prep = s3.prep
@@ -276,8 +277,76 @@ def act_task_controller(**attr):
         # Call standard prep
         result = standard_prep(r) if callable(standard_prep) else True
 
-        # TODO Configure filters and list fields (see issue)
+        resource = r.resource
 
+        # Configure filters and list fields
+        if not r.component:
+            my_open_tasks = r.function == "my_open_tasks"
+
+            # Lookup the organisations and sites the user can read tasks for
+            organisation_ids = permitted_orgs("read", "act_task")
+            multiple_orgs = len(organisation_ids) > 1
+            if organisation_ids:
+                stable = s3db.cr_shelter
+                query = (stable.organisation_id.belongs(organisation_ids)) & \
+                        (stable.deleted == False)
+                shelters = db(query).select(stable.id, limitby=(0, 2))
+                any_shelters = bool(shelters)
+                multiple_shelters = len(shelters) > 1
+            else:
+                any_shelters = multiple_shelters = False
+
+            # Configure list fields and filters, accordingly
+            organisation_id = "organisation_id" if multiple_orgs else None
+            site_id = "site_id" if multiple_orgs and any_shelters or multiple_shelters else None
+            human_resource_id = None if my_open_tasks else "human_resource_id"
+            list_fields = ["date",
+                           organisation_id,
+                           site_id,
+                           "name",
+                           "issue_id",
+                           human_resource_id,
+                           "status",
+                           "comments",
+                           ]
+
+            if not r.record and r.interactive:
+                # Status filter options
+                status_filter_opts = s3db.act_task_status_opts
+                if my_open_tasks:
+                    status_filter_opts = [(k, v) for k, v in status_filter_opts
+                                                 if k in {"PENDING", "STARTED", "FEEDBACK"}]
+                    default_status_filter = None
+                else:
+                    default_status_filter = ["PENDING", "STARTED", "FEEDBACK", "ONHOLD"]
+
+                # Base filters
+                filter_widgets = [TextFilter(["name",
+                                              # "details",
+                                              ],
+                                             label = T("Search"),
+                                             ),
+                                  OptionsFilter("status",
+                                                options = OrderedDict(status_filter_opts),
+                                                default = default_status_filter,
+                                                cols = 4,
+                                                orientation = "rows",
+                                                sort = False,
+                                                ),
+                                  DateFilter("date",
+                                             hidden = True,
+                                             ),
+                                  ]
+                if multiple_orgs:
+                    filter_widgets.insert(2, OptionsFilter("organisation_id", hidden=True))
+                if multiple_orgs and any_shelters or multiple_shelters:
+                    filter_widgets.insert(3, OptionsFilter("site_id", hidden=True))
+            else:
+                filter_widgets = None
+
+            resource.configure(filter_widgets = filter_widgets,
+                               list_fields = list_fields,
+                               )
         return result
     s3.prep = prep
 

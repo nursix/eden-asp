@@ -200,9 +200,10 @@ class OptionsMenu(default.OptionsMenu):
             menu = cls.org()
         else:
             if current.s3db.act_task_is_manager():
-                tasks = M("Work Orders", link=False)(
-                            M("Overview", f="task"),
+                tasks = M("Work Orders", f="task")(
                             M("My Work Orders", f="my_open_tasks"),
+                            M("All Work Orders", f="task"),
+                            M("Create", m="create"),
                             )
             else:
                 tasks = M("My Work Orders", f="my_open_tasks")
