@@ -170,7 +170,7 @@ def my_open_tasks():
         resource.add_filter(query)
 
         # Filter to actionable statuses
-        query = FS("status").belongs(("PENDING", "STARTED", "FEEDBACK"))
+        query = FS("status").belongs(("PENDING", "STARTED", "FEEDBACK", "ONHOLD"))
         resource.add_filter(query)
 
         # Reconfigure resource
