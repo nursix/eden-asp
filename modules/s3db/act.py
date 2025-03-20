@@ -731,6 +731,7 @@ class ActivityTaskModel(DataModel):
                   onaccept = self.task_onaccept,
                   ondelete = self.task_ondelete,
                   orderby = "%s.date desc" % tablename,
+                  update_realm = True,
                   )
 
         # CRUD Strings
