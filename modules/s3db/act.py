@@ -936,8 +936,11 @@ class act_IssueRepresent(S3Represent):
             if not current.auth.permission.has_permission("read", c="act", f="issue"):
                 self.show_link = False
         if self.show_link:
-            subject = A(subject, _href=URL(c="act", f="issue", args=[row.id], extension=""))
-
+            subject = A(subject, _href=URL(c = "act",
+                                           f = "issue",
+                                           args = [row.id, "read"],
+                                           extension = "",
+                                           ))
         if self.full_text:
             issue_repr = DIV(H4(date, subject), _class="issue-full")
 
