@@ -590,7 +590,7 @@ class ActivityIssueModel(DataModel):
         status = record.status
         if status in ("ONHOLD", "CLOSED"):
             # Update status of all related tasks
-            task_open = ("PENDING", "STARTED", "FEEDBACK")
+            task_open = ("PENDING", "STARTED", "FEEDBACK", "ONHOLD")
             new_status = "ONHOLD" if status == "ONHOLD" else "OBSOLETE"
             query = related_tasks & \
                     (ttable.status.belongs(task_open)) & \
@@ -1157,17 +1157,22 @@ def act_issue_configure_form(table, issue_id, issue=None, site_type=None, hide_s
     act_issue_set_status_opts(table, issue_id, record=issue)
 
     # Configure other fields
+    readonly, hidden = set(), set()
     if not act_task_is_manager():
-        readonly = ("status", "resolution")
+        readonly |= {"status", "resolution"}
         status = issue.status if issue else "NEW"
         if status != "NEW":
-            readonly += ("organisation_id", "site_id", "name", "description")
+            readonly |= {"organisation_id", "site_id", "name", "description"}
         if status == "CLOSED":
-            readonly += ("comments",)
-        for fn in readonly:
-            field = table[fn]
-            field.writable = False
-            field.comment = None
+            readonly |= {"comments"}
+    if not issue_id:
+        hidden = {"date", "status", "resolution", "comments"}
+        readonly |= hidden
+    for fn in readonly:
+        field = table[fn]
+        field.readable = fn not in hidden
+        field.writable = False
+        field.comment = None
 
 # =============================================================================
 def act_issue_update_status(issue_id):
@@ -1365,9 +1370,6 @@ def act_task_configure_form(table, task_id, task=None, issue=None, site_type=Non
         if act_task_is_manager():
             if task.status != "PENDING":
                 table.name.writable = False
-            if task.status not in ("PENDING", "FEEDBACK", "ONHOLD"):
-                table.details.writable = False
-                table.human_resource_id.writable = False
         else:
             for fn in ("name", "details", "human_resource_id"):
                 field = table[fn]
