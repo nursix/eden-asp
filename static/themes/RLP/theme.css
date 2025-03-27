@@ -535,6 +535,29 @@ button.toggle-text {
 }
 
 /* line 349, ../../default/scss/theme/_represent.scss */
+.issue-date {
+  display: block;
+  font-size: 0.75rem;
+  color: #666;
+}
+
+/* line 354, ../../default/scss/theme/_represent.scss */
+.issue-full {
+  border: 1px solid #ccc;
+  background-color: #fdf7de;
+  padding: 0.5rem 0.75rem;
+}
+/* line 358, ../../default/scss/theme/_represent.scss */
+.issue-full h4 {
+  font-size: 1rem;
+}
+/* line 361, ../../default/scss/theme/_represent.scss */
+.issue-full .issue-description {
+  font-size: 0.85rem;
+  font-style: italic;
+}
+
+/* line 370, ../../default/scss/theme/_represent.scss */
 .hazard-neg, .hazard-pos {
   display: inline-block;
   width: 20px;
@@ -546,17 +569,17 @@ button.toggle-text {
   background-position: center;
 }
 
-/* line 360, ../../default/scss/theme/_represent.scss */
+/* line 381, ../../default/scss/theme/_represent.scss */
 .hazard-bio.hazard-pos {
   background-image: url(../../img/hazard/bio.png);
 }
 
-/* line 363, ../../default/scss/theme/_represent.scss */
+/* line 384, ../../default/scss/theme/_represent.scss */
 .hazard-tox.hazard-pos {
   background-image: url(../../img/hazard/tox.png);
 }
 
-/* line 366, ../../default/scss/theme/_represent.scss */
+/* line 387, ../../default/scss/theme/_represent.scss */
 .hazard-rad.hazard-pos {
   background-image: url(../../img/hazard/rad.png);
 }
