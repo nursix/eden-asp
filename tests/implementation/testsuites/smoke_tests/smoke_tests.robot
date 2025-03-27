@@ -35,7 +35,7 @@ Get All URLs From Current Page
     [Documentation]  Gets all the URLs from the current page
     ...  by executing the javascript in the file get_links.js
     ${output}=  Execute Javascript  ${CURDIR}/get_links.js
-    [Return]  ${output}
+    RETURN  ${output}
 
 Set Selenium Timeouts
     Set Selenium Timeout  ${PAGE LOAD TIMEOUT}
@@ -49,7 +49,7 @@ Check For Invalidity
     ${message}=  Get Text  xpath=/html/body/h1
     Log  FAILED: ${Failed URL} - ${message}  WARN
     Append To File  ${Log File}  FAILED: ${Failed URL} - ${message}\n
-    [Return]  ${1}
+    RETURN  ${1}
 
 Check For Errors
     [Documentation]  Look for invalidity or tickets. If found returns 1
@@ -66,7 +66,7 @@ Check For Errors
     Login To Eden If Not Logged In  ${VALID USER}  ${VALID PASSWORD}
     Return From Keyword If  ${passed}!=${0}  ${1}
 
-    [Return]  ${0}
+    RETURN  ${0}
 
 Visit URLs And Return ToVisit
     [Documentation]  Visits the URLs present in URL List and
@@ -92,7 +92,7 @@ Visit URLs And Return ToVisit
       ${Current Urls}=  Get All URLs From Current Page
       ${To Visit}=  Add Current Urls to ToVisit Urls  ${Current Urls}  ${To Visit}  ${URL List}
     END
-    [Return]  ${To Visit}  ${URLs Failed}
+    RETURN  ${To Visit}  ${URLs Failed}
 
 Add Current Urls to ToVisit Urls
     [Documentation]  This appends the URLs parsed from the current
@@ -107,7 +107,7 @@ Add Current Urls to ToVisit Urls
     END
 
     Remove Duplicates  ${To Visit}
-    [Return]  ${To Visit}
+    RETURN  ${To Visit}
 
 Create Log File
     ${name}=  Get Variable Value  ${filename}  default

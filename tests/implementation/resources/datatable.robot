@@ -10,7 +10,7 @@ ${DataTableID}      datatable
 Get DataTable Row Count
     [Documentation]  Finds the total number of records in the datatable, and returns the value
     ${count}=  Execute JavaScript  return $('#datatable').dataTable().fnSettings()._iRecordsTotal;
-    [Return]  ${count}
+    RETURN  ${count}
 
 #Testsuite:hrm; Testcase:Finding Staff By Organization
 Should Give X Results
@@ -50,7 +50,7 @@ Get DataTable Column By Label
     ${column}=  Execute JavaScript  return $('#${DataTableID} th').filter(function(){
                 ...                 return $(this).text() === '${label}';}).index()+1;
     Should Be True  ${column} > ${0}  Column not found in datatable: "${label}"
-    [Return]  ${column}
+    RETURN  ${column}
 
 DataTable Search
     [Arguments]  ${text}
