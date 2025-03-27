@@ -93,7 +93,7 @@ Check for ticket and catch exception
     # Return errors if the Failed URL is given
     Return From Keyword if  ${passed}  @{With Failed URL}
 
-    [Return]  ${1}
+    RETURN  ${1}
 
 #Resources: base.txt; keyword: Check for ticket and catch exception
 Login To Admin Interface If Not Logged In
