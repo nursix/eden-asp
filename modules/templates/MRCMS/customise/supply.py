@@ -194,6 +194,7 @@ def supply_distribution_item_resource(r, tablename):
                                                   linkto = URL(c = "supply",
                                                                f = "person",
                                                                args = ["[id]", "distribution_item"],
+                                                               extension = "",
                                                                ),
                                                   )
         text_filter_fields.extend(["person_id$pe_label",
