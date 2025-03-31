@@ -64,12 +64,12 @@ class MainMenu(default.MainMenu):
             org_menu = MM("Organizations", c=c, f=f)
 
         return [
-            MM("Clients", c=("dvr", "pr"), f=("person", "*")),
+            MM("Beneficiaries", c=("dvr", "pr"), f=("person", "*")),
             # MM("Requests", c="req", f="req"),
             # MM("Assets", c="asset", f="asset"),
             org_menu,
             # MM("Map", c="gis", f="index"),
-            MM("To Do", c="act", f=("my_open_tasks", "task", "issue")),
+            MM("Internal tasks", c="act", f=("my_open_tasks", "task", "issue")),
             ]
 
     # -------------------------------------------------------------------------

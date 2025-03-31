@@ -5,9 +5,11 @@
 """
 
 from collections import OrderedDict
-
 from gluon import current
 from gluon.storage import Storage
+
+
+
 
 # =============================================================================
 def config(settings):
@@ -16,7 +18,6 @@ def config(settings):
 
     settings.base.system_name = "Beneficiary Tracking and Assistance Coordination"
     settings.base.system_name_short = "BETRA"
-
     # PrePopulate data
     settings.base.prepopulate += ("BETRA",)
     #settings.base.prepopulate_demo += ("BETRA/Demo",)
@@ -115,7 +116,6 @@ def config(settings):
     # Defaults for custom settings
     #
     settings.custom.autogenerate_case_ids = True
-
     settings.custom.context_org_name = "Eden ASP"
 
     settings.custom.org_menu_logo = ("default", "img", "eden_asp_small.png")
@@ -299,6 +299,18 @@ def config(settings):
     #settings.dvr.manage_transferability = True
     # Uncomment this to have allowance payments update last_seen_on
     #settings.dvr.payments_update_last_seen_on = True
+    
+    from .customise.dvr import dvr_note_resource, \
+                                dvr_case_activity_resource, \
+                                dvr_task_resource
+               
+                               
+    settings.customise_dvr_note_resource = dvr_note_resource
+    settings.customise_dvr_case_activity_resource = dvr_case_activity_resource
+    settings.customise_dvr_task_resource = dvr_task_resource
+    
+
+
 
     # -------------------------------------------------------------------------
     # Human Resource Module Settings
@@ -334,7 +346,6 @@ def config(settings):
     settings.pr.generate_pe_label = True
 
     from .customise.pr import pr_person_controller
-
     settings.customise_pr_person_controller = pr_person_controller
 
     # -------------------------------------------------------------------------
@@ -343,7 +354,10 @@ def config(settings):
     settings.req.req_type = ("Stock",)
     settings.req.use_commit = False
     settings.req.recurring = False
+    #--------------------------------------------------------------------------
 
+
+    #-------------------------------------------------------------------------
 
     # -------------------------------------------------------------------------
     # Supply module settings
@@ -476,7 +490,7 @@ def config(settings):
         #    module_type = 10
         #)),
         ("dvr", Storage(
-            name_nice = T("Clients"),
+            name_nice = T("Beneficiaries"),
             restricted = True,
             module_type = 10,
         )),
