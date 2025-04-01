@@ -302,12 +302,14 @@ def config(settings):
     
     from .customise.dvr import dvr_note_resource, \
                                 dvr_case_activity_resource, \
-                                dvr_task_resource
+                                dvr_task_resource, \
+                                dvr_note_type_resource
                
                                
     settings.customise_dvr_note_resource = dvr_note_resource
     settings.customise_dvr_case_activity_resource = dvr_case_activity_resource
     settings.customise_dvr_task_resource = dvr_task_resource
+    settings.customise_dvr_note_type_resource = dvr_note_type_resource
     
 
 
