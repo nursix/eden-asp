@@ -5,10 +5,9 @@
 """
 
 from collections import OrderedDict
+
 from gluon import current
 from gluon.storage import Storage
-
-
 
 # =============================================================================
 def config(settings):
@@ -249,15 +248,15 @@ def config(settings):
     # Allow marking case activities as emergencies
     settings.dvr.case_activity_emergency = True
     # Disable recording of free-text need details
-    #settings.dvr.case_activity_need_details = False
+    settings.dvr.case_activity_need_details = False
     # Enable/disable linking of case activities to relevant vulnerabilities
     settings.dvr.case_activity_vulnerabilities = False
     # Enable/disable free-text response details
     #settings.dvr.case_activity_response_details = True
     # Disable case activity inline updates
-    #settings.dvr.case_activity_updates = False
-    # Enable/disable recording of free-text case activity outcome
-    #settings.dvr.case_activity_outcome = True
+    settings.dvr.case_activity_updates = False
+    # Disable recording of free-text case activity outcome
+    # settings.dvr.case_activity_outcome = False
     # Enable/disable recording of improvement level in case activities
     settings.dvr.case_activity_achievement = False
     # Disable follow-up fields in case activities
@@ -266,31 +265,31 @@ def config(settings):
     settings.dvr.case_activity_documents = True
 
     # Manage individual response actions in case activities
-    settings.dvr.manage_response_actions = True
+    #settings.dvr.manage_response_actions = True
     # Responses use date+time
-    settings.dvr.response_use_time = True
+    #settings.dvr.response_use_time = True
     # Response planning uses separate due-date
-    settings.dvr.response_due_date = False
+    #settings.dvr.response_due_date = False
     # Use response themes
-    settings.dvr.response_themes = True
+    #settings.dvr.response_themes = True
     # Document response details per theme
-    settings.dvr.response_themes_details = True
+    #settings.dvr.response_themes_details = True
     # Document response efforts per theme
-    settings.dvr.response_themes_efforts = True
+    #settings.dvr.response_themes_efforts = True
     # Response themes are org-specific
-    settings.dvr.response_themes_org_specific = False
+    #settings.dvr.response_themes_org_specific = False
     # Use response types
-    settings.dvr.response_types = True
+    #settings.dvr.response_types = True
     # Link response actions to vulnerabilities addressed
     #settings.dvr.response_vulnerabilities = True
     # Response types hierarchical
-    settings.dvr.response_types_hierarchical = True
+    #settings.dvr.response_types_hierarchical = True
     # Response themes organized by sectors
-    settings.dvr.response_themes_sectors = True
+    #settings.dvr.response_themes_sectors = True
     # Response themes linked to needs
-    settings.dvr.response_themes_needs = True
+    #settings.dvr.response_themes_needs = True
     # Auto-link responses to case activities
-    settings.dvr.response_activity_autolink = True
+    #settings.dvr.response_activity_autolink = True
 
     # Uncomment this to enable tracking of transfer origin/destination sites
     #settings.dvr.track_transfer_sites = True
@@ -298,20 +297,17 @@ def config(settings):
     #settings.dvr.manage_transferability = True
     # Uncomment this to have allowance payments update last_seen_on
     #settings.dvr.payments_update_last_seen_on = True
-    
-    from .customise.dvr import dvr_case_activity_resource, \
-                                dvr_task_resource, \
-                                dvr_note_resource
-                                #dvr_note_type_resource
-               
-                               
+
+    from .customise.dvr import dvr_task_resource, \
+                               dvr_note_resource
+                               #dvr_case_activity_resource
+                               #dvr_note_type_resource
+
+
     settings.customise_dvr_note_resource = dvr_note_resource
-    settings.customise_dvr_case_activity_resource = dvr_case_activity_resource
     settings.customise_dvr_task_resource = dvr_task_resource
+    #settings.customise_dvr_case_activity_resource = dvr_case_activity_resource
     #settings.customise_dvr_note_type_resource = dvr_note_type_resource
-    
-
-
 
     # -------------------------------------------------------------------------
     # Human Resource Module Settings
