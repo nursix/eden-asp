@@ -69,7 +69,7 @@ class MainMenu(default.MainMenu):
             # MM("Assets", c="asset", f="asset"),
             org_menu,
             # MM("Map", c="gis", f="index"),
-            MM("Internal tasks", c="act", f=("my_open_tasks", "task", "issue")),
+            MM("Internal Tasks", c="act", f=("my_open_tasks", "task", "issue")),
             ]
 
     # -------------------------------------------------------------------------
