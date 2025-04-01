@@ -17,4 +17,7 @@ def pr_person_controller(**attr):
         attr["rheader"] = hrm_rheader
     elif current.request.controller == "default":
         attr["rheader"] = default_rheader
+
     return attr
+
+# END =========================================================================
