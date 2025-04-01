@@ -1,14 +1,14 @@
 FROM python:3.11-slim
 
-# Zainstaluj make i zależności
+# Install make and dependencies
 RUN apt-get update && \
     apt-get install -y build-essential make && \
     pip install sphinx sphinx_rtd_theme && \
     apt-get clean
 
-# Katalog roboczy
+# Working directory
 WORKDIR /docs
 
-# Domyślna komenda
+# Default command
 CMD ["make", "html"]
 

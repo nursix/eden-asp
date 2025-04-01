@@ -1,27 +1,34 @@
+"""
+    DVR module customisations for BETRA
+
+    License: MIT
+"""
+
 from gluon import current
 from core import IS_IN_SET
 
-# Make note type optional and free to type yourself
+# Remove Note Type field in note adding form 
 def dvr_note_resource(r, tablename):
     T = current.T
     table = current.s3db.dvr_note
-
-    
+ 
     if "note_type_id" in table.fields:
-        table.note_type_id.requires = None
-        table.note_type_id.notnull = False
-        table.note_type_id.label = T("Note Type (optional)")
+     table.note_type_id.readable = False
+     table.note_type_id.writable = False
+     
 
 
- # Change of label of note type from name and surname to name of note
+"""
+Change of label of note type from name and surname to name of note (for future use if TRATWA will want this functionality ) 
 def dvr_note_type_resource(r, tablename):
     T = current.T
     table = current.s3db.dvr_note_type
+    table.name.label = T("Name of Note Type")
+    table.name.requires = True
+"""   
 
-    table.name.label = T("Name of note")
 
-
-#removing fields or changing labels (depends)
+#Removing Initial Situation Details from need adding form
 def dvr_case_activity_resource(r, tablename):
     T = current.T
     table = current.s3db.dvr_case_activity
@@ -30,15 +37,27 @@ def dvr_case_activity_resource(r, tablename):
     if "need_details" in table.fields:
         table.need_details.readable = False
         table.need_details.writable = False
-        # table.need_details.label = T("Comment") --------> how to change tha label bc I dont have idea? i tried different approaches and didnt make it
+
+    #TODO remove Counseling nad Progress fields
 
 
-#change of label in task from due date to report date 
 def dvr_task_resource(r, tablename):
     T = current.T
     s3db = current.s3db
     table = s3db.dvr_task
-    table.due_date.label = T("Report Date")
+    field = table.date
+
+#Removing Due Date field from task form
+    table.due_date.readbale = False
+    table.due_date.writable = False
+
+#Adding Report Date field to the form 
+    field.label = T("Report Date")
+    field.readable = True
+    field.writable = True
+
+
+
 
 
 
