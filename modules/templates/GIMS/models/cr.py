@@ -590,20 +590,12 @@ class CRReceptionCenterModel(DataModel):
         # Compute allocable capacity
         if COMPUTE_ALLOCABLE_CAPACITY:
             # Sanitize free_allocable_capacity
-            free_allocable_capacity = record.free_allocable_capacity
-            if free_allocable_capacity > free_capacity:
-                free_allocable_capacity = free_capacity
-            if free_allocable_capacity < 0:
-                free_allocable_capacity = 0
+            free_allocable_capacity = max(min(record.free_allocable_capacity, free_capacity), 0)
             # Compute maximum allocable capacity
             allocable_capacity = min(capacity, free_allocable_capacity + total)
         else:
             # Sanitize allocable_capacity
-            allocable_capacity = record.allocable_capacity
-            if allocable_capacity > capacity:
-                allocable_capacity = capacity
-            if allocable_capacity < 0:
-                allocable_capacity = 0
+            allocable_capacity = max(min(record.allocable_capacity, capacity), 0)
             # Compute free allocable capacity
             free_allocable_capacity = max(0, allocable_capacity - total)
 
@@ -1299,10 +1291,10 @@ class OccupancyData(CRUDMethod):
         # Import OpenPyXL
         try:
             from openpyxl import Workbook
-        except ImportError:
+        except ImportError as e:
             error = current.T("Export failed: OpenPyXL library not installed on server")
             current.log.error(error)
-            raise HTTP(503, body=error)
+            raise HTTP(503, body=error) from e
 
         # Create the workbook
         wb = Workbook(iso_dates=True)
