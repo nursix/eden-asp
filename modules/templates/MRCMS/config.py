@@ -387,6 +387,7 @@ def config(settings):
 
     from .customise.dvr import dvr_home, \
                                dvr_case_resource, \
+                               dvr_need_resource, \
                                dvr_case_activity_resource, \
                                dvr_case_activity_controller, \
                                dvr_response_action_resource, \
@@ -405,6 +406,7 @@ def config(settings):
 
     settings.customise_dvr_home = dvr_home
     settings.customise_dvr_case_resource = dvr_case_resource
+    settings.customise_dvr_need_resource = dvr_need_resource
     settings.customise_dvr_case_activity_resource = dvr_case_activity_resource
     settings.customise_dvr_case_activity_controller = dvr_case_activity_controller
     settings.customise_dvr_response_action_resource = dvr_response_action_resource

@@ -261,6 +261,15 @@ def dvr_note_resource(r, tablename):
                    )
 
 # -------------------------------------------------------------------------
+def dvr_need_resource(r, tablename):
+
+    table = current.s3db.dvr_need
+
+    # Expose code
+    field = table.code
+    field.readable = field.writable = True
+
+# -------------------------------------------------------------------------
 def dvr_case_activity_resource(r, tablename):
 
     T = current.T
