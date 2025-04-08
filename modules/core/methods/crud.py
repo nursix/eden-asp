@@ -483,25 +483,25 @@ class BasicCRUD(CRUDMethod):
                                           format = representation)
 
         elif representation == "csv":
-            import cgi
             import csv
             csv.field_size_limit(1000000000)
             infile = request.vars.filename
-            if isinstance(infile, cgi.FieldStorage) and infile.filename:
-                infile = infile.file
+            is_upload = hasattr(infile, "file") and hasattr(infile, "filename")
+            if is_upload and infile.filename:
+                openfile = lambda i: i.file
             else:
-                try:
-                    infile = open(infile, "rb")
-                except IOError:
-                    session.error = current.T("Cannot read from file: %(filename)s") % \
-                                                {"filename": infile}
-                    redirect(r.url(method="", representation="html"))
+                openfile = lambda i: open(i, "rb")
             try:
-                self.import_csv(infile, table=table)
-            except:
-                session.error = current.T("Unable to parse CSV file or file contains invalid data")
-            else:
-                session.confirmation = current.T("Data uploaded")
+                with openfile(infile) as source:
+                    try:
+                        self.import_csv(source, table=table)
+                    except:
+                        session.error = current.T("Unable to parse CSV file or file contains invalid data")
+                    else:
+                        session.confirmation = current.T("Data uploaded")
+            except IOError:
+                session.error = current.T("Cannot read from file: %(filename)s") % {"filename": infile}
+                redirect(r.url(method="", representation="html"))
 
         else:
             r.error(415, current.ERROR.BAD_FORMAT)

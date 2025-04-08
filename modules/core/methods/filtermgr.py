@@ -25,7 +25,7 @@
     OTHER DEALINGS IN THE SOFTWARE.
 """
 
-__all__ = ("S3Filter",
+__all__ = ("FilterManager",
            )
 
 import json
@@ -38,7 +38,7 @@ from ..tools import JSONSEPARATORS
 from .base import CRUDMethod
 
 # =============================================================================
-class S3Filter(CRUDMethod):
+class FilterManager(CRUDMethod):
     """ Back-end for filter forms """
 
     # -------------------------------------------------------------------------

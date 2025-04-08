@@ -498,8 +498,8 @@ class DocumentModel(DataModel):
                 form_vars.name = doc.filename
 
         # Do a checksum on the file to see if it's a duplicate
-        #import cgi
-        #if isinstance(doc, cgi.FieldStorage) and doc.filename:
+        #is_upload = hasattr(doc, "file") and hasattr(doc, "filename")
+        #if is_upload and doc.filename:
         #    f = doc.file
         #    form_vars.checksum = doc_checksum(f.read())
         #    f.seek(0)

@@ -415,11 +415,10 @@ def submission():
         auth.permission.fail()
 
     from io import StringIO
-    import cgi
     from lxml import etree
 
     source = request.post_vars.get("xml_submission_file", None)
-    if isinstance(source, cgi.FieldStorage):
+    if hasattr(source, "file") and hasattr(source, "filename"):
         if source.filename:
             xmlinput = source.file
         else:
