@@ -5732,6 +5732,8 @@ class PRImageLibraryModel(DataModel):
 class PRSavedFilterModel(DataModel):
     """ Saved Filters """
 
+    # TODO replace by usr_filter
+
     names = ("pr_filter",
              "pr_filter_id",
              )

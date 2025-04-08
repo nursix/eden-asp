@@ -2,6 +2,7 @@ from .base import *
 from .account import *
 from .anonymize import *
 from .cico import *
+from .colmgr import *
 from .crud import *
 from .checkpoint import Checkpoint
 from .distribution import Distribution

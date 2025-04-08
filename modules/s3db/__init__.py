@@ -36,6 +36,7 @@ from . import stats
 from . import supply
 from . import sync
 from . import transport
+from . import usr
 from . import vehicle
 from . import vol
 from . import water

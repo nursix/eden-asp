@@ -2099,14 +2099,7 @@ class S3Msg:
         if not channel:
             return "No Such RSS Channel: %s" % channel_id
 
-        # http://pythonhosted.org/feedparser
-        # Python 3.x: Requires pip install sgmllib3k
-        if sys.version_info[1] >= 7:
-            # Use 6.0.0b1 which is required for Python 3.7
-            import feedparser
-        else:
-            # Python 3.6 requires 5.2.1 with 2to3 run on it to prevent SSL: CERTIFICATE_VERIFY_FAILED
-            import feedparser5213 as feedparser
+        import feedparser
 
         # Basic Authentication
         username = channel.username

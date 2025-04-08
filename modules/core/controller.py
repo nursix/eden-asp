@@ -419,12 +419,12 @@ class CRUDRequest:
                 except ValueError:
                     continue
                 # Catch any non-str values
-                if type(value) is list:
+                if isinstance(value, list):
                     value = [s3_str(item)
                              if not isinstance(item, str) else item
                              for item in value
                              ]
-                elif type(value) is not str:
+                elif not isinstance(value, str):
                     value = s3_str(value)
 
                 filter_vars[s3_str(k)] = value
@@ -484,14 +484,16 @@ class CRUDRequest:
         methods = self._default_methods
 
         if not methods:
-            from .methods import RESTful, S3Filter, S3GroupedItemsReport, \
-                                 S3HierarchyCRUD, S3Map, S3Merge, S3MobileCRUD, \
-                                 S3Organizer, S3Profile, S3Report, S3Summary, \
-                                 S3XForms, Select, SpreadsheetImporter, TimePlot
+            from .methods import RESTful, FilterManager, ColumnConfigManager, \
+                                 S3GroupedItemsReport, S3HierarchyCRUD, S3Map, \
+                                 S3Merge, S3MobileCRUD, S3Organizer, S3Profile, \
+                                 S3Report, S3Summary, S3XForms, \
+                                 Select, SpreadsheetImporter, TimePlot
 
-            methods = {"deduplicate": S3Merge,
+            methods = {"columns": ColumnConfigManager,
+                       "deduplicate": S3Merge,
                        "fields": RESTful,
-                       "filter": S3Filter,
+                       "filter": FilterManager,
                        "grouped": S3GroupedItemsReport,
                        "hierarchy": S3HierarchyCRUD,
                        "import": SpreadsheetImporter,
@@ -798,20 +800,22 @@ class CRUDRequest:
         """
 
         if self.ajax or self.representation != "html":
-            headers = {"Content-Type":"application/json"}
+
             current.log.error(message)
+
+            headers = {"Content-Type":"application/json"}
             body = current.xml.json_message(success = False,
                                             statuscode = status,
                                             message = message,
                                             tree = tree,
                                             )
             raise HTTP(status, body=body, web2py_error=message, **headers)
+
+        current.session.error = message
+        if next is not None:
+            redirect(next)
         else:
-            current.session.error = message
-            if next is not None:
-                redirect(next)
-            else:
-                redirect(URL(r=self, f="index"))
+            redirect(URL(r=self, f="index"))
 
     # -------------------------------------------------------------------------
     def url(self,
@@ -1041,8 +1045,7 @@ class CRUDRequest:
         filename = "%s.%s" % (resourcename, extension)
         if filename in self.post_vars:
             p = self.post_vars[filename]
-            import cgi
-            if isinstance(p, cgi.FieldStorage) and p.filename:
+            if hasattr(p, "file") and hasattr(p, "filename") and p.filename:
                 return p.file
 
         # Look for stylesheet in file system
@@ -1086,17 +1089,17 @@ class CRUDRequest:
 
         source = []
         if content_type and content_type.startswith("multipart/"):
-            import cgi
             ext = ".%s" % self.representation
             post_vars = self.post_vars
             for v in post_vars:
                 p = post_vars[v]
-                if isinstance(p, cgi.FieldStorage) and p.filename:
+                is_upload = hasattr(p, "file") and hasattr(p, "filename")
+                if is_upload and p.filename:
                     self.files[p.filename] = p.file
                     if p.filename.endswith(ext):
                         source.append((v, p.file))
                 elif v.endswith(ext):
-                    if isinstance(p, cgi.FieldStorage):
+                    if is_upload:
                         source.append((v, p.value))
                     elif isinstance(p, str):
                         source.append((v, StringIO(p)))

@@ -79,12 +79,13 @@ class DataModel:
         self.prefix = module
 
         mandatory_models = ("auth",
-                            "sync",
-                            "s3",
                             "gis",
-                            "pr",
-                            "sit",
                             "org",
+                            "pr",
+                            "s3",
+                            "sit",
+                            "sync",
+                            "usr",
                             )
 
         if module is not None:
