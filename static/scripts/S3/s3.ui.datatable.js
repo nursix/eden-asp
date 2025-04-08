@@ -986,10 +986,6 @@
                         $('.collapsable').hide();
                    }
                 }
-
-                // Activate or refresh doubleScroll if required
-                self.doubleScroll();
-
             };
         },
 
@@ -1157,37 +1153,6 @@
                 }
                 colIdx++;
             }
-        },
-
-        /**
-         * Activate or refresh doubleScroll for the table container
-         *
-         * NB this function must be called again whenever the actual width
-         * property of the table changes, e.g.:
-         *
-         * - after reloading table contents (drawCallback)
-         * - after un-hiding a hidden data table (e.g. summary tabs)
-         * - ...
-         *
-         * It can therefore be called from the outside like:
-         *
-         *      $('#tableID').dataTableS3('doubleScroll');
-         */
-        doubleScroll: function() {
-
-            var el = $(this.element);
-
-            if (el.hasClass('doublescroll') && !el.hasClass('responsive')) {
-                try {
-                    el.closest('.dataTable_table').doubleScroll({
-                        contentElement: el,
-                        resetOnWindowResize: true
-                    });
-                } catch(e) {
-                    console.log('dataTableS3: doubleScroll not available');
-                }
-            }
-
         },
 
         // --------------------------------------------------------------------

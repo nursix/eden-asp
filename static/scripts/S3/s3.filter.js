@@ -1560,12 +1560,6 @@ S3.search = {};
             if (instance && instance.responsive) {
                 instance.responsive.recalc();
             }
-        } else if (dt.hasClass('doublescroll')) {
-            try {
-                dt.dataTableS3('doubleScroll');
-            } catch(e) {
-                // pass
-            }
         }
     };
 
