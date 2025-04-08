@@ -2210,11 +2210,6 @@ class S3Config(Storage):
 
         return self.ui.get("datatables_responsive", True)
 
-    def get_ui_datatables_double_scroll(self):
-        """ Render double scroll bars (top+bottom) for non-responsive data tables """
-
-        return self.ui.get("datatables_double_scroll", False)
-
     def get_ui_auto_open_update(self):
         """
             Render "Open" action buttons in datatables without explicit

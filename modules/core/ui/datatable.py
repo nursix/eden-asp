@@ -347,10 +347,6 @@ class DataTable:
                            for example: {"warning" : [1,3,6,7,9], "alert" : [2,10,13]}
                 dt_col_widths: dictionary of columns to apply a width to
                                for example: {1 : 15, 2 : 20}
-
-                ** Other Features
-                dt_double_scroll: Render double scroll bars (top+bottom), only available
-                                  with settings.ui.datatables_responsive=False
         """
 
         request = current.request
@@ -493,7 +489,6 @@ class DataTable:
                 a FORM instance
         """
 
-        request = current.request
         s3 = current.response.s3
         settings = current.deployment_settings
 
@@ -505,20 +500,6 @@ class DataTable:
             table_ids.append(table_id)
 
         attr_get = attr.get
-
-        # Double Scroll
-        if not settings.get_ui_datatables_responsive():
-            double_scroll = attr_get("dt_double_scroll")
-            if double_scroll is None:
-                double_scroll = settings.get_ui_datatables_double_scroll()
-            if double_scroll:
-                if s3.debug:
-                    script = "/%s/static/scripts/jquery.doubleScroll.js" % request.application
-                else:
-                    script = "/%s/static/scripts/jquery.doubleScroll.min.js" % request.application
-                if script not in s3.scripts:
-                    s3.scripts.append(script)
-                table.add_class("doublescroll")
 
         # Build the form
         form = FORM(_class="dt-wrapper")
