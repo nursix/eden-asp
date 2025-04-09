@@ -1204,15 +1204,20 @@ class ShelterStatus:
                 days: the planning horizon (latest planned check-in date)
             Returns:
                 integer
+
+            Note:
+                currently the planning horizon has no effect as there
+                is no "planned check-in date" field yet
         """
 
-        today = datetime.datetime.utcnow().date()
-        latest = today + relativedelta(days=days)
+        # TODO implement planning horizon?
+        #today = datetime.datetime.utcnow().date()
+        #latest = today + relativedelta(days=days)
+        #query &= (rtable.planned_date <= latest)
 
         rtable = current.s3db.cr_shelter_registration
         query = (rtable.shelter_id == self.shelter_id) & \
                 (rtable.registration_status == 1) & \
-                (rtable.check_in_date <= latest) & \
                 (rtable.deleted == False)
         num_persons = rtable.person_id.count(distinct=True)
         row = current.db(query).select(num_persons).first()
