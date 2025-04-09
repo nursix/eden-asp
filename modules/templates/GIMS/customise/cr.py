@@ -575,11 +575,10 @@ def cr_reception_center_resource(r, tablename):
     table = current.s3db.cr_reception_center
 
     # Field methods for computed values by estimated capacity
-    from core import s3_fieldmethod
-    from ..models.cr import CRReceptionCenterModel
+    from core import s3_fieldmethod, represent_occupancy
     table.occupancy_rate_estimate = s3_fieldmethod("occupancy_rate_estimate",
                                                    occupancy_rate_estimate,
-                                                   represent = CRReceptionCenterModel.occupancy_represent,
+                                                   represent = represent_occupancy,
                                                    )
     table.free_capacity_estimate = s3_fieldmethod("free_capacity_estimate",
                                                   free_capacity_estimate,
