@@ -10,11 +10,8 @@
  *
  * Server-side script in modules/s3/s3data.py.
  *
- * @copyright 2018-2021 (c) Sahana Software Foundation
+ * @copyright 2018 (c) Sahana Software Foundation
  * @license MIT
- *
- * requires jQuery 1.9.1+
- * requires jQuery UI 1.10 widget factory
  *
  * Global variables/functions:
  *
@@ -26,8 +23,8 @@
  *   - S3.dataTables.Actions           - global array of per-row actions
  *
  *   - $.searchDownloadS3              - provided by s3.filter.js, used for exports
- *   - S3.Utf8.decode                  - provided by S3.js
  *   - S3.addModals                    - provided by S3.js
+ *   - variableColumns                 - provided by s3.ui.columns.js (widget)
  */
 (function($, undefined) {
 
@@ -1767,121 +1764,13 @@
             if (selector.length && !$('.dt-variable-columns', container).length) {
                 // TODO make button icon a setting
                 let btn = $('<button type="button" class="dt-variable-columns"><i class="fa fa-columns"></button>');
-                btn.prop('title', i18n.selectColumns)
-                   .prependTo(container);
+
+                btn.hide()
+                   .prop('title', i18n.selectColumns)
+                   .prependTo(container)
+                   .variableColumns()
+                   .show();
             }
-        },
-
-        /**
-         * Opens the column selection dialog
-         */
-        _variableColumnsDialog: function() {
-
-            const selector = $('.column-selector', this.outerForm);
-            if (!selector.length) {
-                return;
-            }
-
-            // Render the dialog
-            const container = $('<div>').hide().appendTo($('body')),
-                  form = document.createElement('form'),
-                  $form = $(form).appendTo(container),
-                  ns = this.eventNamespace,
-                  self = this;
-
-            form.method = 'post';
-            form.enctype = 'multipart/form-data';
-
-            selector.first().clone().removeClass('hide').show().appendTo($form);
-
-            const dialog = container.show().dialog({
-                title: i18n.selectColumns,
-                autoOpen: false,
-                minHeight: 480,
-                maxHeight: 640,
-                minWidth: 320,
-                modal: true,
-                closeText: '',
-                open: function( /* event, ui */ ) {
-                    // Clicking outside of the popup closes it
-                    $('.ui-widget-overlay').off(ns).on('click' + ns, function() {
-                        dialog.dialog('close');
-                    });
-                    // Any cancel-form-btn button closes the popup
-                    $('.cancel-form-btn', $form).off(ns).on('click' + ns, function() {
-                        dialog.dialog('close');
-                    });
-                    // Submit button updates the form and submits it
-                    $('.submit-form-btn', $form).off(ns).on('click' + ns, function() {
-                        if ($('.column-select:checked', container).length) {
-                            self._variableColumnsApply(form);
-                            dialog.dialog('close');
-                        }
-                    });
-                    // Reset button restores the default
-                    $('.reset-form-btn', $form).off(ns).on('click' + ns, function() {
-                        self._variableColumnsApply(form, true);
-                    });
-                    // Make columns sortable
-                    $('.column-options', $form).sortable({
-                        placeholder: "sortable-placeholder",
-                        forcePlaceholderSize: true
-                    });
-                    // Alternative if drag&drop not available
-                    $('.column-left', $form).off(ns).on('click' + ns, function() {
-                        const row = $(this).closest('tr');
-                        row.insertBefore(row.prev());
-                    });
-                    $('.column-right', $form).off(ns).on('click' + ns, function() {
-                        const row = $(this).closest('tr');
-                        row.insertAfter(row.next());
-                    });
-                    // Select/deselect all
-                    $('.column-select-all', $form).off(ns).on('change' + ns, function() {
-                        let status = $(this).prop('checked');
-                        $('.column-select', $form).prop('checked', status);
-                    });
-                    $('.column-select', $form).off(ns).on('change' + ns, function() {
-                        let deselected = $('.column-select:not(:checked)', container).length;
-                        $('.column-select-all', $form).prop('checked', !deselected);
-                    });
-                },
-                close: function() {
-                    // Hide + remove the container
-                    $('.column-options', $form).sortable('destroy');
-                    container.hide().remove();
-                }
-            });
-
-            dialog.dialog('open');
-        },
-
-        /**
-         * Reloads the page, applying the column selection
-         */
-        _variableColumnsApply: function(form, reset) {
-
-            // Get a link to the current page
-            const link = document.createElement('a');
-            link.href = window.location.href;
-
-            const params = new URLSearchParams(link.search);
-            params.delete('aCols');
-
-            if (!reset) {
-                // Get selected columns indices from form
-                const selected = [];
-                $('.column-select:checked', form).each(function() {
-                    selected.push($(this).data('index'));
-                });
-                if (selected.length) {
-                    params.append('aCols', selected.join(','));
-                }
-            }
-
-            // Reload the page
-            link.search = params.toString();
-            window.location.href = link.href;
         },
 
         // --------------------------------------------------------------------
@@ -2365,11 +2254,6 @@
                 self._toggleGroup(trow, visibility);
             });
 
-            // Column selection
-            $('.dt-variable-columns', outerForm).off(ns).on('click' + ns, function() {
-                self._variableColumnsDialog();
-            });
-
             // Bulk selection
             if (this.tableConfig.bulkActions) {
 
@@ -2377,7 +2261,6 @@
                 el.on('click' + ns, '.bulk-select-all', this._bulkSelectAll());
 
                 // Bulk action checkbox handler
-//                 el.on('click' + ns, '.bulkcheckbox', this._bulkSelectRow());
                 el.on('change' + ns, '.bulkcheckbox', this._bulkSelectRow());
 
                 // Bulk action selector and execute-button

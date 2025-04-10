@@ -88,7 +88,7 @@ from gluon.sqlhtml import DoubleWidget, FormWidget, IntegerWidget, ListWidget, \
                           TextWidget, UploadWidget, SQLFORM
 from gluon.storage import Storage
 
-from ..tools import s3_get_foreign_key, s3_include_underscore, s3_mark_required, \
+from ..tools import s3_get_foreign_key, include_underscore_js, s3_mark_required, \
                     s3_str, s3_strip_markup, JSONERRORS, JSONSEPARATORS, \
                     S3Calendar, S3DateTime, IS_LAT_LON
 
@@ -2022,7 +2022,7 @@ class S3GroupedOptionsWidget(EdenFormWidget):
 
         if self.option_comment:
             widget_opts["comment"] = self.option_comment
-            s3_include_underscore()
+            include_underscore_js()
 
         script = '''$('#%s').groupedopts(%s)''' % \
                  (_id, json.dumps(widget_opts, separators=JSONSEPARATORS))

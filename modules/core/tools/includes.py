@@ -30,7 +30,7 @@ import os
 from gluon import current, HTTP, URL, XML
 
 # =============================================================================
-def s3_include_debug_css():
+def include_debug_css():
     """
         Generates html to include the css listed in
             /modules/templates/<theme>/css.cfg
@@ -53,8 +53,8 @@ def s3_include_debug_css():
 
     return XML(links)
 
-# =============================================================================
-def s3_include_debug_js():
+# -----------------------------------------------------------------------------
+def include_debug_js():
     """
         Generates html to include the js scripts listed in
             /static/scripts/tools/sahana.js.cfg
@@ -81,8 +81,40 @@ def s3_include_debug_js():
     scripts = "\n".join(script_template % scriptname for scriptname in files)
     return XML(scripts)
 
-# =============================================================================
-def s3_include_ext():
+# -----------------------------------------------------------------------------
+def include_datatable_js():
+    """
+        Add dataTable JS into the page; uses response.s3.datatable_opts
+        for optional scripts (responsive, variable columns etc.)
+    """
+
+    s3 = current.response.s3
+
+    scripts = s3.scripts
+    options = s3.datatable_opts
+
+    appname = current.request.application
+    append = lambda s: scripts.append("/%s/static/scripts/%s" % (appname, s))
+
+    if s3.debug:
+        append("jquery.dataTables.js")
+        if options:
+            if options.get("responsive"):
+                append("jquery.dataTables.responsive.js")
+            if options.get("variable_columns"):
+                append("S3/s3.ui.columns.js")
+        append("S3/s3.ui.datatable.js")
+    else:
+        append("jquery.dataTables.min.js")
+        if options:
+            if options.get("responsive"):
+                append("jquery.dataTables.responsive.min.js")
+            if options.get("variable_columns"):
+                append("S3/s3.ui.columns.min.js")
+        append("S3/s3.ui.datatable.min.js")
+
+# -----------------------------------------------------------------------------
+def include_ext_js():
     """
         Add ExtJS CSS & JS into a page for a Map
         - since this is normally run from MAP.xml() it is too late to insert into
@@ -139,8 +171,8 @@ def s3_include_ext():
 
     s3.ext_included = True
 
-# =============================================================================
-def s3_include_underscore():
+# -----------------------------------------------------------------------------
+def include_underscore_js():
     """
         Add Undercore JS into a page
         - for Map templates
