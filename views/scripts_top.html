@@ -16,7 +16,7 @@ function s3_debug(message, value) {
  <script src="/{{=appname}}/static/scripts/jquery-3.6.2.js"></script>
  <script src="/{{=appname}}/static/scripts/jquery-migrate-3.4.0.js"></script>
 {{pass}}
-{{=s3base.s3_include_debug_js()}}
+{{=s3base.include_debug_js()}}
 {{else:}}{{# Running in Production mode, so we want fewer compressed scripts to download}}
 <script>function s3_debug(){}</script>
 {{if s3.cdn:}}{{# For Sites Hosted on the Public Internet, using a CDN should provide better performance}}

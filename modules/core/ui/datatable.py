@@ -492,18 +492,27 @@ class DataTable:
         s3 = current.response.s3
         settings = current.deployment_settings
 
-        # Append table ID to response.s3.dataTableID
-        table_ids = s3.dataTableID
+        # Append table ID to response.s3.datatable_id
+        table_ids = s3.datatable_id
         if not table_ids or not isinstance(table_ids, list):
-            s3.dataTableID = [table_id]
+            s3.datatable_id = [table_id]
         elif table_id not in table_ids:
             table_ids.append(table_id)
+
+        # Flags for optional JavaScript
+        script_opts = s3.datatable_opts
+        if not script_opts or not isinstance(script_opts, dict):
+            script_opts = s3.datatable_opts = {}
 
         attr_get = attr.get
 
         # Build the form
         form = FORM(_class="dt-wrapper")
-        if not settings.get_ui_datatables_responsive():
+
+        # Responsive?
+        if settings.get_ui_datatables_responsive():
+            script_opts["responsive"] = True
+        else:
             form.add_class("scrollable")
 
         # Form key (XSRF protection for Ajax actions)
@@ -558,6 +567,7 @@ class DataTable:
         # Variable columns selector
         available_cols = attr.get("dt_available_cols")
         if available_cols:
+            script_opts["variable_columns"] = True
             form.append(cls.column_selector(available_cols))
 
         # InitComplete callback (processed in views/dataTables.html)
