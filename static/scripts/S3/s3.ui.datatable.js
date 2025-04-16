@@ -8,7 +8,7 @@
  *   - multi-selection of table rows for bulk-actions
  *   - simple grouping of rows with collapse/expand feature
  *
- * Server-side script in modules/s3/s3data.py.
+ * Server-side part in modules/core/ui/datatable.py
  *
  * @copyright 2018 (c) Sahana Software Foundation
  * @license MIT
@@ -17,8 +17,8 @@
  *
  * - uses/applies:
  *
- *   - S3.datatables                   - global object for datatables configuration
- *   - S3.datatables.id                - global array of DOM-ids of data tables
+ *   - S3.dataTables                   - global object for datatables configuration
+ *   - S3.dataTables.id                - global array of DOM-ids of data tables
  *   - S3.dataTables.initComplete      - global callback function (optional)
  *   - S3.dataTables.Actions           - global array of per-row actions
  *
