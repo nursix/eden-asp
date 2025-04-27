@@ -26,15 +26,15 @@ def project_task_resource(r, tablename):
     s3db = current.s3db
 
     # Configure custom form for tasks
-    from core import S3SQLCustomForm
-    crud_form = S3SQLCustomForm("name",
-                                "status",
-                                "priority",
-                                "description",
-                                #"source",
-                                "pe_id",
-                                "date_due",
-                                )
+    from core import CustomForm
+    crud_form = CustomForm("name",
+                           "status",
+                           "priority",
+                           "description",
+                           #"source",
+                           "pe_id",
+                           "date_due",
+                           )
     s3db.configure("project_task",
                    crud_form = crud_form,
                    update_realm = True,

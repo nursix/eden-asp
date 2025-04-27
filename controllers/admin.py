@@ -314,7 +314,7 @@ def user():
 
             s3.actions = actions
 
-            # @ToDo: Merge these with the code in s3aaa.py and use S3SQLCustomForm to implement
+            # @ToDo: Merge these with the code in s3aaa.py and use CustomForm to implement
             form = output.get("form", None)
             if not form:
                 crud_button = s3base.BasicCRUD.crud_button

@@ -25,10 +25,10 @@
     OTHER DEALINGS IN THE SOFTWARE.
 """
 
-__all__ = ("S3SQLSubFormLayout",
-           "S3SQLVerticalSubFormLayout",
-           "S3SQLInlineComponent",
-           "S3SQLInlineLink",
+__all__ = ("SubFormLayout",
+           "SubFormLayoutVertical",
+           "InlineComponent",
+           "InlineLink",
            )
 
 import json
@@ -49,11 +49,11 @@ from ..tools import s3_str, s3_validate, JSONERRORS, JSONSEPARATORS, S3Represent
 
 from .widgets import S3UploadWidget
 from .selectors import LocationSelector
-from .forms import DEFAULT, S3SQLFormElement
+from .forms import DEFAULT, CRUDFormElement
 
 
 # =============================================================================
-class S3SQLSubForm(S3SQLFormElement):
+class SubForm(CRUDFormElement):
     """
         Base class for subforms
 
@@ -168,8 +168,8 @@ class S3SQLSubForm(S3SQLFormElement):
         return True
 
 # =============================================================================
-class S3SQLSubFormLayout:
-    """ Layout for S3SQLInlineComponent (Base Class) """
+class SubFormLayout:
+    """ Layout for InlineComponent (Base Class) """
 
     # Layout-specific CSS class for the inline component
     layout_class = "subform-default"
@@ -459,7 +459,7 @@ class S3SQLSubFormLayout:
         return
 
 # =============================================================================
-class S3SQLVerticalSubFormLayout(S3SQLSubFormLayout):
+class SubFormLayoutVertical(SubFormLayout):
     """
         Vertical layout for inline-components
 
@@ -586,7 +586,7 @@ class INLINEFORM(DIV):
         return super().xml()
 
 # =============================================================================
-class S3SQLInlineComponent(S3SQLSubForm):
+class InlineComponent(SubForm):
     """
         Form element for an inline-component-form
 
@@ -1500,7 +1500,7 @@ class S3SQLInlineComponent(S3SQLSubForm):
                 deletable: whether the record can be deleted
                 multiple: whether multiple records can be added
                 index: the row index
-                layout: the subform layout (S3SQLSubFormLayout)
+                layout: the subform layout (SubFormLayout)
                 attributes: HTML attributes for the row
         """
 
@@ -1827,7 +1827,7 @@ class S3SQLInlineComponent(S3SQLSubForm):
         return None
 
 # =============================================================================
-class S3SQLInlineLink(S3SQLInlineComponent):
+class InlineLink(InlineComponent):
     """
         Subform to edit link table entries for the master record
 

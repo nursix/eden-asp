@@ -21,21 +21,21 @@ def project_task_resource(r, tablename):
     s3db = current.s3db
 
     # Configure custom form for tasks
-    from core import S3SQLCustomForm, S3SQLInlineLink
-    crud_form = S3SQLCustomForm("name",
-                                "status",
-                                "priority",
-                                "description",
-                                "source",
-                                S3SQLInlineLink("shelter_inspection_flag",
-                                                field="inspection_flag_id",
-                                                label=T("Shelter Inspection"),
-                                                readonly=True,
-                                                render_list=True,
-                                                ),
-                                "pe_id",
-                                "date_due",
-                                )
+    from core import CustomForm, InlineLink
+    crud_form = CustomForm("name",
+                           "status",
+                           "priority",
+                           "description",
+                           "source",
+                           InlineLink("shelter_inspection_flag",
+                                      field="inspection_flag_id",
+                                      label=T("Shelter Inspection"),
+                                      readonly=True,
+                                      render_list=True,
+                                      ),
+                           "pe_id",
+                           "date_due",
+                           )
     s3db.configure("project_task",
                    crud_form = crud_form,
                    )

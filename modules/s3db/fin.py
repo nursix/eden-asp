@@ -91,18 +91,18 @@ class FinExpensesModel(DataModel):
             msg_list_empty = T("No Expenses currently registered")
             )
 
-        crud_form = S3SQLCustomForm("name",
-                                    "date",
-                                    "value",
-                                    "currency",
-                                    S3SQLInlineComponent(
-                                        "document",
-                                        name = "document",
-                                        label = T("Attachments"),
-                                        fields = [("", "file")],
+        crud_form = CustomForm("name",
+                               "date",
+                               "value",
+                               "currency",
+                               InlineComponent(
+                                    "document",
+                                    name = "document",
+                                    label = T("Attachments"),
+                                    fields = [("", "file")],
                                     ),
-                                    "comments",
-                                    )
+                               "comments",
+                               )
 
         # Resource Configuration
         self.configure(tablename,

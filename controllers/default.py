@@ -752,7 +752,7 @@ def person():
                         crud_fields += ["user_options.osm_oauth_consumer_key",
                                         "user_options.osm_oauth_consumer_secret",
                                         ]
-                    crud_form = s3base.S3SQLCustomForm(*crud_fields)
+                    crud_form = s3base.CustomForm(*crud_fields)
                     list_fields = ["name",
                                    "pe_default",
                                    ]

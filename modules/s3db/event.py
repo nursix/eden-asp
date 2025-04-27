@@ -404,11 +404,11 @@ class EventModel(DataModel):
                        "start_date",
                        "closed",
                        "end_date",
-                       S3SQLInlineComponent("event_location",
-                                            label = T("Locations"),
-                                            #multiple = False,
-                                            fields = [("", "location_id")],
-                                            ),
+                       InlineComponent("event_location",
+                                       label = T("Locations"),
+                                       #multiple = False,
+                                       fields = [("", "location_id")],
+                                       ),
                        "comments",
                        ]
 
@@ -433,7 +433,7 @@ class EventModel(DataModel):
                                                    sort = False,
                                                    ))
 
-        crud_form = S3SQLCustomForm(*crud_fields)
+        crud_form = CustomForm(*crud_fields)
 
         configure(tablename,
                   context = {"location": "event_location.location_id",
@@ -1482,8 +1482,7 @@ class EventIncidentModel(DataModel):
                 }
 
     # -------------------------------------------------------------------------
-    @staticmethod
-    def defaults():
+    def defaults(self):
         """
             Return safe defaults in case the model has been deactivated.
         """
@@ -2767,8 +2766,7 @@ class EventIncidentTypeModel(DataModel):
                 }
 
     # -------------------------------------------------------------------------
-    @staticmethod
-    def defaults():
+    def defaults(self):
         """
             Return safe defaults in case the model has been deactivated.
         """
@@ -3026,18 +3024,18 @@ class EventAssetModel(DataModel):
             msg_list_empty = T("No Assets currently registered for this incident"))
 
         if current.deployment_settings.has_module("budget"):
-            crud_form = S3SQLCustomForm("incident_id",
-                                        "item_id",
-                                        "asset_id",
-                                        S3SQLInlineComponent("allocation",
-                                                             label = T("Budget"),
-                                                             fields = ["budget_entity_id",
-                                                                       "start_date",
-                                                                       "end_date",
-                                                                       "daily_cost",
-                                                                       ],
-                                                             ),
-                                        )
+            crud_form = CustomForm("incident_id",
+                                   "item_id",
+                                   "asset_id",
+                                   InlineComponent("allocation",
+                                                   label = T("Budget"),
+                                                   fields = ["budget_entity_id",
+                                                             "start_date",
+                                                             "end_date",
+                                                             "daily_cost",
+                                                             ],
+                                                   ),
+                                   )
         else:
             crud_form = None
 
@@ -3541,21 +3539,21 @@ class EventHRModel(DataModel):
                        ]
 
         if current.deployment_settings.has_module("budget"):
-            crud_form = S3SQLCustomForm("incident_id",
-                                        "job_title_id",
-                                        "person_id",
-                                        "start_date",
-                                        "end_date",
-                                        S3SQLInlineComponent("allocation",
-                                                             label = T("Budget"),
-                                                             fields = ["budget_id",
-                                                                       # @ToDo: Populate these automatically from the master record
-                                                                       #"start_date",
-                                                                       #"end_date",
-                                                                       "daily_cost",
-                                                                       ],
-                                                             ),
-                                        )
+            crud_form = CustomForm("incident_id",
+                                   "job_title_id",
+                                   "person_id",
+                                   "start_date",
+                                   "end_date",
+                                   InlineComponent("allocation",
+                                                   label = T("Budget"),
+                                                   fields = ["budget_id",
+                                                             # @ToDo: Populate these automatically from the master record
+                                                             #"start_date",
+                                                             #"end_date",
+                                                             "daily_cost",
+                                                             ],
+                                                   ),
+                                   )
             list_fields.extend(("allocation.budget_id",
                                 #"allocation.start_date",
                                 #"allocation.end_date",
@@ -4563,18 +4561,18 @@ class EventSiteModel(DataModel):
             msg_list_empty = T("No Facilities currently registered in this incident"))
 
         if current.deployment_settings.has_module("budget"):
-            crud_form = S3SQLCustomForm("incident_id",
-                                        "site_id",
-                                        "status",
-                                        S3SQLInlineComponent("allocation",
-                                                             label = T("Budget"),
-                                                             fields = ["budget_entity_id",
-                                                                       "start_date",
-                                                                       "end_date",
-                                                                       "daily_cost",
-                                                                       ],
-                                                             ),
-                                        )
+            crud_form = CustomForm("incident_id",
+                                   "site_id",
+                                   "status",
+                                   InlineComponent("allocation",
+                                                   label = T("Budget"),
+                                                   fields = ["budget_entity_id",
+                                                             "start_date",
+                                                             "end_date",
+                                                             "daily_cost",
+                                                             ],
+                                                   ),
+                                   )
         else:
             crud_form = None
 
@@ -4886,22 +4884,22 @@ class EventSitRepModel(DataModel):
             # All writable fields
             crud_form = None
         else:
-            crud_form = S3SQLCustomForm("event_id",
-                                        "incident_id",
-                                        "number",
-                                        "name",
-                                        "organisation_id",
-                                        "location_id",
-                                        "date",
-                                        "summary",
-                                        S3SQLInlineComponent(
-                                            "document",
-                                            name = "document",
-                                            label = T("Attachments"),
-                                            fields = [("", "file")],
+            crud_form = CustomForm("event_id",
+                                   "incident_id",
+                                   "number",
+                                   "name",
+                                   "organisation_id",
+                                   "location_id",
+                                   "date",
+                                   "summary",
+                                   InlineComponent(
+                                        "document",
+                                        name = "document",
+                                        label = T("Attachments"),
+                                        fields = [("", "file")],
                                         ),
-                                        "comments",
-                                        )
+                                   "comments",
+                                   )
 
         list_fields = ["date",
                        "event_id",
@@ -4971,8 +4969,7 @@ class EventSitRepModel(DataModel):
                 }
 
     # -------------------------------------------------------------------------
-    @staticmethod
-    def defaults():
+    def defaults(self):
         """
             Return safe defaults in case the model has been deactivated.
         """
@@ -5106,19 +5103,19 @@ class event_ActionPlan(CRUDMethod):
                       or a callable to produce such a widget config
         """
 
-        super(event_ActionPlan, self).__init__()
+        super().__init__()
 
         if not form:
             form = {"type": "form",
                     "tablename": "event_incident",
-                    "sqlform": S3SQLCustomForm("action_plan",
-                                               S3SQLInlineComponent(
+                    "crud_form": CustomForm("action_plan",
+                                            InlineComponent(
                                                 "document",
                                                 name = "document",
                                                 label = current.T("Attachments"),
                                                 fields = [("", "file")],
                                                 ),
-                                               ),
+                                            ),
                     }
 
         self.form = form
@@ -5363,19 +5360,19 @@ class event_ScenarioActionPlan(CRUDMethod):
                       or a callable to produce such a widget config
         """
 
-        super(event_ScenarioActionPlan, self).__init__()
+        super().__init__()
 
         if not form:
             form = {"type": "form",
                     "tablename": "event_scenario",
-                    "sqlform": S3SQLCustomForm("action_plan",
-                                               S3SQLInlineComponent(
+                    "crud_form": CustomForm("action_plan",
+                                            InlineComponent(
                                                 "document",
                                                 name = "document",
                                                 label = current.T("Attachments"),
                                                 fields = [("", "file")],
                                                 ),
-                                               ),
+                                            ),
                     }
 
         self.form = form
@@ -5523,46 +5520,46 @@ class event_ScenarioActionPlan(CRUDMethod):
             pwappend(widget)
 
             tablename = "event_scenario_human_resource"
-            widget = dict(# Use CRUD Strings (easier to customise)
-                          #label = "Human Resources",
-                          #label_create = "Add Human Resource",
-                          type = "datatable",
-                          actions = dt_row_actions("human_resource", tablename),
-                          tablename = tablename,
-                          context = "scenario",
-                          create_controller = "event",
-                          create_function = "scenario",
-                          create_component = "human_resource",
-                          #pagesize = None, # all records
-                          list_fields = ["job_title_id",
-                                         "person_id",
-                                         #"start_date",
-                                         #"end_date",
-                                         "comments",
-                                         ],
-                          )
+            widget = {# Use CRUD Strings (easier to customise)
+                      #"label": "Human Resources",
+                      #"label_create": "Add Human Resource",
+                      "type": "datatable",
+                      "actions": dt_row_actions("human_resource", tablename),
+                      "tablename": tablename,
+                      "context": "scenario",
+                      "create_controller": "event",
+                      "create_function": "scenario",
+                      "create_component": "human_resource",
+                      #"pagesize": None, # all records
+                      "list_fields": ["job_title_id",
+                                      "person_id",
+                                      #"start_date",
+                                      #"end_date",
+                                      "comments",
+                                      ],
+                      }
             pwappend(widget)
 
             tablename = "event_scenario_asset"
             r.customise_resource(tablename)
-            widget = dict(# Use CRUD Strings (easier to customise)
-                          #label = "Equipment",
-                          #label_create = "Add Equipment",
-                          type = "datatable",
-                          actions = dt_row_actions("scenario_asset", tablename),
-                          tablename = tablename,
-                          context = "scenario",
-                          create_controller = "event",
-                          create_function = "scenario",
-                          create_component = "asset",
-                          #pagesize = None, # all records
-                          list_fields = ["item_id",
-                                         "asset_id",
-                                         #"start_date",
-                                         #"end_date",
-                                         "comments",
-                                         ],
-                          )
+            widget = {# Use CRUD Strings (easier to customise)
+                      #"label": "Equipment",
+                      #"label_create": "Add Equipment",
+                      "type": "datatable",
+                      "actions": dt_row_actions("scenario_asset", tablename),
+                      "tablename": tablename,
+                      "context": "scenario",
+                      "create_controller": "event",
+                      "create_function": "scenario",
+                      "create_component": "asset",
+                      #"pagesize": None, # all records
+                      "list_fields": ["item_id",
+                                      "asset_id",
+                                      #"start_date",
+                                      #"end_date",
+                                      "comments",
+                                      ],
+                      }
             pwappend(widget)
 
             form = self.form
@@ -5736,7 +5733,7 @@ class event_EventAssignMethod(CRUDMethod):
                 next_tab: the component/method to redirect to after assigning
         """
 
-        super(event_EventAssignMethod, self).__init__()
+        super().__init__()
 
         self.component = component
         if next_tab:
@@ -5803,7 +5800,7 @@ class event_EventAssignMethod(CRUDMethod):
         if r.http == "POST":
             added = 0
             post_vars = r.post_vars
-            if all([n in post_vars for n in ("assign", "selected", "mode")]):
+            if all(n in post_vars for n in ("assign", "selected", "mode")):
 
                 selected = post_vars.selected
                 if selected:
@@ -6130,7 +6127,7 @@ class event_IncidentAssignMethod(CRUDMethod):
                 next_tab: the component/method to redirect to after assigning
         """
 
-        super(event_IncidentAssignMethod, self).__init__()
+        super().__init__()
 
         self.component = component
         if next_tab:
@@ -6190,7 +6187,7 @@ class event_IncidentAssignMethod(CRUDMethod):
             added = assigned.append
 
             post_vars = r.post_vars
-            if all([n in post_vars for n in ("assign", "selected", "mode")]):
+            if all(n in post_vars for n in ("assign", "selected", "mode")):
 
                 selected = post_vars.selected
                 if selected:

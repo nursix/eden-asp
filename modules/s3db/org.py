@@ -447,7 +447,7 @@ class OrgOrganisationModel(DataModel):
 
         crud_fields = ["name",
                        "acronym",
-                       S3SQLInlineLink(
+                       InlineLink(
                             "organisation_type",
                             field = "organisation_type_id",
                             # Disable "Search"-field in multi-select widget:
@@ -470,14 +470,14 @@ class OrgOrganisationModel(DataModel):
 
         use_sector = settings.get_org_sector()
         if use_sector:
-            crud_fields.insert(3, S3SQLInlineLink("sector",
-                                                  columns = 4,
-                                                  label = T("Sectors"),
-                                                  field = "sector_id",
-                                                  ),
+            crud_fields.insert(3, InlineLink("sector",
+                                             columns = 4,
+                                             label = T("Sectors"),
+                                             field = "sector_id",
+                                             ),
                                )
 
-        crud_form = S3SQLCustomForm(*crud_fields)
+        crud_form = CustomForm(*crud_fields)
 
         # CRUD strings
         crud_strings[tablename] = Storage(
@@ -847,7 +847,7 @@ class OrgOrganisationModel(DataModel):
                      )
 
         configure(tablename,
-                  # Whilst S3SQLInlineLink can resolve duplicates automatically, imports cannot
+                  # Whilst InlineLink can resolve duplicates automatically, imports cannot
                   deduplicate = S3Duplicate(primary = ("organisation_id",
                                                        "organisation_type_id",
                                                        ),
@@ -2540,13 +2540,13 @@ class OrgServiceModel(DataModel):
 
         # CRUD form
         service_widget = "hierarchy" if hierarchical_service_types else None
-        crud_form = S3SQLCustomForm(
+        crud_form = CustomForm(
                         "organisation_id",
                         "site_id",
-                        S3SQLInlineLink("service",
-                                        field = "service_id",
-                                        widget = service_widget,
-                                        ),
+                        InlineLink("service",
+                                   field = "service_id",
+                                   widget = service_widget,
+                                   ),
                         "description",
                         "status",
                         "start_date",
@@ -4546,32 +4546,32 @@ class OrgFacilityModel(DataModel):
             type_widget = "hierarchy"
         else:
             type_widget = "groupedopts"
-        crud_form = S3SQLCustomForm("name",
-                                    "code",
-                                    S3SQLInlineLink(
-                                          "facility_type",
-                                          label = T("Facility Type"),
-                                          field = "facility_type_id",
-                                          widget = type_widget,
-                                          cols = 3,
+        crud_form = CustomForm("name",
+                               "code",
+                               InlineLink(
+                                    "facility_type",
+                                    label = T("Facility Type"),
+                                    field = "facility_type_id",
+                                    widget = type_widget,
+                                    cols = 3,
                                     ),
-                                    "organisation_id",
-                                    "location_id",
-                                    "opening_times",
-                                    "contact",
-                                    "phone1",
-                                    "phone2",
-                                    "email",
-                                    "website",
-                                    #S3SQLInlineComponent(
-                                    #    "status",
-                                    #    label = T("Status"),
-                                    #    fields = ["last_contacted"],
-                                    #    multiple = False,
-                                    #),
-                                    "obsolete",
-                                    "comments",
-                                    )
+                               "organisation_id",
+                               "location_id",
+                               "opening_times",
+                               "contact",
+                               "phone1",
+                               "phone2",
+                               "email",
+                               "website",
+                               #InlineComponent(
+                               #    "status",
+                               #    label = T("Status"),
+                               #    fields = ["last_contacted"],
+                               #    multiple = False,
+                               #),
+                               "obsolete",
+                               "comments",
+                               )
 
         list_fields = ["name",
                        "code",
@@ -5130,7 +5130,7 @@ class OrgOfficeModel(DataModel):
                        "comments",
                        ]
 
-        crud_form = S3SQLCustomForm(*crud_fields)
+        crud_form = CustomForm(*crud_fields)
 
         # CRUD strings
         crud_strings[tablename] = Storage(
@@ -7134,15 +7134,15 @@ def org_organisation_controller():
                             for key in keys:
                                 tag = key.tag
                                 label = T(tag.title())
-                                cappend(S3SQLInlineComponent("tag",
-                                                             label = label,
-                                                             name = tag,
-                                                             multiple = False,
-                                                             fields = [("", "value")],
-                                                             filterby = {"field": "tag",
-                                                                         "options": tag,
-                                                                         }
-                                                             ))
+                                cappend(InlineComponent("tag",
+                                                        label = label,
+                                                        name = tag,
+                                                        multiple = False,
+                                                        fields = [("", "value")],
+                                                        filterby = {"field": "tag",
+                                                                    "options": tag,
+                                                                    }
+                                                        ))
                                 add_component(tablename,
                                               org_organisation_tag = {"name": tag,
                                                                       "joinby": "organisation_id",
@@ -7152,7 +7152,7 @@ def org_organisation_controller():
                                                                       },
                                               )
                                 lappend((label, "%s.value" % tag))
-                            crud_form = S3SQLCustomForm(*crud_fields)
+                            crud_form = CustomForm(*crud_fields)
                             s3db.configure(tablename,
                                            crud_form = crud_form,
                                            )

@@ -59,7 +59,7 @@ def inv_recv_resource(r, tablename):
 
     if r.tablename == "inv_recv" and not r.component:
         if r.interactive:
-            from core import S3SQLCustomForm
+            from core import CustomForm
             crud_fields = ["req_ref",
                            #"send_ref",
                            "site_id",
@@ -70,7 +70,7 @@ def inv_recv_resource(r, tablename):
                            "comments",
                            ]
             s3db.configure("inv_recv",
-                           crud_form = S3SQLCustomForm(*crud_fields),
+                           crud_form = CustomForm(*crud_fields),
                            )
 
         list_fields = ["req_ref",
@@ -143,7 +143,7 @@ def inv_recv_controller(**attr):
             field.writable = False
 
             # Use custom form
-            from core import S3SQLCustomForm
+            from core import CustomForm
             crud_fields = ["item_id",
                            "item_pack_id",
                            "quantity",
@@ -158,7 +158,7 @@ def inv_recv_controller(**attr):
                            "status",
                            ]
 
-            component.configure(crud_form = S3SQLCustomForm(*crud_fields),
+            component.configure(crud_form = CustomForm(*crud_fields),
                                 list_fields = list_fields,
                                 )
         return result
@@ -361,7 +361,7 @@ def inv_send_controller(**attr):
                 field.requires = IS_FLOAT_AMOUNT(0)
 
             # Use custom form
-            from core import S3SQLCustomForm
+            from core import CustomForm
             crud_fields = ["item_id",
                            "item_pack_id",
                            "quantity",
@@ -375,7 +375,7 @@ def inv_send_controller(**attr):
                            "status",
                            ]
 
-            component.configure(crud_form = S3SQLCustomForm(*crud_fields),
+            component.configure(crud_form = CustomForm(*crud_fields),
                                 list_fields = list_fields,
                                 )
 
@@ -562,14 +562,14 @@ def inv_track_item_resource(r, tablename):
         # Custom form for record view (read-only)
         field = table.recv_quantity
         field.readable = True
-        from core import S3SQLCustomForm
-        crud_form = S3SQLCustomForm("item_id",
-                                    "send_id",
-                                    "item_pack_id",
-                                    "quantity",
-                                    "recv_quantity",
-                                    "status",
-                                    )
+        from core import CustomForm
+        crud_form = CustomForm("item_id",
+                               "send_id",
+                               "item_pack_id",
+                               "quantity",
+                               "recv_quantity",
+                               "status",
+                               )
 
         # List fields
         list_fields = ["item_id",
@@ -715,7 +715,7 @@ def inv_warehouse_resource(r, tablename):
         current.response.s3.scripts.append("/%s/static/themes/RLP/js/geocoderPlugin.js" % r.application)
 
         # Custom CRUD-Form
-        from core import S3SQLCustomForm
+        from core import CustomForm
         crud_fields = ["organisation_id",
                        "name",
                        "code",
@@ -730,7 +730,7 @@ def inv_warehouse_resource(r, tablename):
                        ]
 
         s3db.configure("inv_warehouse",
-                       crud_form = S3SQLCustomForm(*crud_fields),
+                       crud_form = CustomForm(*crud_fields),
                        )
 
     # Custom list fields

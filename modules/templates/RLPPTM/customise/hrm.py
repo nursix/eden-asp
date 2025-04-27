@@ -214,9 +214,9 @@ def hrm_human_resource_resource(r, tablename):
     field.comment = None
 
     # Use custom-form for HRs
-    from core import S3SQLCustomForm
+    from core import CustomForm
     s3db.configure("hrm_human_resource",
-                   crud_form = S3SQLCustomForm(
+                   crud_form = CustomForm(
                                     "person_id",
                                     "organisation_id",
                                     "site_id",

@@ -370,15 +370,15 @@ def req_controller(template = False):
                         for key in keys:
                             tag = key.tag
                             label = T(tag.title())
-                            cappend(S3SQLInlineComponent("tag",
-                                                         label = label,
-                                                         name = tag,
-                                                         multiple = False,
-                                                         fields = [("", "value")],
-                                                         filterby = {"field": "tag",
-                                                                     "options": tag,
-                                                                     },
-                                                         ))
+                            cappend(InlineComponent("tag",
+                                                    label = label,
+                                                    name = tag,
+                                                    multiple = False,
+                                                    fields = [("", "value")],
+                                                    filterby = {"field": "tag",
+                                                                "options": tag,
+                                                                },
+                                                    ))
                             add_component(tablename,
                                           org_organisation_tag = {"name": tag,
                                                                   "joinby": "req_id",
@@ -387,7 +387,7 @@ def req_controller(template = False):
                                                                   },
                                           )
                             lappend((label, "%s.value" % tag))
-                        crud_form = S3SQLCustomForm(*crud_fields)
+                        crud_form = CustomForm(*crud_fields)
                         s3db.configure(tablename,
                                        crud_form = crud_form,
                                        )
@@ -579,12 +579,12 @@ $.filterOptionsS3({
  'fncRepresent':S3.supply.fncRepresentItem
 })''')
                         # Custom Form
-                        crud_form = s3base.S3SQLCustomForm(
+                        crud_form = s3base.CustomForm(
                                 "site_id",
                                 "date",
                                 "date_available",
                                 "committer_id",
-                                s3base.S3SQLInlineComponent(
+                                s3base.InlineComponent(
                                     "commit_item",
                                     label = T("Items"),
                                     fields = ["req_item_id",
@@ -620,12 +620,12 @@ $.filterOptionsS3({
                         skills_filter(record_id)
 
                         # Custom Form
-                        crud_form = s3base.S3SQLCustomForm(
+                        crud_form = s3base.CustomForm(
                             "site_id",
                             "date",
                             "date_available",
                             "committer_id",
-                            s3base.S3SQLInlineComponent(
+                            s3base.InlineComponent(
                                 "commit_skill",
                                 label = T("Skills"),
                                 fields = ["quantity",
@@ -1352,12 +1352,12 @@ $.filterOptionsS3({
 'fncRepresent':S3.supply.fncRepresentItem
 })''')
                     # Custom Form
-                    crud_form = s3base.S3SQLCustomForm(
+                    crud_form = s3base.CustomForm(
                             "site_id",
                             "date",
                             "date_available",
                             "committer_id",
-                            s3base.S3SQLInlineComponent(
+                            s3base.InlineComponent(
                                 "commit_item",
                                 label = T("Items"),
                                 fields = ["req_item_id",
@@ -1392,13 +1392,13 @@ $.filterOptionsS3({
                     skills_filter(r.record.req_id)
 
                     # Custom Form
-                    crud_form = s3base.S3SQLCustomForm(
+                    crud_form = s3base.CustomForm(
                             #"organisation_id",
                             "site_id",
                             "date",
                             "date_available",
                             "committer_id",
-                            s3base.S3SQLInlineComponent(
+                            s3base.InlineComponent(
                                 "commit_skill",
                                 label = T("People"),
                                 fields = ["quantity",

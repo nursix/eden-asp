@@ -446,7 +446,7 @@ def location():
                 if r.method in ("create", "update"):
                     if get_vars.get("~.level") == "None":
                         # Specific Locations
-                        from core import S3SQLCustomForm
+                        from core import CustomForm
                         crud_fields = ["name",
                                        "parent",
                                        "gis_feature_type",
@@ -458,7 +458,7 @@ def location():
                                        ]
                         if settings.get_gis_postcode_selector():
                             crud_fields.insert(-1, "addr_postcode")
-                        crud_form = S3SQLCustomForm(*crud_fields)
+                        crud_form = CustomForm(*crud_fields)
 
                         s3db.configure("gis_location",
                                        crud_form = crud_form,
@@ -466,16 +466,16 @@ def location():
 
                     elif get_vars.get("~.level__ne") == "None":
                         # Administrative Units
-                        from core import S3SQLCustomForm
-                        crud_form = S3SQLCustomForm("name",
-                                                    "level",
-                                                    "parent",
-                                                    "gis_feature_type",
-                                                    "lat",
-                                                    "lon",
-                                                    "wkt",
-                                                    "comments",
-                                                    )
+                        from core import CustomForm
+                        crud_form = CustomForm("name",
+                                               "level",
+                                               "parent",
+                                               "gis_feature_type",
+                                               "lat",
+                                               "lon",
+                                               "wkt",
+                                               "comments",
+                                               )
 
                         s3db.configure("gis_location",
                                        crud_form = crud_form,
@@ -1191,7 +1191,7 @@ def config():
                             fields += ["user_options.osm_oauth_consumer_key",
                                        "user_options.osm_oauth_consumer_secret",
                                        ]
-                        crud_form = s3base.S3SQLCustomForm(*fields)
+                        crud_form = s3base.CustomForm(*fields)
                     else:
                         crud_form = None
                     s3db.configure("gis_config",

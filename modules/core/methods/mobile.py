@@ -38,8 +38,8 @@ from gluon import IS_EMPTY_OR, IS_IN_SET, current
 from ..resource import S3ResourceTree
 from ..tools import S3Represent, JSONSEPARATORS, s3_get_foreign_key, \
                     s3_parse_datetime, s3_str
-from ..ui import S3SQLCustomForm, S3SQLDummyField, S3SQLField, \
-                 S3SQLForm, S3SQLInlineInstruction, S3SQLSectionBreak
+from ..ui import CRUDForm, CustomForm, \
+                 DummyFormField, FormField, InlineInstruction, SectionBreak
 
 from .base import CRUDMethod
 
@@ -666,7 +666,7 @@ class S3MobileSchema:
 
         else:
             for element in form.elements:
-                if isinstance(element, S3SQLField):
+                if isinstance(element, FormField):
                     rfield = resolve_selector(element.selector)
 
                     fname = rfield.fname
@@ -683,13 +683,13 @@ class S3MobileSchema:
                             fields.append(table[other])
                             include(other)
 
-                elif isinstance(element, S3SQLDummyField):
+                elif isinstance(element, DummyFormField):
                     field = {"type": "dummy",
                              "name": element.selector,
                              }
                     mappend(field)
 
-                elif isinstance(element, S3SQLInlineInstruction):
+                elif isinstance(element, InlineInstruction):
                     field = {"type": "instructions",
                              "do": element.do,
                              "say": element.say,
@@ -697,7 +697,7 @@ class S3MobileSchema:
                              }
                     mappend(field)
 
-                elif isinstance(element, S3SQLSectionBreak):
+                elif isinstance(element, SectionBreak):
                     field = {"type": "section-break",
                              #"name": element.selector,
                              }
@@ -793,22 +793,22 @@ class S3MobileSchema:
                 resource: the CRUDResource
 
             Returns:
-                a S3SQLForm instance
+                a CRUDForm instance
         """
 
         # Get the form definition from "mobile_form" table setting
         form = resource.get_config("mobile_form")
-        if not form or not isinstance(form, (S3SQLCustomForm, list)):
+        if not form or not isinstance(form, (CustomForm, list)):
             # Fallback
             form = resource.get_config("crud_form")
 
         if not form:
-            # No mobile form configured, or is a S3SQLDefaultForm
+            # No mobile form configured, or is a DefaultForm
             # => construct a custom form that includes all readable fields
             readable_fields = resource.readable_fields()
             fields = [field.name for field in readable_fields
                                  if field.type != "id"]
-            form = S3SQLCustomForm(*fields)
+            form = CustomForm(*fields)
 
         return form
 
@@ -829,7 +829,7 @@ class S3MobileSchema:
             if mform is False:
                 self._llrepr = S3Represent(lookup=resource.tablename)
                 lookup_only = True
-            elif callable(mform) and not isinstance(mform, S3SQLForm):
+            elif callable(mform) and not isinstance(mform, CRUDForm):
                 self._llrepr = mform
                 lookup_only = True
             else:
@@ -882,14 +882,14 @@ class S3MobileSchema:
 # =============================================================================
 class S3MobileForm:
     """
-        Mobile representation of an S3SQLForm
+        Mobile representation of a CRUDForm
     """
 
     def __init__(self, resource, form=None):
         """
             Args:
                 resource: the CRUDResource
-                form: an S3SQLForm instance to override settings
+                form: a CRUDForm instance to override settings
         """
 
         self.resource = resource

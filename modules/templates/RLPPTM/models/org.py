@@ -2714,8 +2714,8 @@ class ProviderRepresentative:
             table.person_id.readable = True
             table.organisation_id.readable = True
 
-        from core import S3SQLCustomForm, S3SQLInlineComponent
-        crud_form = S3SQLCustomForm(
+        from core import CustomForm, InlineComponent
+        crud_form = CustomForm(
                         "person_id",
                         active,
                         "organisation_id",
@@ -2723,7 +2723,7 @@ class ProviderRepresentative:
                         "person_data",
                         "contact_data",
                         "address_data",
-                        S3SQLInlineComponent(
+                        InlineComponent(
                             "document",
                             name = "file",
                             label = T("Documents"),

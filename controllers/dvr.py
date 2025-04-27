@@ -165,8 +165,8 @@ def person():
             component = r.component
             if not component:
 
-                from core import S3SQLCustomForm, \
-                                 S3SQLInlineComponent, \
+                from core import CustomForm, \
+                                 InlineComponent, \
                                  TextFilter, \
                                  OptionsFilter, \
                                  get_filter_options
@@ -181,7 +181,7 @@ def person():
                 # NB: this assumes single case per person, must use
                 #     case perspective (dvr/case) for multiple cases
                 #     per person!
-                crud_form = S3SQLCustomForm(
+                crud_form = CustomForm(
                                 "dvr_case.organisation_id",
                                 "dvr_case.date",
                                 "dvr_case.status_id",
@@ -192,7 +192,7 @@ def person():
                                 "last_name",
                                 "date_of_birth",
                                 "gender",
-                                S3SQLInlineComponent(
+                                InlineComponent(
                                         "contact",
                                         fields = [("", "value")],
                                         filterby = {"field": "contact_method",
@@ -202,7 +202,7 @@ def person():
                                         multiple = False,
                                         name = "email",
                                         ),
-                                S3SQLInlineComponent(
+                                InlineComponent(
                                         "contact",
                                         fields = [("", "value")],
                                         filterby = {"field": "contact_method",
@@ -213,7 +213,7 @@ def person():
                                         name = "phone",
                                         ),
                                 "person_details.nationality",
-                                S3SQLInlineComponent(
+                                InlineComponent(
                                         "address",
                                         label = T("Current Address"),
                                         fields = [("", "location_id")],

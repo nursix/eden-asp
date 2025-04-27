@@ -707,18 +707,18 @@ def email_inbox():
     s3.filter = (FS("response.id") == None) & \
                 (FS("inbound") == True)
 
-    from core import S3SQLCustomForm, S3SQLInlineComponent
-    crud_form = S3SQLCustomForm("date",
-                                "subject",
-                                "from_address",
-                                "body",
-                                S3SQLInlineComponent(
-                                    "attachment",
-                                    name = "document_id",
-                                    label = T("Attachments"),
-                                    fields = ["document_id"],
-                                    ),
-                                )
+    from core import CustomForm, InlineComponent
+    crud_form = CustomForm("date",
+                           "subject",
+                           "from_address",
+                           "body",
+                           InlineComponent(
+                                "attachment",
+                                name = "document_id",
+                                label = T("Attachments"),
+                                fields = ["document_id"],
+                                ),
+                           )
 
     s3db.configure(tablename,
                    crud_form = crud_form,

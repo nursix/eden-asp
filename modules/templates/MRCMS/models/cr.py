@@ -38,7 +38,7 @@ from s3dal import Field
 
 from core import CommentsField, DataModel, DateTimeField, WorkflowOptions, \
                  DateFilter, OptionsFilter, TextFilter, \
-                 S3PriorityRepresent, S3SQLCustomForm, S3SQLInlineComponent, \
+                 S3PriorityRepresent, CustomForm, InlineComponent, \
                  datahash, get_form_record_id, s3_text_represent
 
 # =============================================================================
@@ -280,28 +280,28 @@ def cr_configure_shelter_note_form(r):
         field.readable = False
 
     # Configure inline documents
-    documents = S3SQLInlineComponent("document",
-                                     name = "file",
-                                     label = T("Documents"),
-                                     fields = ["name", "file", "comments"],
-                                     filterby = {"field": "file",
-                                                 "options": "",
-                                                 "invert": True,
-                                                 },
-                                     readonly = readonly,
-                                     )
+    documents = InlineComponent("document",
+                                name = "file",
+                                label = T("Documents"),
+                                fields = ["name", "file", "comments"],
+                                filterby = {"field": "file",
+                                            "options": "",
+                                            "invert": True,
+                                            },
+                                readonly = readonly,
+                                )
 
     # Configure CRUD form
     s3db.configure("cr_shelter_note",
-                   crud_form = S3SQLCustomForm("date",
-                                               "person_id",
-                                               "type",
-                                               #"subject",
-                                               "note",
-                                               documents,
-                                               "status",
-                                               "comments",
-                                               ),
+                   crud_form = CustomForm("date",
+                                          "person_id",
+                                          "type",
+                                          #"subject",
+                                          "note",
+                                          documents,
+                                          "status",
+                                          "comments",
+                                          ),
                    )
 
 # END =========================================================================

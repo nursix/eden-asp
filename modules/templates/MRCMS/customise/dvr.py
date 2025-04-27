@@ -10,7 +10,7 @@ from gluon import current, URL, A, TAG, IS_EMPTY_OR
 from gluon.storage import Storage
 
 from core import CRUDRequest, CustomController, FS, IS_ONE_OF, \
-                 S3CalendarWidget, S3HoursWidget, S3SQLCustomForm, S3SQLInlineLink, \
+                 S3CalendarWidget, S3HoursWidget, CustomForm, InlineLink, \
                  DateFilter, HierarchyFilter, OptionsFilter, TextFilter, \
                  get_filter_options, get_form_record_id, s3_redirect_default, \
                  represent_hours, set_default_filter, s3_fullname
@@ -252,7 +252,7 @@ def dvr_note_resource(r, tablename):
     form_fields = ["date", "note", type_id, "created_by"]
     list_fields = ["date", "note", type_id, "created_by"]
     s3db.configure("dvr_note",
-                   crud_form = S3SQLCustomForm(*form_fields),
+                   crud_form = CustomForm(*form_fields),
                    list_fields = list_fields,
                    orderby = "%(tn)s.date desc,%(tn)s.created_on desc" % \
                              {"tn": table._tablename},
@@ -1060,29 +1060,29 @@ def dvr_case_event_type_resource(r, tablename):
     #      if we have a r.record, otherwise OptionsFilterS3?
 
     # Custom form
-    crud_form = S3SQLCustomForm(# --- Event Type ---
-                                "organisation_id",
-                                "event_class",
-                                "code",
-                                "name",
-                                "is_inactive",
-                                "is_default",
-                                # --- Process ---
-                                "appointment_type_id",
-                                "activity_id",
-                                "presence_required",
-                                # --- Restrictions ---
-                                "residents_only",
-                                "register_multiple",
-                                "role_required",
-                                "min_interval",
-                                "max_per_day",
-                                S3SQLInlineLink("excluded_by",
-                                                field = "excluded_by_id",
-                                                label = T("Not Combinable With"),
-                                                comment = T("Events that exclude registration of this event type on the same day"),
-                                                ),
-                                )
+    crud_form = CustomForm(# --- Event Type ---
+                           "organisation_id",
+                           "event_class",
+                           "code",
+                           "name",
+                           "is_inactive",
+                           "is_default",
+                           # --- Process ---
+                           "appointment_type_id",
+                           "activity_id",
+                           "presence_required",
+                           # --- Restrictions ---
+                           "residents_only",
+                           "register_multiple",
+                           "role_required",
+                           "min_interval",
+                           "max_per_day",
+                           InlineLink("excluded_by",
+                                      field = "excluded_by_id",
+                                      label = T("Not Combinable With"),
+                                      comment = T("Events that exclude registration of this event type on the same day"),
+                                      ),
+                           )
 
     # Sub-headings for custom form
     subheadings = {"organisation_id": T("Event Type"),

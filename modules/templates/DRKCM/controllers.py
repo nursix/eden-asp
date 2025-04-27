@@ -217,21 +217,21 @@ class userstats(CustomController):
                        )
 
         # Configure form
-        from core import S3SQLCustomForm, S3SQLVirtualField
-        crud_form = S3SQLCustomForm("name",
-                                    S3SQLVirtualField("total_accounts",
-                                                      label = TOTAL,
-                                                      ),
-                                    S3SQLVirtualField("active_accounts",
-                                                      label = ACTIVE,
-                                                      ),
-                                    S3SQLVirtualField("disabled_accounts",
-                                                      label = DISABLED,
-                                                      ),
-                                    S3SQLVirtualField("active30",
-                                                      label = ACTIVE30,
-                                                      ),
-                                    )
+        from core import CustomForm, VirtualFormField
+        crud_form = CustomForm("name",
+                               VirtualFormField("total_accounts",
+                                                label = TOTAL,
+                                                ),
+                               VirtualFormField("active_accounts",
+                                                label = ACTIVE,
+                                                ),
+                               VirtualFormField("disabled_accounts",
+                                                label = DISABLED,
+                                                ),
+                               VirtualFormField("active30",
+                                                label = ACTIVE30,
+                                                ),
+                               )
 
         # Configure read-only
         resource.configure(insertable = False,

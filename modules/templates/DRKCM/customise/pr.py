@@ -357,9 +357,9 @@ def pr_person_controller(**attr):
 
                 if r.interactive and r.method != "import":
 
-                    from core import S3SQLCustomForm, \
-                                     S3SQLInlineComponent, \
-                                     S3SQLInlineLink, \
+                    from core import CustomForm, \
+                                     InlineComponent, \
+                                     InlineLink, \
                                      TextFilter, \
                                      DateFilter, \
                                      OptionsFilter, \
@@ -396,12 +396,12 @@ def pr_person_controller(**attr):
 
                     # Optional: Case Flags
                     if ui_options_get("case_use_flags"):
-                        case_flags = S3SQLInlineLink("case_flag",
-                                                     label = T("Flags"),
-                                                     field = "flag_id",
-                                                     help_field = "comments",
-                                                     cols = 4,
-                                                     )
+                        case_flags = InlineLink("case_flag",
+                                                label = T("Flags"),
+                                                field = "flag_id",
+                                                help_field = "comments",
+                                                cols = 4,
+                                                )
                     else:
                         case_flags = None
 
@@ -428,7 +428,7 @@ def pr_person_controller(**attr):
                     # Optional: BAMF No.
                     use_bamf = ui_options_get("case_use_bamf")
                     if use_bamf:
-                        bamf = S3SQLInlineComponent(
+                        bamf = InlineComponent(
                                     "bamf",
                                     fields = [("", "value")],
                                     filterby = {"field": "tag",
@@ -480,7 +480,7 @@ def pr_person_controller(**attr):
 
                     # Optional: Address
                     if use_address:
-                        address = S3SQLInlineComponent(
+                        address = InlineComponent(
                                         "address",
                                         label = T("Current Address"),
                                         fields = [("", "location_id")],
@@ -513,7 +513,7 @@ def pr_person_controller(**attr):
                         field.comment = None
                         field = rtable.permit_type_id
                         field.comment = None
-                        residence_status = S3SQLInlineComponent(
+                        residence_status = InlineComponent(
                                             "residence_status",
                                             fields = [#"status_type_id",
                                                       "permit_type_id",
@@ -539,7 +539,7 @@ def pr_person_controller(**attr):
                         education = None
 
                     # Custom CRUD form
-                    crud_form = S3SQLCustomForm(
+                    crud_form = CustomForm(
 
                         # Case Details ----------------------------
                         "dvr_case.date",
@@ -570,7 +570,7 @@ def pr_person_controller(**attr):
                         residence_status,
 
                         # Other Details ---------------------------
-                        S3SQLInlineComponent(
+                        InlineComponent(
                                 "contact",
                                 fields = [("", "value")],
                                 filterby = {"field": "contact_method",
@@ -583,7 +583,7 @@ def pr_person_controller(**attr):
                         education,
                         occupation,
                         "person_details.literacy",
-                        S3SQLInlineComponent(
+                        InlineComponent(
                                 "case_language",
                                 fields = ["language",
                                           "quality",
@@ -880,17 +880,17 @@ def pr_group_controller(**attr):
                 field.comment = None
 
                 # Organisation is required
-                from core import S3SQLCustomForm, \
-                                    S3SQLInlineComponent
-                crud_form = S3SQLCustomForm(
+                from core import CustomForm, \
+                                 InlineComponent
+                crud_form = CustomForm(
                                 "name",
                                 "description",
-                                S3SQLInlineComponent("organisation_team",
-                                                     label = T("Organization"),
-                                                     fields = ["organisation_id"],
-                                                     multiple = False,
-                                                     required = True,
-                                                     ),
+                                InlineComponent("organisation_team",
+                                                label = T("Organization"),
+                                                fields = ["organisation_id"],
+                                                multiple = False,
+                                                required = True,
+                                                ),
                                 "comments",
                                 )
                 r.resource.configure(crud_form = crud_form)

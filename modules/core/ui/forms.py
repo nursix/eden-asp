@@ -25,14 +25,14 @@
     OTHER DEALINGS IN THE SOFTWARE.
 """
 
-__all__ = ("S3SQLCustomForm",
-           "S3SQLDefaultForm",
-           "S3SQLForm",
-           "S3SQLDummyField",
-           "S3SQLField",
-           "S3SQLInlineInstruction",
-           "S3SQLSectionBreak",
-           "S3SQLVirtualField",
+__all__ = ("CRUDForm",
+           "CustomForm",
+           "DefaultForm",
+           "DummyFormField",
+           "FormField",
+           "InlineInstruction",
+           "SectionBreak",
+           "VirtualFormField",
            "WithAdvice",
            )
 
@@ -49,8 +49,8 @@ from ..tools import s3_mark_required, set_last_record_id, s3_str, SKIP_VALIDATIO
 DEFAULT = lambda: None
 
 # =============================================================================
-class S3SQLForm:
-    """ SQL Form Base Class"""
+class CRUDForm:
+    """ CRUD Form Base Class"""
 
     # -------------------------------------------------------------------------
     def __init__(self, *elements, **attributes):
@@ -67,10 +67,10 @@ class S3SQLForm:
         for element in elements:
             if not element:
                 continue
-            if isinstance(element, S3SQLFormElement):
+            if isinstance(element, CRUDFormElement):
                 append(element)
             elif isinstance(element, str):
-                append(S3SQLField(element))
+                append(FormField(element))
             elif isinstance(element, tuple):
                 l = len(element)
                 if l > 1:
@@ -79,7 +79,7 @@ class S3SQLForm:
                 else:
                     selector = element[0]
                     label = widget = DEFAULT
-                append(S3SQLField(selector, label=label, widget=widget))
+                append(FormField(selector, label=label, widget=widget))
             else:
                 msg = "Invalid form element: %s" % str(element)
                 if debug:
@@ -298,22 +298,22 @@ class S3SQLForm:
                     f = f[:-5]
                 if f.startswith(tablename):
                     f = f[len(tablename) + 1:] # : -6
-                    # Subtable / S3SQLInlineComponent
+                    # Subtable / InlineComponent
                     if f.startswith("sub_default"):
                         f = f[11:]
                     elif f.startswith("sub_"):
                         f = f[4:]
-                    # S3SQLInlineLink
+                    # InlineLink
                     elif f.startswith("link_default"):
                         f = f[12:]
                     elif f.startswith("link_"):
                         f = f[5:]
-                # S3SQLInlineComponent
+                # InlineComponent
                 elif f.startswith("sub_default"):
                     f = f[11:]
                 elif f.startswith("sub_"):
                     f = f[4:]
-                # S3SQLInlineLink
+                # InlineLink
                 elif f.startswith("link_default"):
                     f = f[12:]
                 elif f.startswith("link_"):
@@ -437,8 +437,8 @@ class S3SQLForm:
         return record
 
 # =============================================================================
-class S3SQLDefaultForm(S3SQLForm):
-    """ Standard SQL form """
+class DefaultForm(CRUDForm):
+    """ Standard CRUD form """
 
     # -------------------------------------------------------------------------
     # Rendering/Processing
@@ -789,43 +789,8 @@ class S3SQLDefaultForm(S3SQLForm):
         return success, error
 
 # =============================================================================
-class S3SQLCustomForm(S3SQLForm):
-    """ Custom SQL Form """
-
-    # -------------------------------------------------------------------------
-    def insert(self, index, element):
-        """
-            S.insert(index, object) -- insert object before index
-        """
-
-        if not element:
-            return
-        if isinstance(element, S3SQLFormElement):
-            self.elements.insert(index, element)
-        elif isinstance(element, str):
-            self.elements.insert(index, S3SQLField(element))
-        elif isinstance(element, tuple):
-            l = len(element)
-            if l > 1:
-                label, selector = element[:2]
-                widget = element[2] if l > 2 else DEFAULT
-            else:
-                selector = element[0]
-                label = widget = DEFAULT
-            self.elements.insert(index, S3SQLField(selector, label=label, widget=widget))
-        else:
-            msg = "Invalid form element: %s" % str(element)
-            if current.deployment_settings.get_base_debug():
-                raise SyntaxError(msg)
-            current.log.error(msg)
-
-    # -------------------------------------------------------------------------
-    def append(self, element):
-        """
-            S.append(object) -- append object to the end of the sequence
-        """
-
-        self.insert(len(self), element)
+class CustomForm(CRUDForm):
+    """ Custom CRUD Form """
 
     # -------------------------------------------------------------------------
     # Rendering/Processing
@@ -889,7 +854,7 @@ class S3SQLCustomForm(S3SQLForm):
                     fields_.append((name, field))
                     subtable_fields[alias] = fields_
 
-            elif isinstance(alias, S3SQLFormElement):
+            elif isinstance(alias, CRUDFormElement):
                 components.append(alias)
 
             if field is not None:
@@ -931,7 +896,7 @@ class S3SQLCustomForm(S3SQLForm):
 
                 # Apply customised attributes to renamed fields
                 # => except default, label, requires and widget, which can be overridden
-                #    in S3SQLField.resolve instead
+                #    in FormField.resolve instead
                 renamed_fields = subtable_fields.get(alias)
                 if renamed_fields:
                     table = component.table
@@ -1414,6 +1379,41 @@ class S3SQLCustomForm(S3SQLForm):
     # -------------------------------------------------------------------------
     # Utility functions
     # -------------------------------------------------------------------------
+    def insert(self, index, element):
+        """
+            S.insert(index, object) -- insert object before index
+        """
+
+        if not element:
+            return
+        if isinstance(element, CRUDFormElement):
+            self.elements.insert(index, element)
+        elif isinstance(element, str):
+            self.elements.insert(index, FormField(element))
+        elif isinstance(element, tuple):
+            l = len(element)
+            if l > 1:
+                label, selector = element[:2]
+                widget = element[2] if l > 2 else DEFAULT
+            else:
+                selector = element[0]
+                label = widget = DEFAULT
+            self.elements.insert(index, FormField(selector, label=label, widget=widget))
+        else:
+            msg = "Invalid form element: %s" % str(element)
+            if current.deployment_settings.get_base_debug():
+                raise SyntaxError(msg)
+            current.log.error(msg)
+
+    # -------------------------------------------------------------------------
+    def append(self, element):
+        """
+            S.append(object) -- append object to the end of the sequence
+        """
+
+        self.insert(len(self), element)
+
+    # -------------------------------------------------------------------------
     def _extract(self, form, alias=None):
         """
             Extract data for a subtable from the form
@@ -1606,7 +1606,7 @@ class S3SQLCustomForm(S3SQLForm):
         return accept_id, master_form_vars
 
 # =============================================================================
-class S3SQLFormElement:
+class CRUDFormElement:
     """ SQL Form Element Base Class """
 
     # -------------------------------------------------------------------------
@@ -1758,7 +1758,7 @@ class S3SQLFormElement:
         return f
 
 # =============================================================================
-class S3SQLField(S3SQLFormElement):
+class FormField(CRUDFormElement):
     """
         Base class for regular form fields
 
@@ -1831,7 +1831,7 @@ class S3SQLField(S3SQLFormElement):
             raise SyntaxError("Invalid subtable: %s" % tname)
 
 # =============================================================================
-class S3SQLVirtualField(S3SQLFormElement):
+class VirtualFormField(CRUDFormElement):
     """
         A form element to embed values of field methods (virtual fields),
         always read-only
@@ -1897,7 +1897,7 @@ class S3SQLVirtualField(S3SQLFormElement):
         return widget
 
 # =============================================================================
-class S3SQLDummyField(S3SQLFormElement):
+class DummyFormField(CRUDFormElement):
     """
         A Dummy Field
 
@@ -1948,7 +1948,7 @@ class S3SQLDummyField(S3SQLFormElement):
         return DIV(_class = "s3-dummy-field")
 
 # =============================================================================
-class S3SQLSectionBreak(S3SQLFormElement):
+class SectionBreak(CRUDFormElement):
     """
         A Section Break
 
@@ -1999,7 +1999,7 @@ class S3SQLSectionBreak(S3SQLFormElement):
         return DIV(_class = "s3-section-break")
 
 # =============================================================================
-class S3SQLInlineInstruction(S3SQLFormElement):
+class InlineInstruction(CRUDFormElement):
     """
         Inline Instructions
 
@@ -2069,7 +2069,7 @@ class S3SQLInlineInstruction(S3SQLFormElement):
         return element
 
 # =============================================================================
-class WithAdvice(S3SQLFormElement):
+class WithAdvice(CRUDFormElement):
     """
         Wrapper for form elements (or field widgets) to add an
         introductory/advisory text above or below them
@@ -2087,6 +2087,8 @@ class WithAdvice(S3SQLFormElement):
                         be used with safe origin content (=normally never)
         """
 
+        super().__init__(None)
+
         self.widget = widget
 
         self.text = text
@@ -2096,7 +2098,7 @@ class WithAdvice(S3SQLFormElement):
     # -------------------------------------------------------------------------
     def resolve(self, resource):
         """
-            Override S3SQLFormElement.resolve() to map to widget
+            Override CRUDFormElement.resolve() to map to widget
 
             Args:
                 resource: the CRUDResource to resolve this form element
@@ -2106,13 +2108,13 @@ class WithAdvice(S3SQLFormElement):
         widget = self.widget
 
         if isinstance(widget, str):
-            widget = S3SQLField(widget)
+            widget = FormField(widget)
 
         resolved = widget.resolve(resource)
 
         field = resolved[2]
         if field:
-            if isinstance(widget, S3SQLField):
+            if isinstance(widget, FormField):
                 if field.widget:
                     self.widget = field.widget
                 else:

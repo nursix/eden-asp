@@ -63,8 +63,8 @@ def security_seized_item_resource(r, tablename):
 
     from core import DateFilter, \
                      OptionsFilter, \
-                     S3SQLCustomForm, \
-                     S3SQLInlineComponent, \
+                     CustomForm, \
+                     InlineComponent, \
                      TextFilter, \
                      get_filter_options
 
@@ -113,26 +113,26 @@ def security_seized_item_resource(r, tablename):
     if r.interactive:
 
         # CRUD form
-        crud_form = S3SQLCustomForm("person_id",
-                                    "item_type_id",
-                                    "number",
-                                    "date",
-                                    "confiscated_by",
-                                    "status",
-                                    "status_comment",
-                                    "depository_id",
-                                    "returned_on",
-                                    "returned_by",
-                                    S3SQLInlineComponent("image",
-                                            label = T("Photos"),
-                                            fields = ["date",
-                                                      "file",
-                                                      "comments",
-                                                      ],
-                                            explicit_add = T("Add Photo"),
-                                            ),
-                                    "comments",
-                                    )
+        crud_form = CustomForm("person_id",
+                               "item_type_id",
+                               "number",
+                               "date",
+                               "confiscated_by",
+                               "status",
+                               "status_comment",
+                               "depository_id",
+                               "returned_on",
+                               "returned_by",
+                               InlineComponent("image",
+                                               label = T("Photos"),
+                                               fields = ["date",
+                                                         "file",
+                                                         "comments",
+                                                         ],
+                                               explicit_add = T("Add Photo"),
+                                               ),
+                               "comments",
+                               )
 
         # Custom filter Widgets
         filter_widgets = [TextFilter(["person_id$pe_label",

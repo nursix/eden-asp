@@ -43,7 +43,7 @@ def pr_person_controller(**attr):
         resource = r.resource
         table = resource.table
 
-        from core import StringTemplateParser, S3SQLCustomForm
+        from core import StringTemplateParser, CustomForm
 
         # Determine order of name fields
         NAMES = ("first_name", "middle_name", "last_name")
@@ -60,8 +60,7 @@ def pr_person_controller(**attr):
 
             # Custom Form
             crud_fields = name_fields
-            r.resource.configure(crud_form = S3SQLCustomForm(*crud_fields,
-                                                             ),
+            r.resource.configure(crud_form = CustomForm(*crud_fields),
                                  deletable = False,
                                  )
         return result

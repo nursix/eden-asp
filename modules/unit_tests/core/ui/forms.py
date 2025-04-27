@@ -17,10 +17,10 @@ class InlineLinkTests(unittest.TestCase):
     def testInlineLinkValidation(self):
 
         # Default error message
-        widget = S3SQLInlineLink("component",
-                                 field = "test",
-                                 required = True,
-                                 )
+        widget = InlineLink("component",
+                            field = "test",
+                            required = True,
+                            )
         widget.alias = "default"
 
         form = Storage(vars = Storage(link_defaultcomponent=[1, 2]),
@@ -41,10 +41,10 @@ class InlineLinkTests(unittest.TestCase):
 
         # Custom error message
         msg = "Custom Error Message"
-        widget = S3SQLInlineLink("component",
-                                 field = "test",
-                                 required = msg,
-                                 )
+        widget = InlineLink("component",
+                            field = "test",
+                            required = msg,
+                            )
         widget.alias = "default"
 
         form = Storage(vars = Storage(link_defaultcomponent=[1, 2]),

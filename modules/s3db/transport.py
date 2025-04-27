@@ -652,15 +652,15 @@ class TransportModel(DataModel):
             msg_list_empty=T("No Border Crossings currently registered"))
 
         # CRUD Form
-        crud_form = S3SQLCustomForm("name",
-                                    "location_id",
-                                    S3SQLInlineComponent("border_crossing_country",
-                                                         label = T("Countries"),
-                                                         fields = [("", "country")],
-                                                         ),
-                                    "status",
-                                    "comments",
-                                    )
+        crud_form = CustomForm("name",
+                               "location_id",
+                               InlineComponent("border_crossing_country",
+                                               label = T("Countries"),
+                                               fields = [("", "country")],
+                                               ),
+                               "status",
+                               "comments",
+                               )
 
         # List Fields
         list_fields = ["name",

@@ -44,7 +44,7 @@ def person():
                 table.pe_label.readable = table.pe_label.writable = False
                 table.missing.readable = table.missing.writable = False
 
-                # S3SQLCustomForm breaks popup return, so disable
+                # CustomForm breaks popup return, so disable
                 s3db.clear_config("pr_person", "crud_form")
 
             if r.component:

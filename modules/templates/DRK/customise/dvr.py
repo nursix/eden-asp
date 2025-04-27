@@ -284,19 +284,19 @@ def dvr_case_activity_controller(**attr):
                                                           )
 
                 # Custom form (excluding case reference)
-                from core import S3SQLCustomForm
-                crud_form = S3SQLCustomForm("person_id",
-                                            "start_date",
-                                            "need_id",
-                                            "need_details",
-                                            "emergency",
-                                            "activity_details",
-                                            "followup",
-                                            "followup_date",
-                                            "outcome",
-                                            "completed",
-                                            "comments",
-                                            )
+                from core import CustomForm
+                crud_form = CustomForm("person_id",
+                                       "start_date",
+                                       "need_id",
+                                       "need_details",
+                                       "emergency",
+                                       "activity_details",
+                                       "followup",
+                                       "followup_date",
+                                       "outcome",
+                                       "completed",
+                                       "comments",
+                                       )
                 resource.configure(crud_form=crud_form)
 
             # Custom list fields
@@ -683,23 +683,23 @@ def dvr_case_event_type_resource(r, tablename):
     T = current.T
     s3db = current.s3db
 
-    from core import S3SQLCustomForm, \
-                        S3SQLInlineLink
+    from core import CustomForm, \
+                     InlineLink
 
-    crud_form = S3SQLCustomForm("code",
-                                "name",
-                                "is_inactive",
-                                "is_default",
-                                "role_required",
-                                "appointment_type_id",
-                                "min_interval",
-                                "max_per_day",
-                                S3SQLInlineLink("excluded_by",
-                                                field = "excluded_by_id",
-                                                label = T("Not Combinable With"),
-                                                ),
-                                "presence_required",
-                                )
+    crud_form = CustomForm("code",
+                           "name",
+                           "is_inactive",
+                           "is_default",
+                           "role_required",
+                           "appointment_type_id",
+                           "min_interval",
+                           "max_per_day",
+                           InlineLink("excluded_by",
+                                      field = "excluded_by_id",
+                                      label = T("Not Combinable With"),
+                                      ),
+                           "presence_required",
+                           )
 
     s3db.configure("dvr_case_event_type",
                    crud_form = crud_form,

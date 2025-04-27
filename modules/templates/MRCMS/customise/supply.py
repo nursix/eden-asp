@@ -10,7 +10,7 @@ from gluon import current, URL
 
 from core import CustomController, IS_ONE_OF, \
                  DateFilter, OptionsFilter, TextFilter, \
-                 S3SQLCustomForm, S3SQLInlineLink
+                 CustomForm, InlineLink
 
 # -------------------------------------------------------------------------
 def supply_distribution_set_controller(**attr):
@@ -83,24 +83,24 @@ $.filterOptionsS3({
                         jquery_ready.append(script)
 
             # Embed flags_required/flags_debarring in CRUD form
-            crud_form = S3SQLCustomForm("organisation_id",
-                                        "name",
-                                        "max_per_day",
-                                        "min_interval",
-                                        "residents_only",
-                                        S3SQLInlineLink("flag_required",
-                                                        label = T("Case Flags Required"),
-                                                        field = "flag_id",
-                                                        render_list = True,
-                                                        ),
-                                        S3SQLInlineLink("flag_debarring",
-                                                        label = T("Case Flags Debarring"),
-                                                        field = "flag_id",
-                                                        render_list = True,
-                                                        ),
-                                        "active",
-                                        "comments",
-                                        )
+            crud_form = CustomForm("organisation_id",
+                                   "name",
+                                   "max_per_day",
+                                   "min_interval",
+                                   "residents_only",
+                                   InlineLink("flag_required",
+                                              label = T("Case Flags Required"),
+                                              field = "flag_id",
+                                              render_list = True,
+                                              ),
+                                   InlineLink("flag_debarring",
+                                              label = T("Case Flags Debarring"),
+                                              field = "flag_id",
+                                              render_list = True,
+                                              ),
+                                   "active",
+                                   "comments",
+                                   )
 
             # Custom list fields
             list_fields = ["name",

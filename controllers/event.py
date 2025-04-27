@@ -397,17 +397,17 @@ def group():
                            ]
             resource.configure(list_fields = list_fields)
         if r.interactive:
-            from core import S3SQLCustomForm, S3SQLInlineComponent
+            from core import CustomForm, InlineComponent
             crud_fields = ["name",
                            "description",
-                           S3SQLInlineComponent("team_status_team",
-                                                fields = [("", "status_id")],
-                                                label = T("Status"),
-                                                multiple = False,
-                                                ),
+                           InlineComponent("team_status_team",
+                                           fields = [("", "status_id")],
+                                           label = T("Status"),
+                                           multiple = False,
+                                           ),
                            "comments",
                            ]
-            crud_form = S3SQLCustomForm(*crud_fields)
+            crud_form = CustomForm(*crud_fields)
             r.resource.configure(crud_form = crud_form)
         return True
     s3.prep = prep

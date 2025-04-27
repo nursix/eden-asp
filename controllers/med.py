@@ -144,21 +144,21 @@ def person():
 
 
         # CRUD Form
-        from core import S3SQLCustomForm
-        crud_form = S3SQLCustomForm("first_name",
-                                    "middle_name",
-                                    "last_name",
-                                    "person_details.year_of_birth",
-                                    "date_of_birth",
-                                    "gender",
-                                    # "person_details.marital_status",
-                                    # "person_details.nationality",
-                                    # "person_details.religion",
-                                    # "person_details.occupation",
-                                    "deceased",
-                                    "date_of_death",
-                                    "comments",
-                                    )
+        from core import CustomForm
+        crud_form = CustomForm("first_name",
+                               "middle_name",
+                               "last_name",
+                               "person_details.year_of_birth",
+                               "date_of_birth",
+                               "gender",
+                               # "person_details.marital_status",
+                               # "person_details.nationality",
+                               # "person_details.religion",
+                               # "person_details.occupation",
+                               "deceased",
+                               "date_of_death",
+                               "comments",
+                               )
 
         r.resource.configure(crud_form = crud_form,
                              insertable = False,
