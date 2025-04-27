@@ -1384,15 +1384,15 @@ class CRShelterInspectionModel(DataModel):
                      )
 
         # CRUD Form
-        crud_form = S3SQLCustomForm("shelter_unit_id",
-                                    "date",
-                                    S3SQLInlineLink("shelter_flag",
-                                                    field = "flag_id",
-                                                    multiple = True,
-                                                    cols = 3,
-                                                    ),
-                                    "comments",
-                                    )
+        crud_form = CustomForm("shelter_unit_id",
+                               "date",
+                               InlineLink("shelter_flag",
+                                          field = "flag_id",
+                                          multiple = True,
+                                          cols = 3,
+                                          ),
+                               "comments",
+                               )
 
         # List fields
         list_fields = ["shelter_unit_id",
@@ -2757,8 +2757,8 @@ class cr_AssignUnit(BasicCRUD):
             r.error(400, current.messages.BAD_REQUEST)
 
         self.settings = current.response.s3.crud
-        sqlform = self.resource.get_config("crud_form")
-        self.sqlform = sqlform if sqlform else S3SQLDefaultForm()
+        form = self.resource.get_config("crud_form")
+        self.form = form if form else DefaultForm()
         self.data = None
 
         # Create or Update?

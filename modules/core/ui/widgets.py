@@ -4425,7 +4425,7 @@ class S3TagCheckboxWidget(EdenFormWidget):
               e.g. IS_IN_SET(("Y", "N")) (also for consistency with imports)
             - when using this with a filtered key-value component (e.g.
               pr_person_tag), make the filtered component multiple=False and
-              embed *.value as subtable-field (do not use S3SQLInlineComponent)
+              embed *.value as subtable-field (do not use InlineComponent)
     """
 
     def __init__(self, on="Y", off="N"):

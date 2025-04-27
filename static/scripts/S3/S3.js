@@ -962,8 +962,8 @@ S3.openPopup = function(url, center) {
      * @param {string} setting.prefix - the inline form prefix (default: 'default')
      * @param {string} setting.alias - the component alias for the inline form (e.g. task_project)
      * @param {string} setting.name - the field name
-     * @param {string} setting.inlineType - the inline form type, 'link' (for S3SQLInlineLink),
-     *                                      or 'sub' (for other S3SQLInlineComponent types)
+     * @param {string} setting.inlineType - the inline form type, 'link' (for InlineLink),
+     *                                      or 'sub' (for other InlineComponent types)
      * @param {string} setting.inlineRows - the inline form has multiple rows, default: true
      */
     var getSelector = function(setting) {

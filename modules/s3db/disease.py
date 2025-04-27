@@ -488,13 +488,13 @@ class DiseaseMonitoringModel(DataModel):
                            "date",
                            "tests_total",
                            "tests_positive",
-                           S3SQLInlineComponent("testing_demographic",
-                                                label = T("Details"),
-                                                fields = ["demographic_id",
-                                                          "tests_total",
-                                                          "tests_positive",
-                                                          ],
-                                                ),
+                           InlineComponent("testing_demographic",
+                                           label = T("Details"),
+                                           fields = ["demographic_id",
+                                                     "tests_total",
+                                                     "tests_positive",
+                                                     ],
+                                           ),
                            "comments",
                            ]
         else:
@@ -505,7 +505,7 @@ class DiseaseMonitoringModel(DataModel):
                            "tests_positive",
                            "comments",
                            ]
-        crud_form = S3SQLCustomForm(*crud_fields)
+        crud_form = CustomForm(*crud_fields)
 
         # Filter Widgets
         filter_widgets = [TextFilter(["site_id$name", "comments"],
@@ -1110,20 +1110,20 @@ class DiseaseCaseTrackingModel(DataModel):
                        ]
 
         # CRUD form
-        crud_form = S3SQLCustomForm("disease_id",
-                                    case_number,
-                                    "person_id",
-                                    "location_id",
-                                    "illness_status",
-                                    "symptom_debut",
-                                    "hospitalized",
-                                    "intensive_care",
-                                    "diagnosis_status",
-                                    "diagnosis_date",
-                                    "monitoring_level",
-                                    "monitoring_until",
-                                    "comments",
-                                    )
+        crud_form = CustomForm("disease_id",
+                               case_number,
+                               "person_id",
+                               "location_id",
+                               "illness_status",
+                               "symptom_debut",
+                               "hospitalized",
+                               "intensive_care",
+                               "diagnosis_status",
+                               "diagnosis_date",
+                               "monitoring_level",
+                               "monitoring_until",
+                               "comments",
+                               )
 
 
 
@@ -1220,16 +1220,16 @@ class DiseaseCaseTrackingModel(DataModel):
         crud_fields = ["case_id",
                        "date",
                        "illness_status",
-                       S3SQLInlineLink("symptom",
-                                       field = "symptom_id",
-                                       label = T("Symptoms"),
-                                       multiple = True,
-                                       ),
+                       InlineLink("symptom",
+                                  field = "symptom_id",
+                                  label = T("Symptoms"),
+                                  multiple = True,
+                                  ),
                        "comments",
                        ]
 
         configure(tablename,
-                  crud_form = S3SQLCustomForm(*crud_fields),
+                  crud_form = CustomForm(*crud_fields),
                   list_fields = ["date",
                                  "illness_status",
                                  (T("Symptoms"), "symptom.name"),

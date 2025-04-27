@@ -126,11 +126,11 @@ def person():
                 name_fields = [fn for fn in keys if fn in NAMES]
 
                 # Fields in form
-                from core import S3SQLInlineComponent
+                from core import InlineComponent
                 crud_fields = name_fields + \
                               ["gender",
                                "date_of_birth",
-                               S3SQLInlineComponent(
+                               InlineComponent(
                                     "contact",
                                     fields = [("", "value")],
                                     filterby = {"field": "contact_method",
@@ -140,7 +140,7 @@ def person():
                                     multiple = False,
                                     name = "phone",
                                     ),
-                               S3SQLInlineComponent(
+                               InlineComponent(
                                     "contact",
                                     fields = [("", "value")],
                                     filterby = {"field": "contact_method",
@@ -152,7 +152,7 @@ def person():
                                     ),
                                ]
 
-                resource.configure(crud_form = s3base.S3SQLCustomForm(*crud_fields),
+                resource.configure(crud_form = s3base.CustomForm(*crud_fields),
                                    deletable = False,
                                    )
             return True

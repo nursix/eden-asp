@@ -219,7 +219,7 @@ class surplus_meals(CustomController):
                          BasicCRUD, \
                          TextFilter, \
                          DateFilter, \
-                         S3SQLCustomForm
+                         CustomForm
 
         s3 = current.response.s3
         controller = self.__class__.__name__
@@ -278,11 +278,11 @@ class surplus_meals(CustomController):
 
             if r.interactive:
                 # Custom CRUD form
-                crud_form = S3SQLCustomForm("date",
-                                            "quantity",
-                                            registered_by,
-                                            "comments",
-                                            )
+                crud_form = CustomForm("date",
+                                       "quantity",
+                                       registered_by,
+                                       "comments",
+                                       )
                 # Custom filter widgets
                 filter_widgets = [TextFilter(["created_by$email",
                                               "comments",

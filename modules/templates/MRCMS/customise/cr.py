@@ -9,7 +9,7 @@ from collections import OrderedDict
 from gluon import current, URL, DIV, H4, P, TAG, IS_EMPTY_OR
 
 from core import BasicCRUD, FS, IS_ONE_OF, \
-                 LocationSelector, PresenceRegistration, S3SQLCustomForm, \
+                 LocationSelector, PresenceRegistration, CustomForm, \
                  get_form_record_id, s3_fieldmethod, s3_str, represent_occupancy
 
 # -------------------------------------------------------------------------
@@ -329,7 +329,7 @@ def cr_shelter_resource(r, tablename):
 
     # Table configuration
     s3db.configure("cr_shelter",
-                   crud_form = S3SQLCustomForm(*crud_fields),
+                   crud_form = CustomForm(*crud_fields),
                    subheadings = subheadings,
                    realm_components = ("shelter_unit",
                                        ),

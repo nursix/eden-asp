@@ -100,7 +100,7 @@ def repository():
                         human_readable = None
                         delete_input_files = None
 
-                    crud_form = s3base.S3SQLCustomForm(
+                    crud_form = s3base.CustomForm(
                                     "resource_name",
                                     components,
                                     infile_pattern,
@@ -114,7 +114,7 @@ def repository():
                                     #"update_method",
                                     "update_policy",
                                     "conflict_policy",
-                                    s3base.S3SQLInlineComponent(
+                                    s3base.InlineComponent(
                                         "resource_filter",
                                         label = T("Filters"),
                                         fields = ["tablename",
@@ -245,10 +245,10 @@ def dataset():
             # TODO adapt tooltips to context
 
             # Reduced form
-            crud_form = s3base.S3SQLCustomForm(
+            crud_form = s3base.CustomForm(
                             "resource_name",
                             "components",
-                            s3base.S3SQLInlineComponent(
+                            s3base.InlineComponent(
                                 "resource_filter",
                                 label = T("Filters"),
                                 fields = ["tablename",

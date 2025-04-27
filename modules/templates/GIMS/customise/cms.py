@@ -135,9 +135,9 @@ def cms_post_resource(r, tablename):
 
     table = s3db.cms_post
 
-    from core import S3SQLCustomForm, \
-                     S3SQLInlineComponent, \
-                     S3SQLInlineLink, \
+    from core import CustomForm, \
+                     InlineComponent, \
+                     InlineLink, \
                      s3_text_represent
 
     field = table.body
@@ -156,10 +156,10 @@ def cms_post_resource(r, tablename):
                        "priority",
                        "date",
                        "expired",
-                       S3SQLInlineLink("roles",
-                                       label = T("Roles"),
-                                       field = "group_id",
-                                       ),
+                       InlineLink("roles",
+                                  label = T("Roles"),
+                                  field = "group_id",
+                                  ),
                        ]
         list_fields = ["date",
                        "priority",
@@ -173,15 +173,15 @@ def cms_post_resource(r, tablename):
         crud_fields = ["name",
                        "body",
                        "date",
-                       S3SQLInlineComponent("document",
-                                            name = "file",
-                                            label = T("Attachments"),
-                                            fields = ["file", "comments"],
-                                            filterby = {"field": "file",
-                                                        "options": "",
-                                                        "invert": True,
-                                                        },
-                                            ),
+                       InlineComponent("document",
+                                       name = "file",
+                                       label = T("Attachments"),
+                                       fields = ["file", "comments"],
+                                       filterby = {"field": "file",
+                                                   "options": "",
+                                                   "invert": True,
+                                                   },
+                                       ),
                         "comments",
                         ]
         list_fields = ["post_module.module",
@@ -193,7 +193,7 @@ def cms_post_resource(r, tablename):
         orderby = "cms_post.name"
 
     s3db.configure("cms_post",
-                   crud_form = S3SQLCustomForm(*crud_fields),
+                   crud_form = CustomForm(*crud_fields),
                    list_fields = list_fields,
                    orderby = orderby,
                    )

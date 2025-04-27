@@ -2566,7 +2566,7 @@ class S3Config(Storage):
 
     def get_ui_inline_component_layout(self):
         """
-            Layout for S3SQLInlineComponent
+            Layout for InlineComponent
         """
         # Use this to also catch old-style classes (not recommended):
         #import types
@@ -2574,8 +2574,8 @@ class S3Config(Storage):
 
         layout = self.ui.get("inline_component_layout")
         if not layout:
-            from core import S3SQLSubFormLayout
-            layout = S3SQLSubFormLayout()
+            from core import SubFormLayout
+            layout = SubFormLayout()
         elif isinstance(layout, type):
             # Instantiate only now when it's actually requested
             # (because it may inject JS which is not needed if unused)

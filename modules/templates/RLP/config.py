@@ -314,7 +314,7 @@ def config(settings):
 
         s3db = current.s3db
 
-        from core import S3SQLCustomForm, S3SQLInlineComponent, S3SQLInlineLink
+        from core import CustomForm, InlineComponent, InlineLink
 
         record = r.record
         if r.tablename == "cms_series" and \
@@ -329,10 +329,10 @@ def config(settings):
                            "priority",
                            "date",
                            "expired",
-                           S3SQLInlineLink("roles",
-                                           label = T("Roles"),
-                                           field = "group_id",
-                                           ),
+                           InlineLink("roles",
+                                      label = T("Roles"),
+                                      field = "group_id",
+                                      ),
                            ]
             list_fields = ["date",
                            "priority",
@@ -346,15 +346,15 @@ def config(settings):
             crud_fields = ["name",
                            "body",
                            "date",
-                           S3SQLInlineComponent("document",
-                                                name = "file",
-                                                label = T("Attachments"),
-                                                fields = ["file", "comments"],
-                                                filterby = {"field": "file",
-                                                            "options": "",
-                                                            "invert": True,
-                                                            },
-                                                ),
+                           InlineComponent("document",
+                                           name = "file",
+                                           label = T("Attachments"),
+                                           fields = ["file", "comments"],
+                                           filterby = {"field": "file",
+                                                       "options": "",
+                                                       "invert": True,
+                                                       },
+                                           ),
                            "comments",
                            ]
             list_fields = ["post_module.module",
@@ -366,7 +366,7 @@ def config(settings):
             orderby = "cms_post.name"
 
         s3db.configure("cms_post",
-                       crud_form = S3SQLCustomForm(*crud_fields),
+                       crud_form = CustomForm(*crud_fields),
                        list_fields = list_fields,
                        orderby = orderby,
                        )
@@ -415,13 +415,13 @@ def config(settings):
         if r.tablename == "org_organisation" and not r.component:
 
             # Use custom form with email-address
-            from core import S3SQLCustomForm, \
-                             S3SQLInlineComponent, \
-                             S3SQLInlineLink
+            from core import CustomForm, \
+                             InlineComponent, \
+                             InlineLink
 
             crud_fields = ["name",
                            "acronym",
-                           S3SQLInlineLink(
+                           InlineLink(
                                 "organisation_type",
                                 field = "organisation_type_id",
                                 search = False,
@@ -429,7 +429,7 @@ def config(settings):
                                 multiple = settings.get_org_organisation_types_multiple(),
                                 widget = "multiselect",
                                 ),
-                           S3SQLInlineComponent(
+                           InlineComponent(
                                 "contact",
                                 fields = [("", "value")],
                                 filterby = {"field": "contact_method",
@@ -446,7 +446,7 @@ def config(settings):
                            ]
 
             s3db.configure("org_organisation",
-                           crud_form = S3SQLCustomForm(*crud_fields),
+                           crud_form = CustomForm(*crud_fields),
                            )
 
     settings.customise_org_organisation_resource = customise_org_organisation_resource
@@ -502,16 +502,16 @@ def config(settings):
 
         if r.interactive:
 
-            from core import S3SQLCustomForm, S3SQLInlineLink
+            from core import CustomForm, InlineLink
             crud_fields = ["name",
                             #"code",
                             "organisation_id",
                             "office_type_id",
-                            S3SQLInlineLink("facility_type",
-                                            field = "facility_type_id",
-                                            label = T("Facility Type"),
-                                            cols = 3,
-                                            ),
+                            InlineLink("facility_type",
+                                       field = "facility_type_id",
+                                       label = T("Facility Type"),
+                                       cols = 3,
+                                       ),
                             "location_id",
                             "phone1",
                             "phone2",
@@ -533,7 +533,7 @@ def config(settings):
                            ]
 
             current.s3db.configure("org_office",
-                                   crud_form = S3SQLCustomForm(*crud_fields),
+                                   crud_form = CustomForm(*crud_fields),
                                    list_fields = list_fields,
                                    )
 
@@ -1205,17 +1205,17 @@ def config(settings):
                 list of form fields
         """
 
-        from core import (S3SQLInlineComponent,
-                          S3SQLInlineLink,
+        from core import (InlineComponent,
+                          InlineLink,
                           )
 
         crud_fields = [
-                S3SQLInlineLink("pool",
-                                field = "group_id",
-                                multiple = False,
-                                header = False,
-                                search = False,
-                                ),
+                InlineLink("pool",
+                           field = "group_id",
+                           multiple = False,
+                           header = False,
+                           search = False,
+                           ),
                 ]
 
         if coordinator:
@@ -1252,7 +1252,7 @@ def config(settings):
             crud_fields.extend([
                 "date_of_birth",
                 "gender",
-                S3SQLInlineComponent(
+                InlineComponent(
                         "address",
                         label = T("Current Address"),
                         fields = [("", "location_id")],
@@ -1267,7 +1267,7 @@ def config(settings):
         # Contact details if permitted
         if show_contact_details:
             crud_fields.extend([
-                S3SQLInlineComponent(
+                InlineComponent(
                         "contact",
                         fields = [("", "value")],
                         filterby = {"field": "contact_method",
@@ -1277,7 +1277,7 @@ def config(settings):
                         multiple = False,
                         name = "email",
                         ),
-                S3SQLInlineComponent(
+                InlineComponent(
                         "contact",
                         fields = [("", "value")],
                         filterby = {"field": "contact_method",
@@ -1287,7 +1287,7 @@ def config(settings):
                         multiple = False,
                         name = "home_phone",
                         ),
-                S3SQLInlineComponent(
+                InlineComponent(
                         "contact",
                         fields = [("", "value")],
                         filterby = {"field": "contact_method",
@@ -1297,7 +1297,7 @@ def config(settings):
                         multiple = False,
                         name = "phone",
                         ),
-                S3SQLInlineComponent(
+                InlineComponent(
                         "contact",
                         fields = [("", "value")],
                         filterby = {"field": "contact_method",
@@ -1313,23 +1313,23 @@ def config(settings):
         from gluon import IS_IN_SET
         from .helpers import rlp_deployment_sites
         crud_fields.extend([
-                S3SQLInlineLink("occupation_type",
-                               label = T("Occupation Type"),
-                               field = "occupation_type_id",
-                               ),
+                InlineLink("occupation_type",
+                           label = T("Occupation Type"),
+                           field = "occupation_type_id",
+                           ),
                 (T("Occupation / Speciality"), "person_details.occupation"),
                 "availability.hours_per_week",
                 "availability.schedule_json",
-                S3SQLInlineLink("availability_sites",
-                                field = "site_id",
-                                label = T("Possible Deployment Sites"),
-                                requires = IS_IN_SET(rlp_deployment_sites(),
-                                                     multiple = True,
-                                                     zero = None,
-                                                     sort = False,
-                                                     ),
-                                render_list = True,
-                                ),
+                InlineLink("availability_sites",
+                           field = "site_id",
+                           label = T("Possible Deployment Sites"),
+                           requires = IS_IN_SET(rlp_deployment_sites(),
+                                                multiple = True,
+                                                zero = None,
+                                                sort = False,
+                                                ),
+                           render_list = True,
+                           ),
                 "availability.comments",
                 "volunteer_record.comments",
                 ])
@@ -1366,7 +1366,7 @@ def config(settings):
                               LocationSelector,
                               OptionsFilter,
                               RangeFilter,
-                              S3SQLCustomForm,
+                              CustomForm,
                               TextFilter,
                               StringTemplateParser,
                               get_filter_options,
@@ -1641,7 +1641,7 @@ def config(settings):
                                      },
                         }
 
-                    resource.configure(crud_form = S3SQLCustomForm(*crud_fields),
+                    resource.configure(crud_form = CustomForm(*crud_fields),
                                        filter_widgets = filter_widgets,
                                        list_fields = list_fields,
                                        # Extra fields for computation of virtual fields
@@ -1673,17 +1673,17 @@ def config(settings):
 
                     # Custom Form
                     from gluon import IS_IN_SET
-                    from core import S3SQLInlineLink, WithAdvice
+                    from core import InlineLink, WithAdvice
                     from .helpers import rlp_deployment_sites
                     crud_fields = name_fields
                     if volunteer_id:
                         # Volunteer-specific fields
                         crud_fields.extend(["date_of_birth",
                                             "gender",
-                                            S3SQLInlineLink("occupation_type",
-                                                        label = T("Occupation Type"),
-                                                        field = "occupation_type_id",
-                                                        ),
+                                            InlineLink("occupation_type",
+                                                       label = T("Occupation Type"),
+                                                       field = "occupation_type_id",
+                                                       ),
                                             (T("Occupation / Speciality"), "person_details.occupation"),
                                             "volunteer_record.start_date",
                                             "volunteer_record.end_date",
@@ -1691,16 +1691,16 @@ def config(settings):
                                             "availability.hours_per_week",
                                             "availability.schedule_json",
                                             WithAdvice(
-                                                S3SQLInlineLink("availability_sites",
-                                                        field = "site_id",
-                                                        label = T("Possible Deployment Sites"),
-                                                        requires = IS_IN_SET(rlp_deployment_sites(),
-                                                                            multiple = True,
-                                                                            zero = None,
-                                                                            sort = False,
-                                                                            ),
-                                                        render_list = True,
-                                                        ),
+                                                InlineLink("availability_sites",
+                                                           field = "site_id",
+                                                           label = T("Possible Deployment Sites"),
+                                                           requires = IS_IN_SET(rlp_deployment_sites(),
+                                                                                multiple = True,
+                                                                                zero = None,
+                                                                                sort = False,
+                                                                                ),
+                                                           render_list = True,
+                                                           ),
                                                 # Widget intro text from CMS
                                                 text = ("pr", "person_availability_site", "AvailabilitySitesIntro"),
                                                 ),
@@ -1709,9 +1709,9 @@ def config(settings):
                                             ])
 
                     from .helpers import rlp_update_pool
-                    resource.configure(crud_form = S3SQLCustomForm(*crud_fields,
-                                                        postprocess = rlp_update_pool if volunteer_id else None,
-                                                        ),
+                    resource.configure(crud_form = CustomForm(*crud_fields,
+                                                              postprocess = rlp_update_pool if volunteer_id else None,
+                                                              ),
                                        deletable = False,
                                        )
 
@@ -2318,15 +2318,15 @@ def config(settings):
         # Configure custom forms
         auth = current.auth
         if auth.s3_has_role("COORDINATOR"):
-            from core import S3SQLCustomForm
-            crud_form = S3SQLCustomForm("organisation_id",
-                                        "person_id",
-                                        "date",
-                                        "end_date",
-                                        "requested_on",
-                                        "status",
-                                        "comments",
-                                        )
+            from core import CustomForm
+            crud_form = CustomForm("organisation_id",
+                                   "person_id",
+                                   "date",
+                                   "end_date",
+                                   "requested_on",
+                                   "status",
+                                   "comments",
+                                   )
             if record and record.status == "REQ" and r.method != "read":
                 # Request that can be approved
                 # => append inline-notifications
@@ -2338,15 +2338,15 @@ def config(settings):
             s3db.configure("hrm_delegation", crud_form=crud_form)
 
         elif auth.s3_has_roles(("HRMANAGER", "VCMANAGER")):
-            from core import S3SQLCustomForm
-            crud_form = S3SQLCustomForm("organisation_id",
-                                        "person_id",
-                                        "date",
-                                        "end_date",
-                                        "requested_on",
-                                        "status",
-                                        "comments",
-                                        )
+            from core import CustomForm
+            crud_form = CustomForm("organisation_id",
+                                   "person_id",
+                                   "date",
+                                   "end_date",
+                                   "requested_on",
+                                   "status",
+                                   "comments",
+                                   )
             if not record or record.status != "APPR" and \
                next_status and "APPR" in next_status:
                 # Request that can be approved

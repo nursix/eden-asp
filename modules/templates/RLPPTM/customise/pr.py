@@ -70,7 +70,7 @@ def pr_person_controller(**attr):
         # Call standard prep
         result = standard_prep(r) if callable(standard_prep) else True
 
-        from core import S3SQLCustomForm, StringTemplateParser
+        from core import CustomForm, StringTemplateParser
 
         # Determine order of name fields
         NAMES = ("first_name", "middle_name", "last_name")
@@ -98,9 +98,9 @@ def pr_person_controller(**attr):
                                          "gender",
                                          ]
 
-            r.resource.configure(crud_form = S3SQLCustomForm(*crud_fields,
-                                                             postprocess = person_postprocess,
-                                                             ),
+            r.resource.configure(crud_form = CustomForm(*crud_fields,
+                                                        postprocess = person_postprocess,
+                                                        ),
                                  deletable = False,
                                  )
 

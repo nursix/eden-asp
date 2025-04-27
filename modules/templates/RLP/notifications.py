@@ -12,7 +12,7 @@ from gluon import current, Field, SQLFORM, URL, \
                   A, DIV, FIELDSET, H6, INPUT, LABEL, LEGEND, P, TEXTAREA
 
 from core import s3_fullname, s3_str, CRUDMethod, JSONERRORS
-from core.ui.forms import S3SQLSubForm
+from core.ui.forms import SubForm
 
 PLACEHOLDER = re.compile(r"\{([^{}]+)\}")
 
@@ -574,7 +574,7 @@ class InlineNotificationsData(CRUDMethod):
         return output
 
 # =============================================================================
-class InlineNotifications(S3SQLSubForm):
+class InlineNotifications(SubForm):
     """
         Subform to compose and edit notifications for a delegation
 

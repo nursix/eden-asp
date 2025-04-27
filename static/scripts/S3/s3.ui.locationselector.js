@@ -710,7 +710,7 @@
             this.input.data('input', this._hasData());
 
             if (this.fieldname.slice(0, 4) == 'sub_') {
-                // This is an S3SQLInlineComponent => trigger change event
+                // This is an InlineComponent => trigger change event
                 this.input.trigger('change', mapInput && 'user' || 'implicit');
             }
         },

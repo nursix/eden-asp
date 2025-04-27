@@ -77,9 +77,9 @@ def org_organisation_controller(**attr):
             restrict_data_formats(r)
 
         if not r.component:
-            from core import S3SQLCustomForm, \
-                             S3SQLInlineComponent, \
-                             S3SQLInlineLink, \
+            from core import CustomForm, \
+                             InlineComponent, \
+                             InlineLink, \
                              OptionsFilter, \
                              TextFilter, \
                              get_filter_options
@@ -96,20 +96,20 @@ def org_organisation_controller(**attr):
                     groups_readonly = False
 
                 # Show organisation types
-                types = S3SQLInlineLink("organisation_type",
-                                        field = "organisation_type_id",
-                                        search = False,
-                                        label = T("Type"),
-                                        multiple = settings.get_org_organisation_types_multiple(),
-                                        widget = "multiselect",
-                                        )
+                types = InlineLink("organisation_type",
+                                   field = "organisation_type_id",
+                                   search = False,
+                                   label = T("Type"),
+                                   multiple = settings.get_org_organisation_types_multiple(),
+                                   widget = "multiselect",
+                                   )
                 # Show org groups and projects
-                groups = S3SQLInlineLink("group",
-                                         field = "group_id",
-                                         label = T("Organization Group"),
-                                         multiple = False,
-                                         readonly = groups_readonly,
-                                         )
+                groups = InlineLink("group",
+                                    field = "group_id",
+                                    label = T("Organization Group"),
+                                    multiple = False,
+                                    readonly = groups_readonly,
+                                    )
 
             else:
                 types = groups = None
@@ -133,7 +133,7 @@ def org_organisation_controller(**attr):
                            district_id,
                            "logo",
                            # ---- Contact Information ----
-                           S3SQLInlineComponent(
+                           InlineComponent(
                                 "contact",
                                 fields = [("", "value")],
                                 filterby = {"field": "contact_method",
@@ -212,7 +212,7 @@ def org_organisation_controller(**attr):
                                (T("Email"), "email.value"),
                                ]
 
-            resource.configure(crud_form = S3SQLCustomForm(*crud_fields),
+            resource.configure(crud_form = CustomForm(*crud_fields),
                                filter_widgets = filter_widgets,
                                list_fields = list_fields,
                                subheadings = subheadings,

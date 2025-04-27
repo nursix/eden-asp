@@ -1371,11 +1371,11 @@ class CMSNewsletterModel(DataModel):
                             )
 
         # CRUD Form
-        crud_form = S3SQLCustomForm(
+        crud_form = CustomForm(
                         "organisation_id",
                         "subject",
                         "message",
-                        S3SQLInlineComponent(
+                        InlineComponent(
                             "document",
                             name = "file",
                             label = T("Attachments"),

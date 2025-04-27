@@ -185,9 +185,9 @@ class DynamicTableModel:
                 # CRUD Form
                 crud_fields = settings.get("form")
                 if crud_fields:
-                    from ..ui import S3SQLCustomForm
+                    from ..ui import CustomForm
                     try:
-                        crud_form = S3SQLCustomForm(**crud_fields)
+                        crud_form = CustomForm(**crud_fields)
                     except:
                         pass
                     else:

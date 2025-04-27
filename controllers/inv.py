@@ -1555,11 +1555,11 @@ def project():
     # Load default Model
     s3db.project_project
 
-    crud_form = s3base.S3SQLCustomForm("organisation_id",
-                                       "code",
-                                       "name",
-                                       "end_date",
-                                       )
+    crud_form = s3base.CustomForm("organisation_id",
+                                  "code",
+                                  "name",
+                                  "end_date",
+                                  )
 
     list_fields = ["organisation_id",
                    "code",

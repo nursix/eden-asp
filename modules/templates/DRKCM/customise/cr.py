@@ -106,7 +106,7 @@ def cr_shelter_resource(r, tablename):
     auth = current.auth
 
     from core import LocationSelector, \
-                     S3SQLCustomForm
+                     CustomForm
 
     # Field configurations
     table = s3db.cr_shelter
@@ -126,14 +126,14 @@ def cr_shelter_resource(r, tablename):
                                     )
 
     # Custom form
-    crud_form = S3SQLCustomForm("name",
-                                "organisation_id",
-                                "shelter_type_id",
-                                "location_id",
-                                "phone",
-                                "status",
-                                "comments",
-                                )
+    crud_form = CustomForm("name",
+                           "organisation_id",
+                           "shelter_type_id",
+                           "location_id",
+                           "phone",
+                           "status",
+                           "comments",
+                           )
 
 
     # Custom list fields

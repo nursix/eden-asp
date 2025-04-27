@@ -913,18 +913,18 @@ class PRPersonModel(DataModel):
             ]
 
         # CRUD Form
-        crud_form = S3SQLCustomForm("first_name",
-                                    "middle_name",
-                                    "last_name",
-                                    "person_details.year_of_birth",
-                                    "date_of_birth",
-                                    "gender",
-                                    "person_details.marital_status",
-                                    "person_details.nationality",
-                                    "person_details.religion",
-                                    "person_details.occupation",
-                                    "comments",
-                                    )
+        crud_form = CustomForm("first_name",
+                               "middle_name",
+                               "last_name",
+                               "person_details.year_of_birth",
+                               "date_of_birth",
+                               "gender",
+                               "person_details.marital_status",
+                               "person_details.nationality",
+                               "person_details.religion",
+                               "person_details.occupation",
+                               "comments",
+                               )
 
         # Resource configuration
         self.configure(tablename,

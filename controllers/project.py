@@ -261,24 +261,24 @@ def project():
 
                 # @ToDo:
                 #if settings.has_module("budget"):
-                #    from core import S3SQLCustomForm, S3SQLInlineComponent
+                #    from core import CustomForm, InlineComponent
                 #    field = s3db.budget_allocation.budget_entity_id
                 #    field.readable = field.writable = True
                 #    field.represent = S3Represent(lookup="budget_budget", key="budget_entity_id")
                 #    field.requires = IS_ONE_OF()
                 #
-                #    crud_form = S3SQLCustomForm("project_id",
-                #                                "human_resource_id",
-                #                                "status",
-                #                                S3SQLInlineComponent("allocation",
-                #                                                     label = T("Budget"),
-                #                                                     fields = ["budget_entity_id",
-                #                                                               "start_date",
-                #                                                               "end_date",
-                #                                                               "daily_cost",
-                #                                                               ],
-                #                                                     ),
-                #                                )
+                #    crud_form = CustomForm("project_id",
+                #                           "human_resource_id",
+                #                           "status",
+                #                           InlineComponent("allocation",
+                #                                           label = T("Budget"),
+                #                                           fields = ["budget_entity_id",
+                #                                                     "start_date",
+                #                                                     "end_date",
+                #                                                     "daily_cost",
+                #                                                     ],
+                #                                           ),
+                #                           )
                 #    s3db.configure("project_human_resoruce_project",
                 #                   crud_form = crud_form,
                 #                   list_fields = [#"project_id", # Not being dropped in component view
@@ -1043,7 +1043,7 @@ def comments():
     field.default = task_id
     field.writable = field.readable = False
 
-    # Create CRUDRequest for S3SQLForm
+    # Create CRUDRequest for form
     r = crud_request(prefix = "project",
                      name = "comment",
                      # Override task_id
@@ -1057,7 +1057,7 @@ def comments():
     r.customise_resource()
 
     # Form to add a new Comment
-    form = s3base.S3SQLCustomForm("parent", "task_id", "body")(r)
+    form = s3base.CustomForm("parent", "task_id", "body")(r)
 
     # List of existing Comments
     comments = db(field == task_id).select(table.id,

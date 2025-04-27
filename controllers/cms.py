@@ -72,17 +72,17 @@ def series():
                 field = ctable.priority
                 field.readable = field.writable = True
 
-                from core import S3SQLCustomForm, S3SQLInlineLink
+                from core import CustomForm, InlineLink
 
                 crud_fields = ["name",
                                "body",
                                "priority",
                                "date",
                                "expired",
-                               S3SQLInlineLink("roles",
-                                               label = T("Roles"),
-                                               field = "group_id",
-                                               ),
+                               InlineLink("roles",
+                                          label = T("Roles"),
+                                          field = "group_id",
+                                          ),
                                ]
                 list_fields = ["date",
                                "priority",
@@ -92,7 +92,7 @@ def series():
                                "expired",
                                ]
 
-                component.configure(crud_form = S3SQLCustomForm(*crud_fields),
+                component.configure(crud_form = CustomForm(*crud_fields),
                                     list_fields = list_fields,
                                     orderby = "cms_post.date desc",
                                     )
@@ -703,7 +703,7 @@ def newsfeed():
             #    # Don't override card layout for News Feed/Homepage
             #    return True
 
-            from core import S3SQLCustomForm, S3SQLInlineComponent
+            from core import CustomForm, InlineComponent
 
             # Filter from a Profile page?
             # If so, then default the fields we know
@@ -731,49 +731,49 @@ def newsfeed():
                                 "location_id",
                                 ))
             if not event_id and show_events:
-                cappend(S3SQLInlineComponent("event_post",
-                                             # @ToDo: deployment_setting (use same one used to activate?)
-                                             #label = T("Disaster(s)"),
-                                             label = T("Disaster"),
-                                             multiple = False,
-                                             fields = [("", "event_id")],
-                                             orderby = "event_id$name",
-                                             ))
+                cappend(InlineComponent("event_post",
+                                        # @ToDo: deployment_setting (use same one used to activate?)
+                                        #label = T("Disaster(s)"),
+                                        label = T("Disaster"),
+                                        multiple = False,
+                                        fields = [("", "event_id")],
+                                        orderby = "event_id$name",
+                                        ))
             if org_field == "post_organisation.organisation_id":
-                cappend(S3SQLInlineComponent("post_organisation",
-                                             label = T("Organization"),
-                                             fields = [("", "organisation_id")],
-                                             # @ToDo: deployment_setting
-                                             multiple = False,
-                                             ))
+                cappend(InlineComponent("post_organisation",
+                                        label = T("Organization"),
+                                        fields = [("", "organisation_id")],
+                                        # @ToDo: deployment_setting
+                                        multiple = False,
+                                        ))
             if org_group_field == "post_organisation_group.group_id":
-                cappend(S3SQLInlineComponent("post_organisation_group",
-                                             label = T(group_label),
-                                             fields = [("", "group_id")],
-                                             # @ToDo: deployment_setting
-                                             multiple = False,
-                                             ))
+                cappend(InlineComponent("post_organisation_group",
+                                        label = T(group_label),
+                                        fields = [("", "group_id")],
+                                        # @ToDo: deployment_setting
+                                        multiple = False,
+                                        ))
             if contact_field == "person_id":
                 cappend("person_id")
 
             if settings.get_cms_show_attachments():
-                cappend(S3SQLInlineComponent("document",
-                                             name = "file",
-                                             label = T("Files"),
-                                             fields = [("", "file"),
-                                                       #"comments",
-                                                       ],
-                                             ))
+                cappend(InlineComponent("document",
+                                        name = "file",
+                                        label = T("Files"),
+                                        fields = [("", "file"),
+                                                  #"comments",
+                                                  ],
+                                        ))
 
             if settings.get_cms_show_links():
-                cappend(S3SQLInlineComponent("document",
-                                             name = "url",
-                                             label = T("Links"),
-                                             fields = [("", "url"),
-                                                       #"comments",
-                                                       ],
-                                             ))
-            crud_form = S3SQLCustomForm(*crud_fields)
+                cappend(InlineComponent("document",
+                                        name = "url",
+                                        label = T("Links"),
+                                        fields = [("", "url"),
+                                                #"comments",
+                                                ],
+                                        ))
+            crud_form = CustomForm(*crud_fields)
 
             # Return to List view after create/update/delete
             # We now do all this in Popups
@@ -1114,12 +1114,12 @@ def newsletter():
             if lookup:
                 # Add distribution list to CRUD form
                 types = settings.get_cms_newsletter_recipient_types()
-                from core import S3SQLCustomForm, S3SQLInlineComponent, S3SQLInlineLink
-                crud_form = S3SQLCustomForm(
+                from core import CustomForm, InlineComponent, InlineLink
+                crud_form = CustomForm(
                                 "organisation_id",
                                 "subject",
                                 "message",
-                                S3SQLInlineComponent(
+                                InlineComponent(
                                     "document",
                                     name = "file",
                                     label = T("Attachments"),
@@ -1132,7 +1132,7 @@ def newsletter():
                                 "contact_name",
                                 "contact_email",
                                 #"contact_phone",
-                                S3SQLInlineLink(
+                                InlineLink(
                                     "distribution",
                                     label = T("Distribution##list"),
                                     field = "filter_id",
@@ -1174,8 +1174,8 @@ def read_newsletter():
         from core import accessible_pe_query, \
                          DateFilter, \
                          OptionsFilter, \
-                         S3SQLCustomForm, \
-                         S3SQLInlineComponent, \
+                         CustomForm, \
+                         InlineComponent, \
                          TextFilter
 
         resource = r.resource
@@ -1211,13 +1211,13 @@ def read_newsletter():
                                   DIV(v, _class="newsletter-text") if v else "-"
 
                 # Compact representation of contact information
-                from core import s3_fieldmethod, S3SQLVirtualField
+                from core import s3_fieldmethod, VirtualFormField
                 details = s3db.cms_NewsletterDetails
                 table.contact = s3_fieldmethod("contact",
                                                details.contact,
                                                represent = details.contact_represent,
                                                )
-                contact = S3SQLVirtualField("contact", label=T("Contact"))
+                contact = VirtualFormField("contact", label=T("Contact"))
 
             elif r.method == "mark":
                 # Mark all unread newsletters as read
@@ -1235,17 +1235,17 @@ def read_newsletter():
                 contact = None
 
             # CRUD Form
-            crud_form = S3SQLCustomForm(
+            crud_form = CustomForm(
                             "message",
-                            S3SQLInlineComponent("document",
-                                                 name = "file",
-                                                 label = T("Attachments"),
-                                                 fields = ["name", "file", "comments"],
-                                                 filterby = {"field": "file",
-                                                             "options": "",
-                                                             "invert": True,
-                                                             },
-                                                 ),
+                            InlineComponent("document",
+                                            name = "file",
+                                            label = T("Attachments"),
+                                            fields = ["name", "file", "comments"],
+                                            filterby = {"field": "file",
+                                                        "options": "",
+                                                        "invert": True,
+                                                        },
+                                            ),
                             contact,
                             )
 

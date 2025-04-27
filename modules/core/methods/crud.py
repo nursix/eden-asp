@@ -40,7 +40,7 @@ from ..resource import DataExporter
 from ..tools import JSONSEPARATORS, S3DateTime, get_crud_string, \
                     s3_decode_iso_datetime, s3_represent_value, \
                     s3_set_extension, s3_str, s3_validate
-from ..ui import S3EmbeddedComponentWidget, LocationSelector, ICON, S3SQLDefaultForm
+from ..ui import S3EmbeddedComponentWidget, LocationSelector, ICON, DefaultForm
 
 from .base import CRUDMethod
 
@@ -53,7 +53,7 @@ class BasicCRUD(CRUDMethod):
         super().__init__()
 
         self.settings = current.response.s3.crud
-        self.sqlform = None
+        self.form = None
         self.data = None
 
     # -------------------------------------------------------------------------
@@ -81,8 +81,8 @@ class BasicCRUD(CRUDMethod):
                 output object to send to the view
         """
 
-        sqlform = self.resource.get_config("crud_form")
-        self.sqlform = sqlform if sqlform else S3SQLDefaultForm()
+        form = self.resource.get_config("crud_form")
+        self.form = form if form else DefaultForm()
 
         # Pre-populate create-form?
         self.data = None
@@ -160,8 +160,8 @@ class BasicCRUD(CRUDMethod):
 
         # Settings
         self.settings = current.response.s3.crud
-        sqlform = self.resource.get_config("crud_form")
-        self.sqlform = sqlform if sqlform else S3SQLDefaultForm()
+        form = self.resource.get_config("crud_form")
+        self.form = form if form else DefaultForm()
 
         attr = Storage(attr)
         attr["list_id"] = widget_id
@@ -409,21 +409,21 @@ class BasicCRUD(CRUDMethod):
                 self._default_cancel_button(r)
 
             # Get the form
-            output["form"] = self.sqlform(request = request,
-                                          resource = resource,
-                                          data = self.data,
-                                          record_id = original,
-                                          from_table = from_table,
-                                          from_record = from_record,
-                                          map_fields = map_fields,
-                                          onvalidation = onvalidation,
-                                          onaccept = onaccept,
-                                          link = link,
-                                          hierarchy = hierarchy,
-                                          message = message,
-                                          subheadings = subheadings,
-                                          format = representation,
-                                          )
+            output["form"] = self.form(request = request,
+                                       resource = resource,
+                                       data = self.data,
+                                       record_id = original,
+                                       from_table = from_table,
+                                       from_record = from_record,
+                                       map_fields = map_fields,
+                                       onvalidation = onvalidation,
+                                       onaccept = onaccept,
+                                       link = link,
+                                       hierarchy = hierarchy,
+                                       message = message,
+                                       subheadings = subheadings,
+                                       format = representation,
+                                       )
 
             # Navigate-away confirmation
             if self.settings.navigate_away_confirm:
@@ -472,15 +472,16 @@ class BasicCRUD(CRUDMethod):
             subheadings = get_config("subheadings")
             output["title"] = get_crud_string(tablename, "label_create")
             output["details_btn"] = ""
-            output["item"] = self.sqlform(request = request,
-                                          resource = resource,
-                                          data = self.data,
-                                          onvalidation = onvalidation,
-                                          onaccept = onaccept,
-                                          #link = link,
-                                          message = message,
-                                          subheadings = subheadings,
-                                          format = representation)
+            output["item"] = self.form(request = request,
+                                       resource = resource,
+                                       data = self.data,
+                                       onvalidation = onvalidation,
+                                       onaccept = onaccept,
+                                       #link = link,
+                                       message = message,
+                                       subheadings = subheadings,
+                                       format = representation,
+                                       )
 
         elif representation == "csv":
             import csv
@@ -674,13 +675,13 @@ class BasicCRUD(CRUDMethod):
             # Item
             if record_id:
                 try:
-                    item = self.sqlform(request = request,
-                                        resource = resource,
-                                        record_id = record_id,
-                                        readonly = True,
-                                        subheadings = subheadings,
-                                        format = representation,
-                                        )
+                    item = self.form(request = request,
+                                     resource = resource,
+                                     record_id = record_id,
+                                     readonly = True,
+                                     subheadings = subheadings,
+                                     format = representation,
+                                     )
                 except HTTP as e:
                     message = current.ERROR.BAD_RECORD \
                               if e.status == 404 else e.message
@@ -752,11 +753,12 @@ class BasicCRUD(CRUDMethod):
                         value = None
                     if value is None or value == "" or value == []:
                         field.readable = False
-                item = self.sqlform(request = request,
-                                    resource = resource,
-                                    record_id = record_id,
-                                    readonly = True,
-                                    format = representation)
+                item = self.form(request = request,
+                                 resource = resource,
+                                 record_id = record_id,
+                                 readonly = True,
+                                 format = representation,
+                                 )
 
                 # Link to Open record
                 popup_edit_url = get_config("popup_edit_url", None)
@@ -962,15 +964,16 @@ class BasicCRUD(CRUDMethod):
 
             # Get the form
             try:
-                form = self.sqlform(request = self.request,
-                                    resource = resource,
-                                    record_id = record_id,
-                                    onvalidation = onvalidation,
-                                    onaccept = onaccept,
-                                    message = message,
-                                    link = link,
-                                    subheadings = subheadings,
-                                    format = representation)
+                form = self.form(request = self.request,
+                                 resource = resource,
+                                 record_id = record_id,
+                                 onvalidation = onvalidation,
+                                 onaccept = onaccept,
+                                 message = message,
+                                 link = link,
+                                 subheadings = subheadings,
+                                 format = representation,
+                                 )
             except HTTP as e:
                 message = current.ERROR.BAD_RECORD \
                           if e.status == 404 else e.message
@@ -1104,6 +1107,7 @@ class BasicCRUD(CRUDMethod):
                 message = get_crud_string(self.tablename,
                                           "msg_record_deleted")
             else:
+                message = None
                 r.error(404, self.resource.error, next=r.url(method=""))
             current.response.confirmation = message
             r.http = "DELETE" # must be set for immediate redirect
@@ -1349,12 +1353,12 @@ class BasicCRUD(CRUDMethod):
                        self._permitted(method="update"):
                         items = self.update(r, **attr).get("form", None)
                     else:
-                        items = self.sqlform(request = self.request,
-                                             resource = self.resource,
-                                             record_id = r.id,
-                                             readonly = True,
-                                             format = representation,
-                                             )
+                        items = self.form(request = self.request,
+                                          resource = self.resource,
+                                          record_id = r.id,
+                                          readonly = True,
+                                          format = representation,
+                                          )
                 else:
                     raise HTTP(404, body="Record not Found")
             else:

@@ -376,9 +376,9 @@ def org_organisation_controller(**attr):
                 field = ltable.project_id
                 field.represent = S3Represent(lookup="project_project")
 
-                from core import S3SQLCustomForm, \
-                                 S3SQLInlineComponent, \
-                                 S3SQLInlineLink
+                from core import CustomForm, \
+                                 InlineComponent, \
+                                 InlineLink
                 from ..config import TESTSTATIONS
                 from ..helpers import is_org_group
 
@@ -399,13 +399,13 @@ def org_organisation_controller(**attr):
                 if is_org_group_admin:
 
                     # Show organisation type(s) as required
-                    types = S3SQLInlineLink("organisation_type",
-                                            field = "organisation_type_id",
-                                            search = False,
-                                            label = T("Type"),
-                                            multiple = settings.get_org_organisation_types_multiple(),
-                                            widget = "multiselect",
-                                            )
+                    types = InlineLink("organisation_type",
+                                       field = "organisation_type_id",
+                                       search = False,
+                                       label = T("Type"),
+                                       multiple = settings.get_org_organisation_types_multiple(),
+                                       widget = "multiselect",
+                                       )
 
                     # Show org groups
                     if record:
@@ -419,20 +419,20 @@ def org_organisation_controller(**attr):
                     else:
                         groups_readonly = False
 
-                    groups = S3SQLInlineLink("group",
-                                             field = "group_id",
-                                             label = T("Organization Group"),
-                                             multiple = False,
-                                             readonly = groups_readonly,
-                                             )
+                    groups = InlineLink("group",
+                                        field = "group_id",
+                                        label = T("Organization Group"),
+                                        multiple = False,
+                                        readonly = groups_readonly,
+                                        )
 
                     # Show BSNR for test providers
                     if is_test_station:
-                        bsnr = S3SQLInlineComponent("bsnr",
-                                                    fields = [("", "bsnr")],
-                                                    label = T("BSNR"),
-                                                    readonly = True,
-                                                    )
+                        bsnr = InlineComponent("bsnr",
+                                               fields = [("", "bsnr")],
+                                               label = T("BSNR"),
+                                               readonly = True,
+                                               )
                     else:
                         bsnr = None
 
@@ -446,11 +446,11 @@ def org_organisation_controller(**attr):
 
                     # Show projects
                     subheadings["project"] = T("Administrative")
-                    projects = S3SQLInlineLink("project",
-                                               field = "project_id",
-                                               label = T("Project Partner for"),
-                                               cols = 1,
-                                               )
+                    projects = InlineLink("project",
+                                          field = "project_id",
+                                          label = T("Project Partner for"),
+                                          cols = 1,
+                                          )
 
                     # Show delivery-tag
                     delivery = "delivery.value"
@@ -467,14 +467,14 @@ def org_organisation_controller(**attr):
                         field.writable = False
 
                         # Show type(s) read-only
-                        types = S3SQLInlineLink("organisation_type",
-                                                field = "organisation_type_id",
-                                                search = False,
-                                                label = T("Type"),
-                                                multiple = settings.get_org_organisation_types_multiple(),
-                                                widget = "multiselect",
-                                                readonly = True,
-                                                )
+                        types = InlineLink("organisation_type",
+                                           field = "organisation_type_id",
+                                           search = False,
+                                           label = T("Type"),
+                                           multiple = settings.get_org_organisation_types_multiple(),
+                                           widget = "multiselect",
+                                           readonly = True,
+                                           )
                     else:
                         types = None
 
@@ -498,7 +498,7 @@ def org_organisation_controller(**attr):
                                bsnr,
                                projects,
                                delivery,
-                               S3SQLInlineComponent(
+                               InlineComponent(
                                     "contact",
                                     fields = [("", "value")],
                                     filterby = {"field": "contact_method",
@@ -523,9 +523,9 @@ def org_organisation_controller(**attr):
                     subheadings[audit_fields[0].replace(".", "_")] = T("Audit")
 
                 # Add post-process to add/update verification
-                crud_form = S3SQLCustomForm(*crud_fields,
-                                            postprocess = organisation_postprocess,
-                                            )
+                crud_form = CustomForm(*crud_fields,
+                                       postprocess = organisation_postprocess,
+                                       )
 
                 # Configure filter widgets
                 filter_widgets = org_organisation_filter_widgets(
@@ -719,20 +719,20 @@ def org_organisation_type_resource(r, tablename):
         field.represent = S3Represent(lookup="supply_item_category")
 
         # Custom form
-        from core import S3SQLCustomForm, S3SQLInlineLink
-        crud_form = S3SQLCustomForm("name",
-                                    "group.value",
-                                    "requirements.commercial",
-                                    "requirements.natpersn",
-                                    "requirements.verifreq",
-                                    "requirements.mpavreq",
-                                    "requirements.rinforeq",
-                                    S3SQLInlineLink("item_category",
-                                                    field = "item_category_id",
-                                                    label = T("Orderable Item Categories"),
-                                                    ),
-                                    "comments",
-                                    )
+        from core import CustomForm, InlineLink
+        crud_form = CustomForm("name",
+                               "group.value",
+                               "requirements.commercial",
+                               "requirements.natpersn",
+                               "requirements.verifreq",
+                               "requirements.mpavreq",
+                               "requirements.rinforeq",
+                               InlineLink("item_category",
+                                          field = "item_category_id",
+                                          label = T("Orderable Item Categories"),
+                                          ),
+                               "comments",
+                               )
 
         # Include tags and orderable item categories in list view
         list_fields = ["id",
@@ -865,22 +865,22 @@ def configure_facility_form(r, is_org_group_admin=False):
         fresource = record_id = None
 
 
-    from core import S3SQLCustomForm, \
-                     S3SQLInlineComponent, \
-                     S3SQLInlineLink, \
+    from core import CustomForm, \
+                     InlineComponent, \
+                     InlineLink, \
                      WithAdvice
 
     visible_tags = None
     if fresource:
         # Inline service selector and documents
-        services = S3SQLInlineLink(
+        services = InlineLink(
                         "service",
                         label = T("Services"),
                         field = "service_id",
                         widget = "groupedopts",
                         cols = 1,
                         )
-        documents = S3SQLInlineComponent(
+        documents = InlineComponent(
                         "document",
                         name = "file",
                         label = T("Documents"),
@@ -918,7 +918,7 @@ def configure_facility_form(r, is_org_group_admin=False):
                    # -- Facility
                    "name",
                    "code",
-                   #S3SQLInlineLink(
+                   #InlineLink(
                    #    "facility_type",
                    #    label = T("Facility Type"),
                    #    field = "facility_type_id",
@@ -955,9 +955,9 @@ def configure_facility_form(r, is_org_group_admin=False):
         crud_fields.extend(visible_tags)
 
     # Configure postprocess to add/update workflow statuses
-    crud_form = S3SQLCustomForm(*crud_fields,
-                                postprocess = facility_postprocess,
-                                )
+    crud_form = CustomForm(*crud_fields,
+                           postprocess = facility_postprocess,
+                           )
 
     s3db.configure("org_facility",
                    crud_form = crud_form,
@@ -1009,8 +1009,8 @@ def org_facility_resource(r, tablename):
 
     # Configure fields
     in_org_controller = r.tablename == "org_organisation"
-    from core import (S3SQLCustomForm,
-                      S3SQLInlineLink,
+    from core import (CustomForm,
+                      InlineLink,
                       LocationFilter,
                       LocationSelector,
                       OptionsFilter,
@@ -1229,9 +1229,9 @@ def org_facility_resource(r, tablename):
                     (not record or
                      not auth.s3_has_permission("update", r.table, record_id=record.id))
     if public_view:
-        crud_form = S3SQLCustomForm(
+        crud_form = CustomForm(
                 "name",
-                S3SQLInlineLink(
+                InlineLink(
                     "facility_type",
                     label = T("Facility Type"),
                     field = "facility_type_id",
@@ -1241,7 +1241,7 @@ def org_facility_resource(r, tablename):
                 "location_id",
                 (T("Opening Hours"), "opening_times"),
                 "site_details.service_mode_id",
-                S3SQLInlineLink(
+                InlineLink(
                     "service",
                     label = T("Services"),
                     field = "service_id",

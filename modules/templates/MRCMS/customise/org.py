@@ -27,8 +27,8 @@ def org_group_controller(**attr):
 
         if r.interactive:
             if not r.component:
-                from core import S3SQLCustomForm
-                crud_form = S3SQLCustomForm("name", "comments")
+                from core import CustomForm
+                crud_form = CustomForm("name", "comments")
                 resource.configure(crud_form = crud_form)
             elif r.component_name == "organisation":
                 r.component.configure(insertable = False,
@@ -144,28 +144,28 @@ def org_organisation_controller(**attr):
 
         if not r.component:
 
-            from core import S3SQLCustomForm, \
-                             S3SQLInlineComponent, \
-                             S3SQLInlineLink
+            from core import CustomForm, \
+                             InlineComponent, \
+                             InlineLink
 
             # Show organisation type(s)
-            types = S3SQLInlineLink("organisation_type",
-                                    field = "organisation_type_id",
-                                    search = False,
-                                    label = T("Type"),
-                                    multiple = False,
-                                    widget = "multiselect",
-                                    readonly = not is_org_group_admin,
-                                    )
+            types = InlineLink("organisation_type",
+                               field = "organisation_type_id",
+                               search = False,
+                               label = T("Type"),
+                               multiple = False,
+                               widget = "multiselect",
+                               readonly = not is_org_group_admin,
+                               )
 
             # Show organisation sectors (=commission types)
-            sectors = S3SQLInlineLink("sector",
-                                      field = "sector_id",
-                                      search = False,
-                                      label = T("Sectors"),
-                                      widget = "multiselect",
-                                      readonly = not is_org_group_admin,
-                                      )
+            sectors = InlineLink("sector",
+                                 field = "sector_id",
+                                 search = False,
+                                 label = T("Sectors"),
+                                 widget = "multiselect",
+                                 readonly = not is_org_group_admin,
+                                 )
 
             if is_org_group_admin:
 
@@ -181,12 +181,12 @@ def org_organisation_controller(**attr):
                 else:
                     groups_readonly = False
 
-                groups = S3SQLInlineLink("group",
-                                         field = "group_id",
-                                         label = T("Organization Group"),
-                                         multiple = False,
-                                         readonly = groups_readonly,
-                                         )
+                groups = InlineLink("group",
+                                    field = "group_id",
+                                    label = T("Organization Group"),
+                                    multiple = False,
+                                    readonly = groups_readonly,
+                                    )
 
             else:
 
@@ -198,7 +198,7 @@ def org_organisation_controller(**attr):
                            types,
                            sectors,
                            "phone",
-                           S3SQLInlineComponent(
+                           InlineComponent(
                                 "contact",
                                 fields = [("", "value")],
                                 filterby = {"field": "contact_method",
@@ -218,7 +218,7 @@ def org_organisation_controller(**attr):
                            }
 
             # Add post-process to add/update verification
-            crud_form = S3SQLCustomForm(*crud_fields)
+            crud_form = CustomForm(*crud_fields)
 
             list_fields = ["name",
                            "acronym",

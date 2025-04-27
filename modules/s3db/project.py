@@ -267,40 +267,40 @@ class ProjectModel(DataModel):
         if mode_3w:
             lappend((T("Locations"), "location.location_id"))
         if settings.get_project_sectors():
-            cappend(S3SQLInlineLink("sector",
-                                    label = T("Sectors"),
-                                    field = "sector_id",
-                                    cols = 4,
-                                    translate = True,
-                                    ))
+            cappend(InlineLink("sector",
+                               label = T("Sectors"),
+                               field = "sector_id",
+                               cols = 4,
+                               translate = True,
+                               ))
             lappend((T("Sectors"), "sector_project.sector_id"))
             rappend("count(sector_project.sector_id)")
             report_row_default = "sector_project.sector_id"
             report_fact_default = "count(organisation_id)"
         if mode_drr and settings.get_project_hazards():
             lappend((T("Hazards"), "hazard_project.hazard_id"))
-            cappend(S3SQLInlineLink("hazard",
-                                    label = T("Hazards"),
-                                    field = "hazard_id",
-                                    help_field = project_hazard_help_fields,
-                                    cols = 4,
-                                    translate = True,
-                                    ))
+            cappend(InlineLink("hazard",
+                               label = T("Hazards"),
+                               field = "hazard_id",
+                               help_field = project_hazard_help_fields,
+                               cols = 4,
+                               translate = True,
+                               ))
             rappend("count(hazard_project.hazard_id)")
             report_row_default = "hazard_project.hazard_id"
             report_fact_default = "count(organisation_id)"
         if settings.get_project_themes():
-            cappend(S3SQLInlineLink("theme",
-                                    label = T("Themes"),
-                                    field = "theme_id",
-                                    help_field = project_theme_help_fields,
-                                    cols = 4,
-                                    translate = True,
-                                    # Filter Theme by Sector
-                                    #match = {
-                                    #    "theme_id:project_theme_sector.sector_id": "sector_project.sector_id",
-                                    #    },
-                                    #script = '''
+            cappend(InlineLink("theme",
+                               label = T("Themes"),
+                               field = "theme_id",
+                               help_field = project_theme_help_fields,
+                               cols = 4,
+                               translate = True,
+                               # Filter Theme by Sector
+                               #match = {
+                               #    "theme_id:project_theme_sector.sector_id": "sector_project.sector_id",
+                               #    },
+                               #script = '''
 #$.filterOptionsS3({
 # 'trigger':{'alias':'sector','name':'sector_id','inlineType':'link'},
 # 'target':{'alias':'theme','name':'theme_id','inlineType':'link'},
@@ -310,7 +310,7 @@ class ProjectModel(DataModel):
 # 'showEmptyField':false,
 # 'tooltip':'project_theme_help_fields(id,name)'
 #})'''
-                                    ))
+                               ))
             lappend((T("Themes"), "theme.name"))
             rappend("count(theme.name)")
         if multi_orgs:
@@ -341,7 +341,7 @@ class ProjectModel(DataModel):
         if not mode_3w:
             lappend("location.location_id")
 
-        crud_form = S3SQLCustomForm(*crud_fields)
+        crud_form = CustomForm(*crud_fields)
 
         report_fields = list_fields
 
@@ -2332,10 +2332,10 @@ class ProjectThemeModel(DataModel):
                                      },
                        )
 
-        crud_form = S3SQLCustomForm(
+        crud_form = CustomForm(
                         "name",
                         # Project Sectors
-                        S3SQLInlineComponent(
+                        InlineComponent(
                             "theme_sector",
                             label = T("Sectors to which this Theme can apply"),
                             fields = ["sector_id"],
@@ -2671,11 +2671,11 @@ class ProjectActivityModel(DataModel):
         list_index = 1
         if settings.get_project_activity_sectors():
             crud_fields.insert(crud_index,
-                               S3SQLInlineLink("sector",
-                                               field = "sector_id",
-                                               label = T("Sectors"),
-                                               widget = "groupedopts",
-                                               ))
+                               InlineLink("sector",
+                                          field = "sector_id",
+                                          label = T("Sectors"),
+                                          widget = "groupedopts",
+                                          ))
             crud_index += 1
             list_fields.insert(list_index,
                                (T("Sectors"), "sector_activity.sector_id"))
@@ -2685,11 +2685,11 @@ class ProjectActivityModel(DataModel):
             filter_widgets.append(OptionsFilter("sector_activity.sector_id"))
         if settings.get_project_activity_types():
             crud_fields.insert(crud_index,
-                               S3SQLInlineLink("activity_type",
-                                               field = "activity_type_id",
-                                               label = T("Activity Types"),
-                                               widget = "groupedopts",
-                                               ))
+                               InlineLink("activity_type",
+                                          field = "activity_type_id",
+                                          label = T("Activity Types"),
+                                          widget = "groupedopts",
+                                          ))
             crud_index += 1
             list_fields.insert(list_index,
                                (T("Activity Types"), "activity_activity_type.activity_type_id"))
@@ -2754,7 +2754,7 @@ class ProjectActivityModel(DataModel):
             # Highest-level of Hierarchy
             default_row = "location_id$%s" % levels[0]
 
-        crud_form = S3SQLCustomForm(*crud_fields)
+        crud_form = CustomForm(*crud_fields)
 
         report_options = {"rows": report_fields,
                           "cols": report_fields,
@@ -3125,10 +3125,10 @@ class ProjectActivityTypeModel(DataModel):
                                 project_activity_type_sector = "activity_type_id",
                                 )
 
-            crud_form = S3SQLCustomForm(
+            crud_form = CustomForm(
                             "name",
                             # Sectors
-                            S3SQLInlineComponent(
+                            InlineComponent(
                                 "activity_type_sector",
                                 label=T("Sectors to which this Activity Type can apply"),
                                 fields=["sector_id"],
@@ -3773,15 +3773,15 @@ class ProjectTaskModel(DataModel):
         if task_time:
             cextend(("time_estimated",
                      "status",
-                     S3SQLInlineComponent("time",
-                                          label = T("Time Log"),
-                                          fields = ["date",
-                                                    "person_id",
-                                                    "hours",
-                                                    "comments"
-                                                    ],
-                                          orderby = "date"
-                                          ),
+                     InlineComponent("time",
+                                     label = T("Time Log"),
+                                     fields = ["date",
+                                               "person_id",
+                                               "hours",
+                                               "comments"
+                                               ],
+                                     orderby = "date"
+                                     ),
                      "time_actual",
                      "comments",
                      ))
@@ -3791,7 +3791,7 @@ class ProjectTaskModel(DataModel):
                      ))
 
         # Custom Form
-        crud_form = S3SQLCustomForm(*crud_fields)
+        crud_form = CustomForm(*crud_fields)
 
         report_options = {"rows": list_fields,
                           "cols": list_fields,

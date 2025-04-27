@@ -211,7 +211,7 @@ def configure_case_form(resource, privileged=False, cancel=False):
 
     T = current.T
 
-    from core import S3SQLCustomForm, S3SQLInlineComponent, S3SQLInlineLink
+    from core import CustomForm, InlineComponent, InlineLink
 
     if cancel:
         # Ignore registration data in form if the registration
@@ -235,15 +235,15 @@ def configure_case_form(resource, privileged=False, cancel=False):
     if privileged:
 
         # Extended form for privileged user roles
-        crud_form = S3SQLCustomForm(
+        crud_form = CustomForm(
                 # Case Details ----------------------------
                 (T("Case Status"), "dvr_case.status_id"),
-                S3SQLInlineLink("case_flag",
-                                label = T("Flags"),
-                                field = "flag_id",
-                                help_field = "comments",
-                                cols = 4,
-                                ),
+                InlineLink("case_flag",
+                           label = T("Flags"),
+                           field = "flag_id",
+                           help_field = "comments",
+                           cols = 4,
+                           ),
 
                 # Person Details --------------------------
                 (T("ID"), "pe_label"),
@@ -262,7 +262,7 @@ def configure_case_form(resource, privileged=False, cancel=False):
                 (T("EA Arrival"), "dvr_case.date"),
                 "dvr_case.origin_site_id",
                 "dvr_case.destination_site_id",
-                #S3SQLInlineComponent(
+                #InlineComponent(
                 #        "eo_number",
                 #        fields = [("", "value")],
                 #        filterby = {"field": "tag",
@@ -272,7 +272,7 @@ def configure_case_form(resource, privileged=False, cancel=False):
                 #        multiple = False,
                 #        name = "eo_number",
                 #        ),
-                S3SQLInlineComponent(
+                InlineComponent(
                         "bamf",
                         fields = [("", "value")],
                         filterby = {"field": "tag",
@@ -283,7 +283,7 @@ def configure_case_form(resource, privileged=False, cancel=False):
                         name = "bamf",
                         ),
                 "dvr_case.valid_until",
-                S3SQLInlineComponent(
+                InlineComponent(
                         "identity",
                         fields = ["value",
                                   "valid_until",
@@ -308,7 +308,7 @@ def configure_case_form(resource, privileged=False, cancel=False):
 
                 # Other Details ---------------------------
                 "person_details.occupation",
-                S3SQLInlineComponent(
+                InlineComponent(
                         "contact",
                         fields = [("", "value")],
                         filterby = {"field": "contact_method",
@@ -319,7 +319,7 @@ def configure_case_form(resource, privileged=False, cancel=False):
                         name = "phone",
                         ),
                 "person_details.literacy",
-                S3SQLInlineComponent(
+                InlineComponent(
                         "case_language",
                         fields = ["language",
                                   "quality",
@@ -342,13 +342,13 @@ def configure_case_form(resource, privileged=False, cancel=False):
                        }
     else:
         # Reduced form for non-privileged user roles
-        crud_form = S3SQLCustomForm(
-                S3SQLInlineLink("case_flag",
-                                label = T("Flags"),
-                                field = "flag_id",
-                                help_field = "comments",
-                                cols = 4,
-                                ),
+        crud_form = CustomForm(
+                InlineLink("case_flag",
+                           label = T("Flags"),
+                           field = "flag_id",
+                           help_field = "comments",
+                           cols = 4,
+                           ),
                 (T("ID"), "pe_label"),
                 "last_name",
                 "first_name",
@@ -356,7 +356,7 @@ def configure_case_form(resource, privileged=False, cancel=False):
                 "date_of_birth",
                 "gender",
                 reg_unit_id,
-                S3SQLInlineComponent(
+                InlineComponent(
                         "contact",
                         fields = [("", "value")],
                         filterby = {"field": "contact_method",
@@ -835,8 +835,8 @@ def configure_security_person_controller(r):
         atable.note.readable = atable.note.writable = False
 
     # Custom CRUD form
-    from core import S3SQLCustomForm, S3SQLInlineComponent
-    crud_form = S3SQLCustomForm(
+    from core import CustomForm, InlineComponent
+    crud_form = CustomForm(
                     (T("ID"), "pe_label"),
                     "last_name",
                     "first_name",
@@ -844,7 +844,7 @@ def configure_security_person_controller(r):
                     #"gender",
                     "person_details.nationality",
                     "shelter_registration.shelter_unit_id",
-                    S3SQLInlineComponent(
+                    InlineComponent(
                             "case_note",
                             fields = [(T("Date"), "date"),
                                         "note",

@@ -197,15 +197,15 @@ class VolunteerActivityModel(DataModel):
                                      },
                        )
 
-        crud_form = S3SQLCustomForm("name",
-                                    S3SQLInlineLink("sector",
-                                                    label = T("Sectors"),
-                                                    field = "sector_id",
-                                                    help_field = "comments",
-                                                    cols = 4,
-                                                    ),
-                                    "comments",
-                                    )
+        crud_form = CustomForm("name",
+                               InlineLink("sector",
+                                          label = T("Sectors"),
+                                          field = "sector_id",
+                                          help_field = "comments",
+                                          cols = 4,
+                                          ),
+                               "comments",
+                               )
 
         configure(tablename,
                   crud_form = crud_form,
@@ -283,19 +283,19 @@ class VolunteerActivityModel(DataModel):
                                              },
                        )
 
-        crud_form = S3SQLCustomForm("organisation_id",
-                                    "sector_id",
-                                    S3SQLInlineLink("activity_type",
-                                                    label = T("Activity Types"),
-                                                    field = "activity_type_id",
-                                                    #help_field = s3db.project_theme_help_fields,
-                                                    cols = 4,
-                                                    translate = True,
-                                                    # Filter Activity Type by Sector
-                                                    match = {
-                                                        "activity_type_id:vol_activity_type_sector.sector_id": "sector_id",
-                                                        },
-                                                    script = '''
+        crud_form = CustomForm("organisation_id",
+                               "sector_id",
+                               InlineLink("activity_type",
+                                          label = T("Activity Types"),
+                                          field = "activity_type_id",
+                                          #help_field = s3db.project_theme_help_fields,
+                                          cols = 4,
+                                          translate = True,
+                                          # Filter Activity Type by Sector
+                                          match = {
+                                              "activity_type_id:vol_activity_type_sector.sector_id": "sector_id",
+                                              },
+                                          script = '''
 $.filterOptionsS3({
  'trigger':'sector_id',
  'target':{'alias':'activity_type','name':'activity_type_id','inlineType':'link'},
@@ -305,12 +305,12 @@ $.filterOptionsS3({
  'showEmptyField':false,
  //'tooltip':'project_theme_help_fields(id,name)'
 })'''
-                                                    ),
-                                    (T("Activity Name"), "name"),
-                                    "location_id",
-                                    "date",
-                                    "comments",
-                                    )
+                                          ),
+                               (T("Activity Name"), "name"),
+                               "location_id",
+                               "date",
+                               "comments",
+                               )
 
         configure(tablename,
                   crud_form = crud_form,
@@ -435,21 +435,21 @@ $.filterOptionsS3({
                        )
 
         # CRUD form
-        crud_form = S3SQLCustomForm("activity_id",
-                                    "person_id",
-                                    "date",
-                                    #"end_date",
-                                    "job_title_id",
-                                    "hours",
-                                    S3SQLInlineLink(
-                                        "activity_type",
-                                        field = "activity_type_id",
-                                        label = T("Activity Types"),
-                                        help_field = "comments",
-                                        cols = "4",
-                                        ),
-                                    "comments",
-                                    )
+        crud_form = CustomForm("activity_id",
+                               "person_id",
+                               "date",
+                               #"end_date",
+                               "job_title_id",
+                               "hours",
+                               InlineLink(
+                                    "activity_type",
+                                    field = "activity_type_id",
+                                    label = T("Activity Types"),
+                                    help_field = "comments",
+                                    cols = "4",
+                                    ),
+                               "comments",
+                               )
 
         configure(tablename,
                   context = {"person": "person_id",

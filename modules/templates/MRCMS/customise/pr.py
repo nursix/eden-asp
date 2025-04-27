@@ -14,7 +14,7 @@ from core import AgeFilter, DateFilter, OptionsFilter, TextFilter, get_filter_op
                  Anonymize, AnonymizeWidget, \
                  FS, IS_ONE_OF, IS_PERSON_GENDER, JSONSEPARATORS, \
                  PersonSelector, S3CalendarWidget, \
-                 S3SQLCustomForm, S3SQLInlineComponent, S3SQLInlineLink, \
+                 CustomForm, InlineComponent, InlineLink, \
                  s3_fullname, s3_str
 
 # Limit after which a checked-out resident is reported overdue (days)
@@ -476,20 +476,20 @@ def configure_case_form(resource,
 
     # Filter flags for case organisation
     if organisation_id:
-        flags = S3SQLInlineLink("case_flag",
-                                label = T("Flags"),
-                                field = "flag_id",
-                                help_field = "comments",
-                                filterby = {"organisation_id": organisation_id},
-                                cols = 4,
-                                )
+        flags = InlineLink("case_flag",
+                           label = T("Flags"),
+                           field = "flag_id",
+                           help_field = "comments",
+                           filterby = {"organisation_id": organisation_id},
+                           cols = 4,
+                           )
     else:
         flags = None
 
     if privileged:
 
         # Extended form for privileged user roles
-        crud_form = S3SQLCustomForm(
+        crud_form = CustomForm(
                 # Case Details ----------------------------
                 (T("Case Status"), "dvr_case.status_id"),
                 flags,
@@ -512,7 +512,7 @@ def configure_case_form(resource,
                 #"dvr_case.destination_site_id",
 
                 "dvr_case.reference",
-                S3SQLInlineComponent(
+                InlineComponent(
                         "bamf",
                         fields = [("", "value")],
                         filterby = {"field": "tag",
@@ -522,7 +522,7 @@ def configure_case_form(resource,
                         multiple = False,
                         name = "bamf",
                         ),
-                S3SQLInlineComponent(
+                InlineComponent(
                         "residence_status",
                         fields = ["status_type_id",
                                   "permit_type_id",
@@ -543,14 +543,14 @@ def configure_case_form(resource,
 
                 # Other Details ---------------------------
                 "person_details.occupation",
-                S3SQLInlineComponent(
+                InlineComponent(
                         "phone",
                         fields = [("", "value")],
                         label = T("Mobile Phone"),
                         multiple = False,
                         name = "phone",
                         ),
-                S3SQLInlineComponent(
+                InlineComponent(
                         "email",
                         fields = [("", "value")],
                         label = T("Email"),
@@ -558,7 +558,7 @@ def configure_case_form(resource,
                         name = "email",
                         ),
                 "person_details.literacy",
-                S3SQLInlineComponent(
+                InlineComponent(
                         "case_language",
                         fields = ["language",
                                   "quality",
@@ -582,7 +582,7 @@ def configure_case_form(resource,
                        }
     else:
         # Reduced form for non-privileged user roles
-        crud_form = S3SQLCustomForm(
+        crud_form = CustomForm(
                 flags,
                 (T("ID"), "pe_label"),
                 "last_name",
@@ -592,7 +592,7 @@ def configure_case_form(resource,
                 "gender",
                 reg_shelter,
                 reg_unit_id,
-                S3SQLInlineComponent(
+                InlineComponent(
                         "contact",
                         fields = [("", "value")],
                         filterby = {"field": "contact_method",
@@ -1168,7 +1168,7 @@ def configure_security_person_controller(r):
         atable.note.readable = atable.note.writable = False
 
     # Custom CRUD form
-    crud_form = S3SQLCustomForm(
+    crud_form = CustomForm(
                     (T("ID"), "pe_label"),
                     "last_name",
                     "first_name",
@@ -1176,7 +1176,7 @@ def configure_security_person_controller(r):
                     #"gender",
                     "person_details.nationality",
                     "shelter_registration.shelter_unit_id",
-                    S3SQLInlineComponent(
+                    InlineComponent(
                             "case_note",
                             fields = [(T("Date"), "date"),
                                         "note",
@@ -1282,13 +1282,13 @@ def configure_default_person_controller(r):
     if not r.component:
 
         # Reduce form to relevant fields
-        crud_form = S3SQLCustomForm("pe_label",
-                                    "last_name",
-                                    "first_name",
-                                    "date_of_birth",
-                                    "gender",
-                                    "person_details.nationality",
-                                    )
+        crud_form = CustomForm("pe_label",
+                               "last_name",
+                               "first_name",
+                               "date_of_birth",
+                               "gender",
+                               "person_details.nationality",
+                               )
         s3db.configure("pr_person", crud_form=crud_form)
 
     elif r.component_name == "human_resource":
@@ -1346,13 +1346,13 @@ def configure_hrm_person_controller(r):
         else:
             pe_label = None
 
-        crud_form = S3SQLCustomForm(pe_label,
-                                    "last_name",
-                                    "first_name",
-                                    "date_of_birth",
-                                    "gender",
-                                    "person_details.nationality",
-                                    )
+        crud_form = CustomForm(pe_label,
+                               "last_name",
+                               "first_name",
+                               "date_of_birth",
+                               "gender",
+                               "person_details.nationality",
+                               )
 
         s3db.configure("pr_person", crud_form=crud_form)
 

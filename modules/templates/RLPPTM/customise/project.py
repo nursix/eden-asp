@@ -32,7 +32,7 @@ def project_project_resource(r, tablename):
                                                ),
                         )
 
-    from core import S3SQLCustomForm, \
+    from core import CustomForm, \
                      TextFilter, \
                      OptionsFilter
 
@@ -64,7 +64,7 @@ def project_project_resource(r, tablename):
                       ]
 
     s3db.configure("project_project",
-                   crud_form = S3SQLCustomForm(*crud_fields),
+                   crud_form = CustomForm(*crud_fields),
                    filter_widgets = filter_widgets,
                    list_fields = list_fields,
                    )

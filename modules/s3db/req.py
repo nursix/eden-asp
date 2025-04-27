@@ -5967,7 +5967,7 @@ def req_inline_form(req_type, method):
                   "date",
                   "priority",
                   "date_required",
-                  S3SQLInlineComponent(
+                  InlineComponent(
                     "req_item",
                     label = T("Items"),
                     fields = ["item_id",
@@ -6058,9 +6058,9 @@ $.filterOptionsS3({
             fields.insert(-1, "purpose")
 
         if postprocess:
-            crud_form = S3SQLCustomForm(*fields, postprocess=postprocess)
+            crud_form = CustomForm(*fields, postprocess=postprocess)
         else:
-            crud_form = S3SQLCustomForm(*fields)
+            crud_form = CustomForm(*fields)
         s3db.configure("req_req",
                        crud_form = crud_form,
                        )
@@ -6078,7 +6078,7 @@ $.filterOptionsS3({
                   "date_required",
                   "date_required_until",
                   "purpose",
-                  S3SQLInlineComponent(
+                  InlineComponent(
                     "req_skill",
                     label = T("Skills"),
                     fields = ["quantity",
@@ -6131,9 +6131,9 @@ $.filterOptionsS3({
            not settings.get_req_generate_req_number():
             fields.insert(0, "req_ref")
         if postprocess:
-            crud_form = S3SQLCustomForm(*fields, postprocess=postprocess)
+            crud_form = CustomForm(*fields, postprocess=postprocess)
         else:
-            crud_form = S3SQLCustomForm(*fields)
+            crud_form = CustomForm(*fields)
         s3db.configure("req_req",
                        crud_form = crud_form,
                        )
