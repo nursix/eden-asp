@@ -1,13 +1,11 @@
-# Eden ASP
+# Sahana Eden
 
-Eden ASP is a RAD (Rapid Application Development) Kit to build
-web based applications for Humanitarian and Emergency Management,
-originally derived from the Sahana Eden Humanitarian Management
-Platform.
+Sahana Eden is a RAD (Rapid Application Development) Kit to build
+web based applications for Humanitarian and Emergency Management.
 
-# Who is Eden ASP for?
+# Who is Sahana Eden for?
 
-Eden ASP is for application developers and service providers.
+Sahana Eden is for application developers and service providers.
 
 # What about documentation?
 
