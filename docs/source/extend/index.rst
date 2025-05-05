@@ -1,5 +1,5 @@
-Extending Eden ASP
-==================
+Extending Eden
+==============
 
 .. toctree::
    :maxdepth: 2

@@ -1,7 +1,7 @@
 Core Models
 ===========
 
-Core models form the basis of the Eden ASP database, defining base
+Core models form the basis of the Eden database, defining base
 entities *Persons*, *Organisations* and *Locations* that represent
 the fundamental elements of the user world.
 

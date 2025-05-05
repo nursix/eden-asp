@@ -130,7 +130,7 @@ def config(settings):
     #
     settings.custom.autogenerate_case_ids = True
 
-    settings.custom.context_org_name = "Eden ASP"
+    settings.custom.context_org_name = "Sahana Eden"
 
     settings.custom.org_menu_logo = ("MRCMS", "img", "eden_asp_small.png")
     settings.custom.homepage_logo = ("MRCMS", "img", "eden_asp_large.png")

@@ -45,8 +45,8 @@ settings.base.template = "default"
 #settings.gis.spatialdb = True
 
 # Base settings
-#settings.base.system_name = T("Eden ASP Humanitarian Management Platform")
-#settings.base.system_name_short = T("Eden ASP")
+#settings.base.system_name = T("Sahana Eden Humanitarian Management Platform")
+#settings.base.system_name_short = T("Sahana Eden")
 # Set this to the Public URL of the instance
 #settings.base.public_url = "http://127.0.0.1:8000"
 
@@ -101,7 +101,7 @@ settings.auth.hmac_key = "akeytochange"
 #settings.mail.tls = True
 #settings.mail.login = "username:password"
 # From Address - until this is set, no mails can be sent
-#settings.mail.sender = "'Eden ASP' <eden@example.org>"
+#settings.mail.sender = "'Sahana Eden' <eden@example.org>"
 # Default email address to which requests to approve new user accounts gets sent
 # This can be overridden for specific domains/organisations via the auth_domain table
 #settings.mail.approver = "useradmin@example.org"

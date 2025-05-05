@@ -4,7 +4,7 @@ About Templates
 Global Config
 -------------
 
-Many features and behaviors of Eden ASP can be controlled by settings.
+Many features and behaviors of Eden can be controlled by settings.
 
 These settings are stored in a global *S3Config* instance - which is accessible
 through :doc:`current </reference/current>` as *current.deployment_settings*.
@@ -101,7 +101,7 @@ deployment scenario. The example above highlights how these templates are applie
 
 .. important::
    Implementing configuration **templates** is the primary strategy to build
-   applications with Eden ASP.
+   applications with Eden.
 
 Templates are Python packages located in the *modules/templates* directory:
 

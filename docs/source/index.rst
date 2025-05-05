@@ -1,11 +1,10 @@
-Eden ASP
-========
+Eden
+====
 
-Eden ASP is a rapid application development (RAD) kit for web-based, database-driven
-humanitarian and emergency management applications, originally derived from the
-*Sahana Eden Humanitarian Management Platform*.
+Eden is a rapid application development (RAD) kit for web-based, database-driven
+humanitarian and emergency management applications.
 
-Eden ASP builds on the **web2py** web application framework, and is written in the
+Eden builds on the **web2py** web application framework, and is written in the
 **Python** programming language (version 3.9+). It also uses *HTML5*, *JavaScript*,
 and *SCSS* to generate web contents, as well as *XSLT* to handle certain data formats.
 
@@ -19,7 +18,7 @@ This documentation is aimed at application developers, and included in the sourc
    Building Applications <dev/index>
    Reference Guide <reference/index>
    Deploying Applications <deploy/index>
-   Extending Eden ASP <extend/index>
+   Extending Eden <extend/index>
 
 Indices and tables
 ==================

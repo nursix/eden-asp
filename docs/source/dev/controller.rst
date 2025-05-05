@@ -12,7 +12,7 @@ Web2py maps the first three elements of the URL path to controllers as follows::
    https:// server.domain.tld / application / controller / function
 
 The *application* refers to the subdirectory in web2py's application directory,
-which in the case of Eden ASP is normally **eden** (it is possible to name it
+which in the case of Eden is normally **eden** (it is possible to name it
 differently, however).
 
 The **controller** refers to a Python script in the *controllers* directory inside
@@ -42,7 +42,7 @@ passed to the view compiler to render the HTML which is then returned to the
 client in the HTTP response.
 
 Every controller having its own URL also means that every *page* in the web
-GUI has its own controller - and Eden ASP (like any web2py application) is a
+GUI has its own controller - and Eden (like any web2py application) is a
 *multi-page application* (MPA). Therefore, in the context of the web GUI, the
 terms "controller function" and "page" are often used synonymously.
 
@@ -53,7 +53,7 @@ CRUD Controllers
 ----------------
 
 The basic database functions **create**, **read**, **update** and **delete**
-(short: *CRUD*) are implemented in Eden ASP as one generic function:
+(short: *CRUD*) are implemented in Eden as one generic function:
 
 .. code-block:: python
    :caption: In controllers/my.py
@@ -176,7 +176,7 @@ CRUD workflows, but rather each function individually (stateless).
    HTML format will be assumed and one of the interactive *read*, *update*,
    *delete* or *list* methods will be chosen to handle the request instead.
 
-The default REST API *could* be used to integrate Eden ASP with other
+The default REST API *could* be used to integrate Eden with other
 applications, but normally such integrations require process-specific end
 points (rather than just database end points) - which would be implemented
 as explicit methods instead.
