@@ -1371,7 +1371,7 @@ def system_info():
     os_version = platform.platform()
 
     trows.extend([subheader("Server"),
-                  item("Eden ASP", base_version),
+                  item("Eden", base_version),
                   item("Web2Py", web2py_version),
                   item("HTTP Server", request.env.server_software),
                   item("Operating System", os_version),

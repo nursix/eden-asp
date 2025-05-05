@@ -3016,7 +3016,7 @@ $.extend(TRUE, QTIP.defaults, {
 	viewportWidth = viewport[0] === window ? viewport.width() : viewport.outerWidth(FALSE);
 	viewportHeight = viewport[0] === window ? viewport.height() : viewport.outerHeight(FALSE);
 	viewportScroll = { left: fixed ? 0 : viewport.scrollLeft(), top: fixed ? 0 : viewport.scrollTop() };
-    // *** Eden ASP patched for jQuery 3 ***
+    // *** Eden patched for jQuery 3 ***
     if (viewport[0] === window || !document.body.contains(viewport[0])) {
         viewportOffset = adjusted;
     } else {

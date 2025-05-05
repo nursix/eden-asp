@@ -673,7 +673,7 @@
 'Person Registry': 'Personregister',
 'Personal Profile': 'Personlig profil',
 'Persons': 'Personer',
-'Powered by Eden ASP': 'Drivs av Eden ASP',
+'Powered by Sahana': 'Drivs av Sahana',
 'Preselected': 'Förvalt',
 'Privacy': 'Integritet',
 'Processing Type Details': 'Detaljer om databehandlingstypen',

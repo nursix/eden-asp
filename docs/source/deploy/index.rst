@@ -1,9 +1,9 @@
-How to deploy Eden ASP applications
-===================================
+How to deploy Eden applications
+===============================
 
-Eden ASP is normally deployed behind a separate front-end web server (e.g. nginx)
+Eden is normally deployed behind a separate front-end web server (e.g. nginx)
 using WSGI/uWSGI to plugin web2py. This section describes how to setup a production
-instance of an Eden ASP application on a Debian server.
+instance of an Eden application on a Debian server.
 
 .. toctree::
    :maxdepth: 2

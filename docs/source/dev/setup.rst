@@ -1,7 +1,7 @@
 Setting up for Development
 ==========================
 
-This page describes how you can set up a local Eden ASP instance for
+This page describes how you can set up a local Eden instance for
 application development on your computer.
 
 .. note::
@@ -25,7 +25,7 @@ application development on your computer.
 Prerequisites
 -------------
 
-Eden ASP requires a couple of Python libraries, which can be installed
+Eden requires a couple of Python libraries, which can be installed
 with the *pip* installer.
 
 As a minimum, *lxml* and *python-dateutil* must be installed:
@@ -74,20 +74,20 @@ all submodules) to the supported stable version (currently 2.27.1):
    git reset --hard 49bb23c4
    git submodule update --recursive
 
-Installing Eden ASP
--------------------
+Installing Eden
+---------------
 
-To install Eden ASP, clone it directly from GitHub:
+To install Eden, clone it directly from GitHub:
 
 .. code-block:: bash
 
-   git clone --recursive https://github.com/sahana/eden-asp.git ~/eden
+   git clone --recursive https://github.com/sahana/eden.git ~/eden
 
 .. tip::
    You can of course choose any other target location than *~/eden* for
    the clone - just remember to use the correct path in subsequent commands.
 
-Configure Eden ASP as a web2py application by adding a symbolic link
+Configure Eden as a web2py application by adding a symbolic link
 to the *eden* directory under *web2py/applications*:
 
 .. code-block:: bash
@@ -99,14 +99,14 @@ The name of this symbolic link (*eden*) becomes the web2py application name,
 and will later be used in URLs to access the application.
 
 .. tip::
-   You can also clone Eden ASP into the *~/web2py/applications/eden*
+   You can also clone Eden into the *~/web2py/applications/eden*
    directory - then you will not need the symbolic link.
 
-Configuring Eden ASP
---------------------
+Configuring Eden
+----------------
 
-Before running Eden ASP the first time, you need to create a configuration
-file. To do so, copy the *000_config.py* template into Eden ASP's *models* folder:
+Before running Eden the first time, you need to create a configuration
+file. To do so, copy the *000_config.py* template into Eden's *models* folder:
 
 .. code-block:: bash
 
@@ -135,7 +135,7 @@ development:
 First run
 ---------
 
-The first start of Eden ASP will set up the database, creating all tables
+The first start of Eden will set up the database, creating all tables
 and populating them with some data.
 
 This is normally done by running the *noop.py* script in the web2py shell:
@@ -214,7 +214,7 @@ Once the server is running, it will give you a localhost URL to access it:
    use "kill -SIGTERM 28254" to shutdown the web2py server
 
 Append the application name *eden* to the URL (http://127.0.0.1:8000/eden),
-and open that address in your web browser to access Eden ASP.
+and open that address in your web browser to access Eden.
 
 The first run will have installed two demo user accounts, namely:
 

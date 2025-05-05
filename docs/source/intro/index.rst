@@ -1,5 +1,5 @@
-Introduction into Eden ASP
-==========================
+Introduction into Eden
+======================
 
 .. toctree::
    :maxdepth: 2

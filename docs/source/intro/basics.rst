@@ -1,13 +1,13 @@
 Basic Concepts
 ==============
 
-This page explains the basic concepts, structure and operations of Eden ASP, and
+This page explains the basic concepts, structure and operations of Eden, and
 introduces the fundamental terminology used throughout this documentation.
 
 Client and Server
 -----------------
 
-Eden ASP is a **web application**, which means it is run as a **server** program
+Eden is a **web application**, which means it is run as a **server** program
 and is accessed remotely by **client** programs connected over the network.
 
 .. image:: client_server.png
@@ -25,12 +25,12 @@ on the screen).
 
 .. note::
 
-   Responding to HTTP requests is Eden ASP's fundamental mode of operation.
+   Responding to HTTP requests is Eden's fundamental mode of operation.
 
 Web2Py and PyDAL
 ----------------
 
-Eden ASP builds on the **web2py** web application framework, which consists
+Eden builds on the **web2py** web application framework, which consists
 of three basic components: a *HTTP server*, the *application runner* and various
 libraries, and a *database abstraction layer*.
 
@@ -46,7 +46,7 @@ to web2py through a WSGI plugin or service (e.g. *uWSGI*).
    :align: center
 
 The **application runner** (*gluon*) decodes the HTTP request, then calls certain
-Python functions in the Eden ASP application with the request data as input, and
+Python functions in the Eden application with the request data as input, and
 from their output renders the HTTP response. Additionally, *gluon* provides a number
 of libraries to generate interactive web contents and process user input.
 
@@ -59,14 +59,14 @@ PostGIS extension, but SQLite and MariaDB/MySQL are also supported.
 Application Structure
 ---------------------
 
-Web2py applications like Eden ASP implement the MVC (model-view-controller)
+Web2py applications like Eden implement the MVC (model-view-controller)
 application model, meaning that the application code is separated in:
 
   - **models** defining the data(base) structure,
   - **views** implementing the user interface,
   - **controllers** implementing the logic connecting models and views
 
-This is somewhat reflected by the directory layout of Eden ASP:
+This is somewhat reflected by the directory layout of Eden:
 
 .. image:: directory_layout.png
    :align: center
@@ -77,11 +77,11 @@ This is somewhat reflected by the directory layout of Eden ASP:
    functionality can be found in the code:
 
    The *controllers* directory contains Python scripts implementing the logic
-   of the application. In Eden ASP, these controllers delegate much of that
+   of the application. In Eden, these controllers delegate much of that
    logic to **core** modules.
 
    The *models* directory contains Python scripts to configure the application
-   and define the database structure. In Eden ASP, the former is largely delegated
+   and define the database structure. In Eden, the former is largely delegated
    to configuration **templates**, and the latter is reduced to the instantiation
    of a model loader, which then loads the actual data models from **s3db** modules
    if and when they are actually needed.
@@ -89,7 +89,7 @@ This is somewhat reflected by the directory layout of Eden ASP:
 The Request Cycle
 -----------------
 
-Eden ASP runs in cycles triggered by incoming HTTP requests.
+Eden runs in cycles triggered by incoming HTTP requests.
 
 .. image:: request_cycle.png
    :align: center
@@ -108,7 +108,7 @@ When an HTTP request is received, web2py parses and translates it into a global
 Web2py also generates a global **response** object, which can be written to
 in order to set parameters for the eventual HTTP response.
 
-Web2py then runs the Eden ASP application:
+Web2py then runs the Eden application:
 
   1. executes all scripts in the *models/* directory in lexical (ASCII) order.
 
