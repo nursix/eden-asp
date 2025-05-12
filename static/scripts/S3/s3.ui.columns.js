@@ -31,6 +31,8 @@
             variableColumnsID += 1;
 
             this.eventNamespace = '.variableColumns';
+
+            this.columnConfigs = {};
         },
 
         /**
@@ -39,9 +41,11 @@
         _init: function() {
 
             const $el = $(this.element),
-                  outerForm = $el.closest('form.dt-wrapper');
+                  outerForm = $el.closest('form.dt-wrapper'),
+                  availableColumns = $('.column-selector', outerForm);
 
-            this.availableColumns = $('.column-selector', outerForm);
+            this.availableColumns = availableColumns;
+            this.configsURL = availableColumns.data('url');
 
             this.refresh();
         },
@@ -51,6 +55,7 @@
          */
         _destroy: function() {
 
+            this._unbindEvents();
         },
 
         /**
@@ -74,16 +79,11 @@
             }
 
             // Render the dialog
-            const container = $('<div>').hide().appendTo($('body')),
-                  form = document.createElement('form'),
-                  $form = $(form).appendTo(container),
+            const container = $('<div class="column-select-container">').hide().appendTo($('body')),
                   ns = this.eventNamespace,
                   self = this;
 
-            form.method = 'post';
-            form.enctype = 'multipart/form-data';
-
-            availableColumns.first().clone().removeClass('hide').show().appendTo($form);
+            availableColumns.first().clone().removeClass('hide').show().appendTo(container);
 
             const dialog = container.show().dialog({
                 title: i18n.selectColumns,
@@ -94,52 +94,26 @@
                 modal: true,
                 closeText: '',
                 open: function( /* event, ui */ ) {
-                    // Clicking outside of the popup closes it
-                    $('.ui-widget-overlay').off(ns).on('click' + ns, function() {
-                        dialog.dialog('close');
-                    });
-                    // Any cancel-form-btn button closes the popup
-                    $('.cancel-form-btn', $form).off(ns).on('click' + ns, function() {
-                        dialog.dialog('close');
-                    });
-                    // Submit button updates the form and submits it
-                    $('.submit-form-btn', $form).off(ns).on('click' + ns, function() {
-                        if ($('.column-select:checked', container).length) {
-                            self._applyColumnSelection(form);
-                            dialog.dialog('close');
-                        }
-                    });
-                    // Reset button restores the default
-                    $('.reset-form-btn', $form).off(ns).on('click' + ns, function() {
-                        self._applyColumnSelection(form, true);
-                    });
+                    // Bind column selection events
+                    self._bindDialogEvents(dialog, container);
+
                     // Make columns sortable
-                    $('.column-options', $form).sortable({
+                    $('.column-options', container).sortable({
                         placeholder: "sortable-placeholder",
                         forcePlaceholderSize: true
                     });
-                    // Alternative if drag&drop not available
-                    $('.column-left', $form).off(ns).on('click' + ns, function() {
-                        const row = $(this).closest('tr');
-                        row.insertBefore(row.prev());
-                    });
-                    $('.column-right', $form).off(ns).on('click' + ns, function() {
-                        const row = $(this).closest('tr');
-                        row.insertAfter(row.next());
-                    });
-                    // Select/deselect all
-                    $('.column-select-all', $form).off(ns).on('change' + ns, function() {
-                        let status = $(this).prop('checked');
-                        $('.column-select', $form).prop('checked', status);
-                    });
-                    $('.column-select', $form).off(ns).on('change' + ns, function() {
-                        let deselected = $('.column-select:not(:checked)', container).length;
-                        $('.column-select-all', $form).prop('checked', !deselected);
-                    });
+
+                    // Initialize configuration manager
+                    self._initConfigManager(container);
                 },
                 close: function() {
+                    // Remove event handlers
+                    self._removeDialogEvents(container);
+
+                    // Destroy secondary widget instances
+                    $('.column-options', container).sortable('destroy');
+
                     // Hide + remove the container
-                    $('.column-options', $form).sortable('destroy');
                     container.hide().remove();
                 }
             });
@@ -150,7 +124,7 @@
         /**
          * Reloads the page, applying the column selection
          */
-        _applyColumnSelection: function(form, reset) {
+        _applyColumnSelection: function(container, reset) {
 
             // Get a link to the current page
             const link = document.createElement('a');
@@ -160,9 +134,9 @@
             params.delete('aCols');
 
             if (!reset) {
-                // Get selected columns indices from form
+                // Get selected columns indices
                 const selected = [];
-                $('.column-select:checked', form).each(function() {
+                $('.column-select:checked', container).each(function() {
                     selected.push($(this).data('index'));
                 });
                 if (selected.length) {
@@ -176,7 +150,431 @@
         },
 
         /**
-         * Bind events to generated elements (after refresh)
+         * Programmatically changes the column arrangement in the dialog
+         * - e.g. when loading a saved configuration
+         *
+         * @param {jQuery} container - the container
+         * @param {object} config - the column arrangement as an object like
+         *                          {"columns": ["field selector", ...]}
+         */
+        _updateColumnSelection: function(container, config) {
+
+            const selection = $('tbody.column-options', container),
+                  selectors = $('tr', selection),
+                  detached = {},
+                  fieldSelectors = Array.from(config.columns);
+
+            var lastRow;
+
+            const insertDetached = function(currentRow) {
+                lastRow = currentRow;
+                while(fieldSelectors.length && detached.hasOwnProperty(fieldSelectors[0])) {
+                    let fieldSelector = fieldSelectors[0],
+                        detachedRow = detached[fieldSelector];
+                    detachedRow.insertAfter(lastRow);
+                    lastRow = detachedRow;
+                    delete detached[fieldSelector];
+                    fieldSelectors.splice(0, 1);
+                }
+            };
+
+            selectors.each(function() {
+
+                let currentRow = $(this),
+                    checkbox = $('input.column-select', currentRow),
+                    fieldSelector = checkbox.data('selector'),
+                    pos = fieldSelectors.indexOf(fieldSelector);
+
+                lastRow = currentRow;
+
+                if (pos == -1) {
+                    checkbox.prop('checked', false);
+                } else if (pos == 0) {
+                    checkbox.prop('checked', true);
+                    fieldSelectors.splice(0, 1);
+                    insertDetached(currentRow);
+                } else {
+                    checkbox.prop('checked', true);
+                    currentRow.detach();
+                    detached[fieldSelector] = currentRow;
+                }
+            });
+
+            insertDetached(lastRow);
+        },
+
+        /**
+         * Initializes the config manager
+         *
+         * @param {jQuery} container - the container
+         */
+        _initConfigManager: function(container) {
+
+            var configsURL = this.configsURL;
+            if (!configsURL) {
+                return;
+            }
+
+            // TODO cache available configurations
+            //      - do not load configs again while on the same page
+
+            // TODO show throbber
+
+            // Look up available saved column configurations
+            const configSelector = $('.cfg-select-options', container),
+                  self = this;
+
+            $.ajaxS3({
+                'url': configsURL,
+                'type': 'GET',
+                'dataType': 'json',
+                'retryLimit': 0, // only try once
+                'success': function(data) {
+                    const configs = data.configs;
+                    if (configs && configs.length) {
+                        // Remove existing options
+                        configSelector.empty();
+                        // Append empty option (not selectable)
+                        $('<option>').val('')
+                                     .text('Saved Configurations...') // TODO i18n
+                                     .prop('disabled', true)
+                                     .prop('selected', true)
+                                     .appendTo(configSelector);
+                        // Append selectable options
+                        configs.forEach(function(config) {
+                            $('<option>').val(config.id).text(config.name).appendTo(configSelector);
+                        });
+                    }
+                    // TODO remove throbber
+                },
+                'error': function() {
+                    // TODO remove throbber
+                },
+            });
+
+            this._bindConfigManagerEvents(container);
+        },
+
+        /**
+         * Loads a column arrangement from the server, and updates
+         * the column arrangement in dialog accordingly
+         *
+         * @param {jQuery} container - the container
+         * @param {integer} configID - the config ID
+         */
+        _loadConfig: function(container, configID) {
+
+            // Check cache first
+            const columnConfigs = this.columnConfigs;
+            if (columnConfigs.hasOwnProperty(configID)) {
+                this._updateColumnSelection(container, columnConfigs[configID]);
+                return;
+            }
+
+            // Get Ajax-URL
+            const configsURL = this.configsURL;
+            if (!configsURL) {
+                return;
+            }
+
+            // TODO show throbber
+
+            const self = this;
+            $.ajaxS3({
+                'url': configsURL + '?load=' + configID,
+                'type': 'GET',
+                'dataType': 'json',
+                'retryLimit': 0,
+                'success': function(data) {
+                    // Cache column configuration
+                    columnConfigs[data.id] = data;
+
+                    // Update column arrangement in dialog
+                    self._updateColumnSelection(container, data);
+
+                    // TODO remove throbber
+                },
+                'error': function() {
+                    // TODO remove throbber
+                },
+            });
+
+        },
+
+        /**
+         * Deletes the currently selected column configuration
+         *
+         * @param {jQuery} container - the container
+         */
+        _deleteConfig: function(container) {
+
+            const configsURL = this.configsURL;
+            if (!configsURL) {
+                return;
+            }
+
+            const configOptions = $('.cfg-select-options', container),
+                  selectedOption = $('option:selected', configOptions),
+                  configID = selectedOption.val(),
+                  configName = selectedOption.text().trim();
+            if (!configID || !configName) {
+                return;
+            }
+
+            if (confirm('Delete "' + configName + '"?')) {
+
+                // TODO show throbber
+
+                const url = configsURL + '?delete=' + configID,
+                      self = this;
+                $.ajaxS3({
+                    'url': url,
+                    'type': 'DELETE',
+                    'dataType': 'json',
+                    'retryLimit': 0,
+                    'success': function(data) {
+                        // Remove option from selector
+                        configOptions.val('');
+                        selectedOption.remove();
+
+                        // Remove config from cache
+                        delete self.columnConfigs[configID];
+
+                        // TODO remove throbber
+                    },
+                    'error': function() {
+                        // TODO remove throbber
+                    },
+                });
+            }
+        },
+
+        /**
+         * Toggles the configuration manager between Select-mode and Save-mode
+         *
+         * @param {jQuery} container: the container
+         * @param {boolean} on: switch to Save-mode (true), or Select-mode (false)
+         */
+        _toggleConfigSave: function(container, on) {
+
+            const selectGroup = $('.cfg-select', container),
+                  saveGroup = $('.cfg-save', container),
+                  configOptions = $('.cfg-select-options', container),
+                  nameInput = $('input.cfg-save-name', container);
+
+            if (on) {
+                // Get the selected config name
+                let selectedOption = $('option:selected', configOptions),
+                    configName = '',
+                    nameLength = 0;
+                if (configOptions.val()) {
+                    configName = selectedOption.text().trim();
+                    nameLength = configName.length * 2;
+                }
+
+                // Hide select group, show save group
+                selectGroup.hide();
+                saveGroup.removeClass('hide').show();
+
+                // Populate name input, set focus and cursor
+                nameInput.val(configName).focus();
+                nameInput[0].setSelectionRange(nameLength, nameLength);
+            } else {
+                // Clear name input
+                nameInput.val('');
+
+                // Hide save group, show select group
+                saveGroup.hide();
+                selectGroup.removeClass('hide').show();
+            }
+        },
+
+        /**
+         * Saves the column arrangement from the dialog
+         * - this can be both, create or update (by name match)
+         * - called when Save-icon is clicked
+         *
+         * @param {jQuery} container - the container
+         */
+        _saveConfig: function(container) {
+
+            // Get the Ajax URL
+            const self = this,
+                  configsURL = this.configsURL;
+            if (!configsURL) {
+                return;
+            }
+
+            // Read+trim name from name input
+            const nameInput = $('input.cfg-save-name', container),
+                  configName = nameInput.val().trim();
+            if (!configName) {
+                return;
+            }
+
+            // Get the field selectors for the columns (ordered Array)
+            const selected = [];
+            $('.column-select:checked', container).each(function() {
+                selected.push($(this).data('selector'));
+            });
+            if (!selected.length) {
+                return;
+            }
+
+            // TODO show throbber
+
+            // Submit to server
+            const columnConfigs = this.columnConfigs,
+                  configOptions = $('.cfg-select-options', container),
+                  data = {'name': configName, 'columns': selected};
+            $.ajaxS3({
+                'url': configsURL,
+                'type': 'POST',
+                'data': JSON.stringify(data),
+                'dataType': 'json',
+                'retryLimit': 0,
+                'success': function(data) {
+                    // Update config selector and config cache
+                    var configID = data.updated || data.created;
+                    if (configID) {
+                        columnConfigs[configID] = selected;
+                        var selectedConfig = $('option[value="' + configID + '"]', configOptions);
+                        if (selectedConfig.length) {
+                            selectedConfig.prop('selected', true);
+                        } else {
+                            $('<option>').val(configID)
+                                         .text(configName)
+                                         .appendTo(configOptions)
+                                         .prop('selected', true);
+                        }
+                        configOptions.val(configID);
+                    }
+
+                    // TODO remove throbber
+                    self._toggleConfigSave(container, false);
+                },
+                'error': function() {
+                    // TODO remove throbber
+                    self._toggleConfigSave(container, false);
+                },
+            });
+
+        },
+
+        /**
+         * Binds event handlers to dialog
+         *
+         * @param {jQuery.widget} dialog: the dialog instance
+         * @param {jQuery} container: the container
+         */
+        _bindDialogEvents: function(dialog, container) {
+
+            const ns = this.eventNamespace,
+                  self = this;
+
+            // Clicking outside of the popup closes it
+            $('.ui-widget-overlay').off(ns).on('click' + ns, function() {
+                dialog.dialog('close');
+            });
+
+            // Any cancel-form-btn button closes the popup
+            $('.cancel-form-btn', container).off(ns).on('click' + ns, function() {
+                dialog.dialog('close');
+            });
+            // Submit button applies the column arrangement and closes the dialog
+            $('.submit-form-btn', container).off(ns).on('click' + ns, function() {
+                if ($('.column-select:checked', container).length) {
+                    self._applyColumnSelection(container);
+                    dialog.dialog('close');
+                }
+            });
+            // Reset button restores the default
+            $('.reset-form-btn', container).off(ns).on('click' + ns, function() {
+                self._applyColumnSelection(container, true);
+            });
+
+            // Alternative if drag&drop not available
+            $('.column-left', container).off(ns).on('click' + ns, function() {
+                $(this).closest('tr').insertBefore(row.prev());
+            });
+            $('.column-right', container).off(ns).on('click' + ns, function() {
+                $(this).closest('tr').insertAfter(row.next());
+            });
+
+            // Select/deselect all
+            $('.column-select-all', container).off(ns).on('change' + ns, function() {
+                let status = $(this).prop('checked');
+                $('.column-select', container).prop('checked', status);
+            });
+            $('.column-select', container).off(ns).on('change' + ns, function() {
+                let deselected = $('.column-select:not(:checked)', container).length;
+                $('.column-select-all', container).prop('checked', !deselected);
+            });
+        },
+
+        /**
+         * Binds event handlers to configuration manager elements
+         *
+         * @param {jQuery} container - the container
+         */
+        _bindConfigManagerEvents: function(container) {
+
+            const ns = this.eventNamespace,
+                  self = this;
+
+            // Configuration selection
+            $('.cfg-select-options', container).off(ns).on('change' + ns, function() {
+                let configID = $(this).val();
+                if (configID) {
+                    self._loadConfig(container, configID - 0);
+                }
+            });
+            $('.cfg-select-save', container).off(ns).on('click' + ns, function() {
+                self._toggleConfigSave(container, true);
+            });
+            $('.cfg-select-delete', container).off(ns).on('click' + ns, function() {
+                self._deleteConfig(container);
+            });
+
+            // Save-Group
+            $('.cfg-save-name', container).off(ns).on('keyup' + ns, function() {
+                // TODO Events when button pressed in name input
+                // ENTER to submit, then return to SELECT-group
+                // ESC to clear and abort, then return to SELECT group
+            });
+            $('.cfg-save-submit', container).off(ns).on('click' + ns, function() {
+                self._saveConfig(container);
+            });
+            $('.cfg-save-cancel', container).off(ns).on('click' + ns, function() {
+                self._toggleConfigSave(container, false);
+            });
+        },
+
+        /**
+         * Removes all event handlers from the dialog
+         *
+         * @param {jQuery} container: the container
+         */
+        _removeDialogEvents: function(container) {
+
+            const ns = this.eventNamespace,
+                  self = this;
+
+            // Form events
+            $('.ui-widget-overlay').off(ns);
+            $('.cancel-form-btn, .submit-form-btn, .reset-form-button', container).off(ns);
+
+            // Column selection/arrangement events
+            $('.column-left, .column-right', container).off(ns);
+            $('.column-select, .column-select-all', container).off(ns);
+
+            // Configuration manager events
+            $('.cfg-select-options, .cfg-select-save, .cfg-select-delete', container).off(ns);
+            $('.cfg-save-name, .cfg-save-submit, .cfg-save-cancel', container).off(ns);
+        },
+
+        /**
+         * Binds overall page events
          */
         _bindEvents: function() {
 
@@ -191,15 +589,18 @@
         },
 
         /**
-         * Unbind events (before refresh)
+         * Removes all added events
          */
         _unbindEvents: function() {
 
-            const ns = this.eventNamespace;
+            const self = this,
+                  ns = this.eventNamespace;
+
+            self._removeDialogEvents($('.column-select-container'));
 
             $(this.element).off(ns);
 
             return true;
-        }
+        },
     });
 })(jQuery);
