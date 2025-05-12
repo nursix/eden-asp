@@ -32,7 +32,7 @@ import json
 
 from gluon import current
 
-from ..tools import JSONERRORS
+from ..tools import JSONERRORS, JSONSEPARATORS
 
 from .base import CRUDMethod
 
@@ -47,6 +47,7 @@ class ColumnConfigManager(CRUDMethod):
             Args:
                 r: the CRUDRequest
                 **attr: controller parameters
+
             Returns:
                 JSON
         """
@@ -58,7 +59,10 @@ class ColumnConfigManager(CRUDMethod):
             http = r.http
 
             if http == "GET":
-                output = self.load(r, **attr)
+                if "load" in r.get_vars:
+                    output = self.load(r, **attr)
+                else:
+                    output = self.configs(r, **attr)
 
             elif http == "DELETE" or \
                  http == "POST" and "delete" in r.get_vars:
@@ -84,6 +88,7 @@ class ColumnConfigManager(CRUDMethod):
             Args:
                 r: the CRUDRequest
                 **attr: controller parameters
+
             Returns:
                 JSON message, containing created=ID or updated=ID
             Raises:
@@ -164,6 +169,38 @@ class ColumnConfigManager(CRUDMethod):
         return current.xml.json_message(**msg)
 
     # -------------------------------------------------------------------------
+    def configs(self, r, **attr):
+        """
+            Returns a list of saved column configurations for the context
+
+            Args:
+                r: the CRUDRequest
+                **attr: controller parameters
+
+            Returns:
+                JSON string {"configs": [{"id": recordID, "name": "configName"}, ...]}
+        """
+
+        c, f, t, user_id = self.get_context(r)
+        if not user_id:
+            r.unauthorised()
+
+        table = current.s3db.usr_columns
+        query = (table.controller == c) & \
+                (table.function == f) & \
+                (table.tablename == t) & \
+                (table.user_id == user_id) & \
+                (table.deleted == False)
+        rows = current.db(query).select(table.id, table.name)
+
+        # Audit?
+        #current.audit("read", "usr", "columns", representation="json")
+
+        configs = [{"id": row.id, "name": row.name} for row in rows if row.name.strip()]
+
+        return json.dumps({"configs": configs}, separators=JSONSEPARATORS)
+
+    # -------------------------------------------------------------------------
     def load(self, r, **attr):
         """
             Loads a column configuration; requires ?load=ID query
@@ -171,6 +208,7 @@ class ColumnConfigManager(CRUDMethod):
             Args:
                 r: the CRUDRequest
                 **attr: controller parameters
+
             Returns:
                 JSON string {"name": "configName", "columns": ["selector", ...]}
             Raises:
@@ -212,7 +250,7 @@ class ColumnConfigManager(CRUDMethod):
         # Audit?
         #current.audit("read", "usr", "columns", record=record.id, representation="json")
 
-        return json.dumps(output)
+        return json.dumps(output, separators=JSONSEPARATORS)
 
     # -------------------------------------------------------------------------
     def delete(self, r, **attr):
@@ -222,6 +260,7 @@ class ColumnConfigManager(CRUDMethod):
             Args:
                 r: the CRUDRequest
                 **attr: controller parameters
+
             Returns:
                 JSON message, containing deleted=ID
             Raises:

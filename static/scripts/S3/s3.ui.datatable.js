@@ -1761,6 +1761,8 @@
                   container = $('.dataTables_wrapper', outerForm),
                   selector = $('.column-selector', outerForm);
 
+            var tableConfig = this._parseConfig();
+
             if (selector.length && !$('.dt-variable-columns', container).length) {
                 // TODO make button icon a setting
                 let btn = $('<button type="button" class="dt-variable-columns"><i class="fa fa-columns"></button>');
