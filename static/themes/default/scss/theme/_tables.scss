@@ -406,9 +406,30 @@ table {
             }
         }
         thead {
-            background: transparent;
+            background-color: #fffccb;
             th, td {
                 border: 0;
+                padding: 0.4rem 0.2rem;
+                label {
+                    max-width: 8rem;
+                }
+            }
+            font-size: 0.8rem;
+            i.fa {
+                font-size: 0.95rem;
+                cursor: pointer;
+            }
+            select option:disabled {
+                display: none;
+            }
+            select:focus, input:focus {
+                background-color: #fffbe0;
+            }
+            .cfg-select-throbber {
+                position: absolute;
+                right: 4.5rem;
+                top: 0.95rem;
+                display: none;
             }
         }
         tbody {

@@ -218,37 +218,35 @@
             // TODO cache available configurations
             //      - do not load configs again while on the same page
 
-            // TODO show throbber
-
             // Look up available saved column configurations
-            const configSelector = $('.cfg-select-options', container),
+            const configOptions = $('.cfg-select-options', container),
+                  throbber = $('.cfg-select-throbber', container).show(),
                   self = this;
-
             $.ajaxS3({
                 'url': configsURL,
                 'type': 'GET',
                 'dataType': 'json',
                 'retryLimit': 0, // only try once
                 'success': function(data) {
-                    const configs = data.configs;
+                    const configs = data.configs,
+                          savedConfigsLabel = i18n.savedConfigurations || 'Saved Configurations...';
                     if (configs && configs.length) {
                         // Remove existing options
-                        configSelector.empty();
+                        configOptions.empty();
                         // Append empty option (not selectable)
                         $('<option>').val('')
-                                     .text('Saved Configurations...') // TODO i18n
+                                     .text(savedConfigsLabel)
                                      .prop('disabled', true)
                                      .prop('selected', true)
-                                     .appendTo(configSelector);
+                                     .appendTo(configOptions);
                         // Append selectable options
                         configs.forEach(function(config) {
-                            $('<option>').val(config.id).text(config.name).appendTo(configSelector);
+                            $('<option>').val(config.id).text(config.name).appendTo(configOptions);
                         });
                     }
-                    // TODO remove throbber
                 },
-                'error': function() {
-                    // TODO remove throbber
+                'always': function() {
+                    throbber.hide();
                 },
             });
 
@@ -277,9 +275,9 @@
                 return;
             }
 
-            // TODO show throbber
-
-            const self = this;
+            // Load configuration from server
+            const throbber = $('.cfg-select-throbber', container).show(),
+                  self = this;
             $.ajaxS3({
                 'url': configsURL + '?load=' + configID,
                 'type': 'GET',
@@ -292,10 +290,10 @@
                     // Update column arrangement in dialog
                     self._updateColumnSelection(container, data);
 
-                    // TODO remove throbber
+                    throbber.hide();
                 },
-                'error': function() {
-                    // TODO remove throbber
+                'always': function() {
+                    throbber.hide();
                 },
             });
 
@@ -322,10 +320,8 @@
             }
 
             if (confirm('Delete "' + configName + '"?')) {
-
-                // TODO show throbber
-
-                const url = configsURL + '?delete=' + configID,
+                const throbber = $('.cfg-select-throbber', container).show(),
+                      url = configsURL + '?delete=' + configID,
                       self = this;
                 $.ajaxS3({
                     'url': url,
@@ -339,11 +335,9 @@
 
                         // Remove config from cache
                         delete self.columnConfigs[configID];
-
-                        // TODO remove throbber
                     },
-                    'error': function() {
-                        // TODO remove throbber
+                    'always': function() {
+                        throbber.hide();
                     },
                 });
             }
@@ -399,8 +393,7 @@
         _saveConfig: function(container) {
 
             // Get the Ajax URL
-            const self = this,
-                  configsURL = this.configsURL;
+            const configsURL = this.configsURL;
             if (!configsURL) {
                 return;
             }
@@ -421,12 +414,12 @@
                 return;
             }
 
-            // TODO show throbber
-
             // Submit to server
             const columnConfigs = this.columnConfigs,
                   configOptions = $('.cfg-select-options', container),
-                  data = {'name': configName, 'columns': selected};
+                  throbber = $('.cfg-select-throbber', container).show(),
+                  data = {'name': configName, 'columns': selected},
+                  self = this;
             $.ajaxS3({
                 'url': configsURL,
                 'type': 'POST',
@@ -437,7 +430,11 @@
                     // Update config selector and config cache
                     var configID = data.updated || data.created;
                     if (configID) {
-                        columnConfigs[configID] = selected;
+                        columnConfigs[configID] = {
+                            columns: selected,
+                            id: configID,
+                            name: configName
+                        };
                         var selectedConfig = $('option[value="' + configID + '"]', configOptions);
                         if (selectedConfig.length) {
                             selectedConfig.prop('selected', true);
@@ -449,16 +446,12 @@
                         }
                         configOptions.val(configID);
                     }
-
-                    // TODO remove throbber
-                    self._toggleConfigSave(container, false);
                 },
-                'error': function() {
-                    // TODO remove throbber
+                'always': function() {
+                    throbber.hide();
                     self._toggleConfigSave(container, false);
                 },
             });
-
         },
 
         /**
@@ -537,10 +530,19 @@
             });
 
             // Save-Group
-            $('.cfg-save-name', container).off(ns).on('keyup' + ns, function() {
-                // TODO Events when button pressed in name input
-                // ENTER to submit, then return to SELECT-group
-                // ESC to clear and abort, then return to SELECT group
+            $('.cfg-save-name', container).off(ns).on('keyup' + ns, function(e) {
+                e.preventDefault();
+                e.stopPropagation();
+                switch(e.which) {
+                    case 13:
+                        self._saveConfig(container);
+                        break;
+                    case 27:
+                        self.toogleConfigSave(container, false);
+                        break;
+                    default:
+                        break;
+                }
             });
             $('.cfg-save-submit', container).off(ns).on('click' + ns, function() {
                 self._saveConfig(container);

@@ -721,11 +721,10 @@ class DataTable:
                                        T("All"),
                                        _class = "available-column",
                                        ),
-                                  # _colspan = 4,
                                   ),
                                 # ColumnConfigManager
-                                # TODO move styles into theme
-                                TD(SELECT(OPTION(T("No saved configurations"),
+                                TD(DIV(_class="throbber cfg-select-throbber"),
+                                   SELECT(OPTION(T("No Saved Configurations"),
                                                  _disabled = "disabled",
                                                  _selected = "selected",
                                                  _value = "",
@@ -743,7 +742,6 @@ class DataTable:
                                         _title=T("Save"),
                                         _class="cfg-save cfg-save-submit hide",
                                         ),
-                                   _style="font-size: 0.95rem;letter-spacing: 0.05rem;white-space: pre;",
                                    ),
                                 TD(ICON("fa fa-trash-o",
                                         _title=T("Delete"),
@@ -753,9 +751,8 @@ class DataTable:
                                         _title=T("Cancel"),
                                         _class="cfg-save cfg-save-cancel hide",
                                         ),
-                                   _style="font-size: 0.95rem;letter-spacing: 0.05rem;white-space: pre;",
                                    ),
-                                ), _style="background: #fffccb;")
+                                ))
 
         # Complete subform
         subform = DIV(TABLE(select_all, options),
@@ -966,6 +963,7 @@ class DataTable:
                    "selectedRecords": T("Selected Records"),
                    "executeBulkAction": T("OK"),
                    "selectColumns": T("Select Columns"),
+                   "savedConfigurations": T("Saved Configurations..."),
                    }
 
         return "\n".join('''i18n.%s="%s"'''% (k, v) for k, v in strings.items())
