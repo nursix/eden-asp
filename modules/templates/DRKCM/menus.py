@@ -8,7 +8,7 @@ from gluon import current, URL
 from core import IS_ISO639_2_LANGUAGE_CODE
 from core.ui.layouts import MM, M, ML, MP, MA, SEP
 try:
-    from ..DRK.layouts import OM
+    from .layouts import OM
 except ImportError:
     pass
 import core.ui.menus as default

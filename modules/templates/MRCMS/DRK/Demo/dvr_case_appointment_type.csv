@@ -1,0 +1,7 @@
+Organisation,Name,Active,Mandatory for Children,Mandatory for Adolescents,Mandatory for Adults,Presence required,Comments
+Erstaufnahme Mannheim,BAMF,false,false,false,false,true,
+Erstaufnahme Mannheim,ED,false,false,false,false,true,
+Erstaufnahme Mannheim,GU,false,false,false,false,true,
+Erstaufnahme Mannheim,Transfer,false,false,false,false,true,
+Erstaufnahme Mannheim,Arzttermin,false,false,false,false,true,
+Erstaufnahme Mannheim,Ausländerbehörde,false,false,false,false,true,

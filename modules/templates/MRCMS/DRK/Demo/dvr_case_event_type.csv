@@ -1,0 +1,3 @@
+Organisation,Event Class,Code,Name,Inactive,Default,Minimum Interval,Maximum per Day,Multiple,Residents Only,Excluded By,Presence required,Comments
+Erstaufnahme Mannheim,C,SEEN,Gesehen,false,true,,,false,false,,true,Person has been seen at a checkpoint
+Erstaufnahme Mannheim,C,MAIL,Post abgeholt,false,false,,,false,false,,true,Person has been to fetch their mail

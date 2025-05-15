@@ -1,0 +1,7 @@
+Organisation,Event Class,Code,Name,Inactive,Default,Minimum Interval,Maximum per Day,Multiple,Residents Only,Excluded By,Presence required,Comments
+Erstaufnahme Mannheim,F,FOOD,Food Distribution,true,false,1,3,true,true,"FOOD-SUHUR,FOOD-IFTAR",false,Person has received food (legacy event type)
+Erstaufnahme Mannheim,F,FOOD-1,Breakfast,false,false,1,1,true,true,"FOOD-SUHUR,FOOD-IFTAR",false,Person has received breakfast
+Erstaufnahme Mannheim,F,FOOD-2,Lunch,false,false,1,1,true,true,"FOOD-SUHUR,FOOD-IFTAR",false,Person has received lunch
+Erstaufnahme Mannheim,F,FOOD-3,Supper,false,false,1,1,true,true,"FOOD-SUHUR,FOOD-IFTAR",false,Person has received supper
+Erstaufnahme Mannheim,F,FOOD-IFTAR,Iftar (Ramadan),true,false,1,1,true,true,"FOOD,FOOD-1,FOOD-2,FOOD-3",false,Person has participated in iftar
+Erstaufnahme Mannheim,F,FOOD-SUHUR,Suhur (Ramadan),true,false,1,1,true,true,"FOOD,FOOD-1,FOOD-2,FOOD-4",false,Person has participated in suhur

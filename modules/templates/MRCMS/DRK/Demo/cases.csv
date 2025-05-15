@@ -1,0 +1,6 @@
+Organisation,Facility,Facility Type,Sex,First Name,Last Name,DOB,Nationality,Family,Head of Family,Shelter,Unit,Case,Registration Date,CaseStatus
+Erstaufnahme Mannheim,LEA Mannheim,Shelter,Male,Ahmed,Hamed,1971-03-11,SY,,,LEA Mannheim,275 8 A,,,OPEN
+Erstaufnahme Mannheim,LEA Mannheim,Shelter,Male,Alibrahim,Malik,1970-04-12,SY,Malik,true,LEA Mannheim,275 8 B,,,OPEN
+Erstaufnahme Mannheim,LEA Mannheim,Shelter,Female,Fatima,Malik,1974-12-01,SY,Malik,,LEA Mannheim,275 8 B,,,OPEN
+Erstaufnahme Mannheim,LEA Mannheim,Shelter,Male,Ahmad,Malik,2000-02-12,SY,Malik,,LEA Mannheim,275 8 B,,,OPEN
+Erstaufnahme Mannheim,LEA Mannheim,Shelter,Female,Zaynab,Aziz,1982-03-01,SY,,,LEA Mannheim,275 8 C,,,OPEN

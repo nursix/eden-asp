@@ -1,0 +1,11 @@
+Organisation,Name,External,Not Transferable,Comments
+Erstaufnahme Mannheim,Gesucht,false,false,Person is sought by the administration
+Erstaufnahme Mannheim,Inobhutnahme,true,false,Child taken into care of child welfare authorities
+Erstaufnahme Mannheim,Krankenhaus,true,true,"In Hospital, still entitled to benefits, cannot be transferred"
+Erstaufnahme Mannheim,Medizin,false,false,Medical conditions that require special handling
+Erstaufnahme Mannheim,Polizeigewahrsam,true,true,"With the police, still entitled to benefits, cannot be transferred"
+Erstaufnahme Mannheim,Post,false,false,Client has mail to fetch from the info point
+Erstaufnahme Mannheim,Priorität,false,false,Conditions exist that require prioritized handling of the case
+Erstaufnahme Mannheim,Quarantäne,false,true,"Person is to be quarantined, cannot be transferred"
+Erstaufnahme Mannheim,Schutz,false,false,Vulnerabilities that require protective measures
+Erstaufnahme Mannheim,Sicherheit,false,false,Security risks that require special handling

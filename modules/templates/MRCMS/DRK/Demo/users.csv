@@ -1,0 +1,7 @@
+First Name,Last Name,Email,Password,Role,Organisation,Language
+Admin,DRKBW,drkbw_admin@example.com,eden,"ORG_GROUP_ADMIN/0, NEWSLETTER_AUTHOR/0,STAFF",DRK Landesverband Baden-Württemberg,de
+Admin,Mannheim,ma_admin@example.com,eden,"ORG_ADMIN, SHELTER_ADMIN, SUPPLY_ADMIN, STAFF",Erstaufnahme Mannheim,de
+Case Admin,Mannheim,ma_case_admin@example.com,eden,"CASE_ADMIN, SHELTER_MANAGER, SUPPLY_MANAGER, STAFF",Erstaufnahme Mannheim,de
+Case Manager,Mannheim,ma_case_manager@example.com,eden,"CASE_MANAGER, CHECKPOINT, STAFF",Erstaufnahme Mannheim,de
+Supply Manager,Mannheim,ma_supply_manager@example.com,eden,"CASE_ADMIN, SUPPLY_MANAGER, STAFF",Erstaufnahme Mannheim,de
+Caterer,Mannheim,ma_caterer@example.com,eden,"CATERING,STAFF",Erstaufnahme Mannheim,de
