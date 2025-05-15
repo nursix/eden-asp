@@ -129,6 +129,7 @@ def config(settings):
     # Defaults for custom settings
     #
     settings.custom.autogenerate_case_ids = True
+    settings.custom.manage_work_orders = True
 
     settings.custom.context_org_name = "Sahana Eden"
 

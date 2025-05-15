@@ -6,13 +6,13 @@
 
 from collections import OrderedDict
 
-from gluon import current
-from gluon.storage import Storage
+# from gluon import current
+# from gluon.storage import Storage
 
 # =============================================================================
 def config(settings):
 
-    T = current.T
+    # T = current.T
 
     #settings.base.system_name = "MRCMS"
     #settings.base.system_name_short = "MRCMS"
@@ -39,14 +39,23 @@ def config(settings):
     settings.L10n.timezone = "Europe/Berlin"
 
     # -------------------------------------------------------------------------
-    # Defaults for custom settings
+    # Scenario-specific custom settings
     #
     settings.custom.autogenerate_case_ids = True
+    settings.custom.manage_work_orders = False
 
     settings.custom.context_org_name = "Johanniter-Unfall-Hilfe"
 
     settings.custom.org_menu_logo = ("JUH", "img", "logo_smaller.png")
     settings.custom.homepage_logo = ("JUH", "img", "logo_small.svg")
     settings.custom.idcard_default_logo = ("JUH", "img", "logo_small.png")
+
+    # -------------------------------------------------------------------------
+    # Hide IssueReporter role while not using work order management
+    # TODO remove when approved
+    #
+    privileged_roles = settings.get_auth_privileged_roles()
+    privileged_roles["ISSUE_REPORTER"] = "ADMIN"
+    settings.auth.privileged_roles = privileged_roles
 
 # END =========================================================================

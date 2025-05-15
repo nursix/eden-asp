@@ -75,7 +75,7 @@ class MainMenu(default.MainMenu):
         else:
             shelter_menu = MM("Shelters", c="cr", f="shelter")
 
-        return [
+        menu = [
             MM("Clients", c=("dvr", "pr"), f=("person", "*")),
             MM("Food Distribution", c="dvr", f="case_event", m="register_food", p="create",
                restrict = "CATERING",
@@ -86,8 +86,14 @@ class MainMenu(default.MainMenu):
             shelter_menu,
             org_menu,
             MM("Security", c="security", f="seized_item"),
-            MM("To Do", c="act", f=("my_open_tasks", "task", "issue")),
+            # MM("To Do", c="act", f=("my_open_tasks", "task", "issue")),
             ]
+
+        # Optional entries
+        if current.deployment_settings.get_custom("manage_work_orders", True):
+            menu.append(MM("To Do", c="act", f=("my_open_tasks", "task", "issue")))
+
+        return menu
 
     # -------------------------------------------------------------------------
     @classmethod
