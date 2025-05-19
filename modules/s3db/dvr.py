@@ -5441,6 +5441,7 @@ def dvr_get_case(person_id, archived=None):
         query &= (ctable.archived == archived)
     rows = db(query).select(ctable.id,
                             ctable.organisation_id,
+                            ctable.reference,
                             stable.is_closed,
                             left = left,
                             orderby = ~ctable.date,
@@ -7928,6 +7929,8 @@ class DVRManageAllowance(CRUDMethod):
         permitted = self._permitted("update")
         if not permitted:
             r.unauthorised()
+
+        output = None
 
         if r.representation in ("html", "iframe"):
             if r.http in ("GET", "POST"):

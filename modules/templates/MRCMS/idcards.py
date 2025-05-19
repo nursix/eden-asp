@@ -56,6 +56,7 @@ class GenerateIDCard(CRUDMethod):
         if not r.record:
             r.error(400, current.ERROR.BAD_METHOD)
 
+        output = None
         if r.interactive:
             # ID document generation
             if r.http in ("GET", "POST"):
@@ -107,24 +108,37 @@ class GenerateIDCard(CRUDMethod):
 
         # Form fields
         #now = request.utcnow.date()
-        formfields = [DateField("valid_until",
+        formfields = [Field("fmt",
+                            requires = IS_IN_SET(card_formats, zero=None),
+                            default = "A4",
+                            label = T("Format"),
+                            ),
+                      DateField("valid_until",
                                 label = T("Valid Until"),
                                 #default = now + relativedelta(months=1, day=31),
                                 month_selector = True,
                                 past = 0,
                                 #empty = False,
                                 ),
-                      Field("fmt",
-                            requires = IS_IN_SET(card_formats, zero=None),
-                            default = "A4",
-                            label = T("Format"),
-                            ),
                       Field("confirm", "boolean",
                             requires = lambda v: (v, None) if v else (v, T("You must confirm the action")),
                             default = False,
                             label = T("Yes, generate a new registration card"),
                             ),
                       ]
+
+        if r.controller == "dvr" and person_id:
+            case = s3db.dvr_get_case(person_id, archived=None)
+            tag_value_default = case.reference if case else None
+            formfields[1:1] = [Field('tag_option', 'boolean',
+                                     default = False,
+                                     label = T("Print Ref.No.##fileref"),
+                                     ),
+                               Field('tag_value',
+                                     default = tag_value_default,
+                                     label = T("Ref.No.##fileref"),
+                                     ),
+                               ]
 
         # Generate labels (and mark required fields in the process)
         labels, has_required = s3_mark_required(formfields)
@@ -184,10 +198,14 @@ class GenerateIDCard(CRUDMethod):
                 else:
                     layout = IDCardLayoutA4
 
+            # Print tag?
+            tag = form_vars.get("tag_value") if form_vars.get("tag_option") else None
+
             # Initialize ID card
             valid_until = form_vars.get("valid_until")
             idcard = IDCard(person_id,
                             valid_until = valid_until if valid_until else None,
+                            extra_data = {"tag": tag.strip() if tag else None},
                             )
 
             # Generate PDF document (with registration callback)
@@ -300,6 +318,8 @@ class GenerateIDCard(CRUDMethod):
         if not current.auth.s3_has_permission("read", "pr_identity", record_id=component_id):
             r.unauthorised()
 
+        output = None
+
         db = current.db
         s3db = current.s3db
 
@@ -337,11 +357,15 @@ class GenerateIDCard(CRUDMethod):
 class IDCard:
     """ Toolkit for registered, system-generated ID cards """
 
-    def __init__(self, person_id, valid_until=None):
+    def __init__(self, person_id, valid_until=None, extra_data=None):
+        # TODO docstring
 
         self.person_id = person_id
-        self.identity_id = None
         self.valid_until = valid_until
+        self.extra_data = extra_data
+
+        # Will be set during register()
+        self.identity_id = None
 
     # -------------------------------------------------------------------------
     def register(self, item):
@@ -447,6 +471,8 @@ class IDCard:
                         "vhash": card_vhash,
                         "vcode": check,
                         }
+        item["_ext"] = self.extra_data
+
         return item
 
     # -------------------------------------------------------------------------
@@ -750,6 +776,9 @@ class IDCard:
 
 # =============================================================================
 class IDCardLayoutL(PDFCardLayout):
+    """
+        Layout for printable beneficiary ID cards
+    """
 
     cardsize = CCLS
     orientation = "Landscape"
@@ -948,8 +977,7 @@ class IDCardLayoutL(PDFCardLayout):
 
         # Get the localized root org name
         org_names = common.get("root_org_names")
-        if org_names:
-            root_org_name = org_names.get(root_org)
+        root_org_name = org_names.get(root_org) if org_names else None
 
         # Logo
         if logo:
@@ -1020,14 +1048,15 @@ class IDCardLayoutL(PDFCardLayout):
         """
 
         w = self.width
-        common = self.common
 
         raw = item["_row"]
+        common = self.common
+        extra_data = item.get("_ext")
 
         draw_string = self.draw_string
 
         # Start position
-        x, y = 12, 55
+        x, y = 12, 82
         wt = w - (x + 70) # text width
 
         # Name
@@ -1038,20 +1067,27 @@ class IDCardLayoutL(PDFCardLayout):
         draw_string(x, y, name, width=wt, height=12, size=12)
 
         # Date of birth
-        y = y - 19
+        y = y - 18
         dob = raw["pr_person.date_of_birth"]
         if dob:
             dob = item["pr_person.date_of_birth"]
-            draw_string(x, y + 8, t_("Date of Birth"), size=6)
+            draw_string(x, y + 8, t_("Date of Birth"), size=5)
             draw_string(x, y, dob, width=wt, height=9, size=8)
+
+        # Reference Number (=tag)
+        y = y - 17
+        tag = extra_data.get("tag") if extra_data else None
+        if tag:
+            draw_string(x, y + 8, t_("Ref.No.##fileref"), size=5)
+            draw_string(x, y, tag, width=wt, height=9, size=8)
 
         # Shelter Unit
         # TODO do not draw if transitory unit?
-        y = y - 19
+        y = y - 17
         unit = raw["cr_shelter_registration.shelter_unit_id"]
         if unit:
             unit = item["cr_shelter_registration.shelter_unit_id"]
-            draw_string(x, y + 8, t_("Housing Unit"), size=6)
+            draw_string(x, y + 8, t_("Housing Unit"), size=5)
             draw_string(x, y, unit, width=wt, height=9, size=8)
 
         # Profile picture
@@ -1059,9 +1095,9 @@ class IDCardLayoutL(PDFCardLayout):
         picture = pictures.get(raw["pr_person.pe_id"]) if pictures else None
         if picture:
             self.draw_image(picture,
-                            w - 45, 65, height=60, width=60,
-                            halign = "center",
-                            valign = "middle",
+                            w - 16, 32, height=60, width=60,
+                            halign = "right",
+                            valign = "bottom",
                             )
 
     # -------------------------------------------------------------------------
@@ -1115,8 +1151,8 @@ class IDCardLayoutL(PDFCardLayout):
 
         else:
             # ID Number and barcode
-            self.draw_string(12, h-75, s3_str(code), width=w-16, size=12, bold=True)
-            self.draw_barcode(s3_str(code), w*3/4, 15, height=12, halign="center", maxwidth=w/2-12)
+            self.draw_string(12, 12, s3_str(code), width=w/2-16, size=12, bold=True)
+            self.draw_barcode(s3_str(code), w-6, 12, height=12, halign="right", maxwidth=w/2-16)
 
     # -------------------------------------------------------------------------
     def draw_border(self):
@@ -1293,6 +1329,9 @@ class IDCardLayoutL(PDFCardLayout):
 
 # =============================================================================
 class IDCardLayoutP(IDCardLayoutL):
+    """
+        Layout for printable beneficiary ID cards
+    """
 
     cardsize = CREDITCARD
     orientation = "Portrait"
@@ -1357,8 +1396,7 @@ class IDCardLayoutP(IDCardLayoutL):
 
         # Get the localized root org name
         org_names = common.get("root_org_names")
-        if org_names:
-            root_org_name = org_names.get(root_org)
+        root_org_name = org_names.get(root_org) if org_names else None
 
         # Logo
         if logo:
@@ -1432,10 +1470,11 @@ class IDCardLayoutP(IDCardLayoutL):
 
         raw = item["_row"]
         common = self.common
+        extra_data = item.get("_ext")
 
         draw_string = self.draw_string
 
-        x, y = 18, 81
+        x, y = 18, 82
         wt = w-2*x # text width
 
         # Name
@@ -1446,21 +1485,31 @@ class IDCardLayoutP(IDCardLayoutL):
         draw_string(x, y, name, width=wt, height=12, size=12, halign="center")
 
         # Date of birth
-        y = y - 18
+        y = y - 15
+        cl, cr = w * 2/5 - 2, w * 2/5 + 2
         dob = raw["pr_person.date_of_birth"]
         if dob:
             dob = item["pr_person.date_of_birth"]
-            draw_string(x, y + 9, t_("Date of Birth"), size=6, halign="center")
-            draw_string(x, y, dob, width=wt, height=9, size=8, halign="center")
+            # draw_string(x, y + 8, t_("Date of Birth"), size=5, halign="center")
+            # draw_string(x, y, dob, width=wt, height=9, size=8, halign="center")
+            draw_string(0, y, t_("Date of Birth"), width=cl, size=5, halign="right")
+            draw_string(cr, y, dob, width=wt/2, height=9, size=8, halign="left")
+
+        # Reference Number (=tag)
+        y = y - 10
+        tag = extra_data.get("tag") if extra_data else None
+        if tag:
+            draw_string(0, y, t_("Ref.No.##fileref"), width=cl, size=5, halign="right")
+            draw_string(cr, y, tag, width=wt/2, height=9, size=8, halign="left")
 
         # Shelter Unit
         # TODO do not draw if transitory unit?
-        y = y - 18
+        y = y - 10
         unit = raw["cr_shelter_registration.shelter_unit_id"]
         if unit:
             unit = item["cr_shelter_registration.shelter_unit_id"]
-            draw_string(x, y + 9, t_("Housing Unit"), size=6, halign="center")
-            draw_string(x, y, unit, width=wt, height=9, size=8, halign="center")
+            draw_string(0, y, t_("Housing Unit"), width=cl, size=5, halign="right")
+            draw_string(cr, y, unit, width=wt/2, height=9, size=8, halign="left")
 
         # Profile picture
         pictures = common.get("pictures")
@@ -1521,9 +1570,9 @@ class IDCardLayoutP(IDCardLayoutL):
                                  )
         else:
             # ID Number and barcode
-            y = 26
+            y = 24
             self.draw_string(10, y, s3_str(code), width=w-20, size=12, bold=True, halign="center")
-            self.draw_barcode(s3_str(code), w / 2, y - 16, height=14, halign="center", maxwidth=w-40)
+            self.draw_barcode(s3_str(code), w / 2, y - 14, height=12, halign="center", maxwidth=w-40)
 
 # =============================================================================
 class IDCardLayoutA4(IDCardLayoutP):
@@ -1632,8 +1681,7 @@ class IDCardLayoutA4(IDCardLayoutP):
 
         # Get the localized root org name
         org_names = common.get("root_org_names")
-        if org_names:
-            root_org_name = org_names.get(root_org)
+        root_org_name = org_names.get(root_org) if org_names else None
 
         # Get the organisation logo
         logos = common.get("logos")
@@ -1668,6 +1716,7 @@ class IDCardLayoutA4(IDCardLayoutP):
 
         raw = item["_row"]
         common = self.common
+        extra_data = item.get("_ext")
 
         draw_string = self.draw_string
 
@@ -1675,11 +1724,11 @@ class IDCardLayoutA4(IDCardLayoutP):
 
         # Draw box around person data
         left = 30
-        bottom = h/2 + 95
-        self.draw_box(left, bottom, w/2-60, 150)
+        bottom = h/2 + 78
+        self.draw_box(left, bottom, w/2-60, 165)
 
         x = left + 10
-        y = bottom + 55
+        y = bottom + 76
         wt = w/2 - 2*x # text width
 
         # Name
@@ -1688,24 +1737,31 @@ class IDCardLayoutA4(IDCardLayoutP):
                                   truncate = False,
                                   )
         draw_string(x, y + 13, t_("Name"))
-        draw_string(x, y, name, width=wt, height=20, size=12)
+        draw_string(x, y, name, width=wt, height=20, size=12, bold=True)
 
         # Date of birth
-        y = y - 26
+        y = y - 25
         dob = raw["pr_person.date_of_birth"]
         if dob:
             dob = item["pr_person.date_of_birth"]
-            draw_string(x, y + 13, t_("Date of Birth"))
-            draw_string(x, y, dob, size=12, width=wt)
+            draw_string(x, y + 12, t_("Date of Birth"))
+            draw_string(x, y, dob, size=10, width=wt)
+
+        # Reference Number (=tag)
+        y = y - 23
+        tag = extra_data.get("tag") if extra_data else None
+        if tag:
+            draw_string(x, y + 12, t_("Ref.No.##fileref"))
+            draw_string(x, y, tag, size=10, width=wt)
 
         # Shelter Unit
         # TODO do not draw if transitory unit?
-        y = y - 26
+        y = y - 23
         unit = raw["cr_shelter_registration.shelter_unit_id"]
         if unit:
             unit = item["cr_shelter_registration.shelter_unit_id"]
-            draw_string(x, y + 13, t_("Housing Unit"))
-            draw_string(x, y, unit, size=12, width=wt)
+            draw_string(x, y + 12, t_("Housing Unit"))
+            draw_string(x, y, unit, size=10, width=wt)
 
         # ----- Right -----
 
@@ -1784,11 +1840,11 @@ class IDCardLayoutA4(IDCardLayoutP):
         # ----- Left -----
 
         # ID Number and barcode
-        y = h/2 + 60
+        y = h/2 + 45
         code = raw["pr_person.pe_label"]
         if code:
             self.draw_string(30, y, s3_str(code), width=w/2-60, size=28, bold=True, halign="center")
-            self.draw_barcode(s3_str(code), w / 4, y - 40, height=28, halign="center", maxwidth=w/2-40)
+            self.draw_barcode(s3_str(code), w / 4, y - 25, height=20, halign="center", maxwidth=w/2-40)
 
         # ----- Right -----
 
@@ -2011,7 +2067,7 @@ class StaffIDCardLayoutL(StaffIDCardLayout, IDCardLayoutL):
 
         draw_string = self.draw_string
 
-        x, y = 12, 60
+        x, y = 12, 82
         wt = w - (x + 70) # text width
 
         # Names
@@ -2022,11 +2078,11 @@ class StaffIDCardLayoutL(StaffIDCardLayout, IDCardLayoutL):
         draw_string(x, y, name, width=wt, height=12, size=12)
 
         # Date of birth
-        y = y - 17
+        y = y - 18
         #dob = raw["pr_person.date_of_birth"]
         #if dob:
         #    dob = item["pr_person.date_of_birth"]
-        #    draw_string(x, y + 10, t_("Date of Birth"), size=6)
+        #    draw_string(x, y + 10, t_("Date of Birth"), size=5)
         #    draw_string(x, y, dob, width=wt, height=9, size=8)
 
         # Staff Role
@@ -2042,9 +2098,9 @@ class StaffIDCardLayoutL(StaffIDCardLayout, IDCardLayoutL):
         picture = pictures.get(raw["pr_person.pe_id"]) if pictures else None
         if picture:
             self.draw_image(picture,
-                            w - 45, 65, height=60, width=60,
-                            halign = "center",
-                            valign = "middle",
+                            w - 16, 32, height=60, width=60,
+                            halign = "right",
+                            valign = "bottom",
                             )
 
     # -------------------------------------------------------------------------
@@ -2104,7 +2160,7 @@ class StaffIDCardLayoutP(StaffIDCardLayout, IDCardLayoutP):
 
         draw_string = self.draw_string
 
-        x, y = 18, 81
+        x, y = 18, 82
         wt = w-2*x # text width
 
         # Name
