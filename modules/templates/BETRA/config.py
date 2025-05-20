@@ -246,9 +246,9 @@ def config(settings):
     # Which subject type to use for case activities (subject|need|both)
     settings.dvr.case_activity_subject_type = "need"
     # Allow marking case activities as emergencies
-    settings.dvr.case_activity_emergency = True
+    settings.dvr.case_activity_emergency = False
     # Disable recording of free-text need details
-    settings.dvr.case_activity_need_details = False
+    settings.dvr.case_activity_need_details = True
     # Enable/disable linking of case activities to relevant vulnerabilities
     settings.dvr.case_activity_vulnerabilities = False
     # Enable/disable free-text response details

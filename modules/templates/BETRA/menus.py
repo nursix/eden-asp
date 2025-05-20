@@ -227,7 +227,7 @@ class OptionsMenu(default.OptionsMenu):
                     M("Tasks", c="dvr", f="task"),
                     ),
                 M("Current Needs", f="case_activity")(
-                    M("Emergencies", vars={"~.emergency": "True"}),
+                    # M("Emergencies", vars={"~.emergency": "True"}),
                     M("Report", m="report"),
                     ),
                 M("Archive", link=False)(
