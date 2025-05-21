@@ -1322,7 +1322,7 @@ class DVRTaskModel(DataModel):
                            represent = status_represent,
                            ),
                      self.hrm_human_resource_id(
-                         label = T("Staff"),
+                         label = T("Contact Person for Inquiries"),
                          ),
                      DateField("due_date",
                                label = T("Date Due"),
@@ -5651,16 +5651,27 @@ def dvr_configure_case_tasks(r, categories=False, default_category=None):
 
     table = resource.table
 
-    # Limit HR selection to relevant organisation
     if organisation_id:
+        field = table.human_resource_id
+
+        # Limit contact person selection to case organisation
         htable = s3db.hrm_human_resource
         dbset = db((htable.organisation_id==organisation_id) & \
                    (htable.status == 1))
-        field = table.human_resource_id
         field.requires = IS_EMPTY_OR(IS_ONE_OF(dbset,
                                                "hrm_human_resource.id",
                                                field.represent,
                                                ))
+
+        # Default contact person to current user, if they are
+        # staff member of the case organisation
+        query = (htable.person_id == current.auth.s3_logged_in_person()) & \
+                (htable.organisation_id == organisation_id) & \
+                (htable.status == 1) & \
+                (htable.deleted == False)
+        row = db(query).select(htable.id, limitby=(0, 1)).first()
+        if row:
+            field.default = row.id
 
     # Hide person_id from form (shown in rheader instead), show as link to ToDo-tab
     field = table.person_id

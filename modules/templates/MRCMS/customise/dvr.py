@@ -144,15 +144,15 @@ def dvr_task_controller(**attr):
                                       categories = categories,
                                       default_category = default_category,
                                       )
-        resource = r.resource
-        resource.configure(insertable = False,
-                           deletable = False,
-                           )
+        r.resource.configure(insertable = False,
+                             deletable = False,
+                             )
         return result
     s3.prep = prep
 
     from ..rheaders import dvr_rheader
     attr["rheader"] = dvr_rheader
+
     return attr
 
 # -------------------------------------------------------------------------

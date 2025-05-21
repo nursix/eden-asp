@@ -1267,6 +1267,7 @@
 'Contact Method': 'Kontaktmethode',
 'Contact Name': 'Name des Ansprechpartners',
 'Contact Person / Camp Owner': 'Kontaktperson / Camp-Betreiber',
+'Contact Person for Inquiries': 'Ansprechpartner bei Rückfragen',
 'Contact Person': 'Kontaktperson',
 'Contact Phone': 'Telefonnummer des Kontaktes',
 'Contact Us': 'Kontaktieren Sie uns',
