@@ -2016,7 +2016,7 @@ body.rtl .sub-nav.about-menu {
 /* line 339, ../scss/theme/_page.scss */
 #poweredby img {
   margin-right: 5px;
-  vertical-align: text-bottom;
+  vertical-align: middle;
 }
 /* line 343, ../scss/theme/_page.scss */
 [dir=rtl] #poweredby {
@@ -3659,35 +3659,42 @@ table th, table td {
 .column-selector table thead select:focus, .column-selector table thead input:focus {
   background-color: #fffbe0;
 }
-/* line 430, ../scss/theme/_tables.scss */
+/* line 428, ../scss/theme/_tables.scss */
+.column-selector table thead .cfg-select-throbber {
+  position: absolute;
+  right: 4.5rem;
+  top: 0.95rem;
+  display: none;
+}
+/* line 436, ../scss/theme/_tables.scss */
 .column-selector table tbody td {
   border: 1px solid #ccc;
 }
-/* line 433, ../scss/theme/_tables.scss */
+/* line 439, ../scss/theme/_tables.scss */
 .column-selector table tbody.ui-sortable .sortable-placeholder {
   background-color: #fff7d8;
 }
-/* line 438, ../scss/theme/_tables.scss */
+/* line 444, ../scss/theme/_tables.scss */
 .column-selector .submit-form-btn {
   margin-bottom: 0.3rem;
 }
 
-/* line 446, ../scss/theme/_tables.scss */
+/* line 452, ../scss/theme/_tables.scss */
 .dt-export-options {
   float: right;
   padding-top: 5px;
 }
-/* line 448, ../scss/theme/_tables.scss */
+/* line 454, ../scss/theme/_tables.scss */
 [dir=rtl] .dt-export-options {
   float: left;
 }
-/* line 452, ../scss/theme/_tables.scss */
+/* line 458, ../scss/theme/_tables.scss */
 .dt-export-options .list_formats {
   padding-top: 0;
   margin: 0 0.2rem;
 }
 
-/* line 457, ../scss/theme/_tables.scss */
+/* line 463, ../scss/theme/_tables.scss */
 .dt-export {
   display: inline-block;
   margin: 0 0.15rem;
@@ -3696,50 +3703,50 @@ table th, table td {
   width: 16px;
   background-repeat: no-repeat;
 }
-/* line 464, ../scss/theme/_tables.scss */
+/* line 470, ../scss/theme/_tables.scss */
 .dt-export.fa {
   font-size: 14px;
   padding: 0;
   padding-top: 2px;
 }
-/* line 469, ../scss/theme/_tables.scss */
+/* line 475, ../scss/theme/_tables.scss */
 .dt-export.export_cap {
   background-image: url(../../img/cap_16.png);
 }
-/* line 472, ../scss/theme/_tables.scss */
+/* line 478, ../scss/theme/_tables.scss */
 .dt-export.export_have {
   background-image: url(../../img/have_16.png);
 }
-/* line 475, ../scss/theme/_tables.scss */
+/* line 481, ../scss/theme/_tables.scss */
 .dt-export.export_kml {
   background-image: url(../../img/kml_icon.png);
 }
-/* line 478, ../scss/theme/_tables.scss */
+/* line 484, ../scss/theme/_tables.scss */
 .dt-export.export_map {
   background-image: url(../../img/map_icon.png);
 }
-/* line 481, ../scss/theme/_tables.scss */
+/* line 487, ../scss/theme/_tables.scss */
 .dt-export.export_pdf {
   background-image: url(../../img/pdficon_small.gif);
 }
-/* line 484, ../scss/theme/_tables.scss */
+/* line 490, ../scss/theme/_tables.scss */
 .dt-export.export_rss {
   background-image: url(../../img/RSS_16.png);
 }
-/* line 487, ../scss/theme/_tables.scss */
+/* line 493, ../scss/theme/_tables.scss */
 .dt-export.export_xls {
   background-image: url(../../img/icon-xls.png);
 }
-/* line 490, ../scss/theme/_tables.scss */
+/* line 496, ../scss/theme/_tables.scss */
 .dt-export.export_xlsx {
   background-image: url(../../img/icon-xls.png);
 }
-/* line 493, ../scss/theme/_tables.scss */
+/* line 499, ../scss/theme/_tables.scss */
 .dt-export.export_xml {
   background-image: url(../../img/icon-xml.png);
 }
 
-/* line 501, ../scss/theme/_tables.scss */
+/* line 507, ../scss/theme/_tables.scss */
 .empty {
   font-style: italic;
   font-size: 0.825rem;

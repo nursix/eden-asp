@@ -369,7 +369,7 @@ class OrgMenuDefaultLayout(S3NavigationItem):
                 if row:
                     name = row.name
 
-        logo = IMG(_src = "/%s/static/img/eden_asp_small.png" %
+        logo = IMG(_src = "/%s/static/img/eden_small.png" %
                           current.request.application,
                    _alt = name,
                    _height = 49,

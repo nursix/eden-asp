@@ -116,9 +116,9 @@ def config(settings):
     settings.custom.autogenerate_case_ids = True
     settings.custom.context_org_name = "Sahana Eden"
 
-    settings.custom.org_menu_logo = ("default", "img", "eden_asp_small.png")
-    settings.custom.homepage_logo = ("default", "img", "eden_asp_large.png")
-    settings.custom.idcard_default_logo = ("default", "img", "eden_asp_small.png")
+    settings.custom.org_menu_logo = ("default", "img", "eden_small.png")
+    settings.custom.homepage_logo = ("default", "img", "eden_large.png")
+    settings.custom.idcard_default_logo = ("default", "img", "eden_small.png")
 
     # -------------------------------------------------------------------------
     # General UI settings

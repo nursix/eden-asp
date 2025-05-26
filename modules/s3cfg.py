@@ -2633,7 +2633,7 @@ class S3Config(Storage):
         return self.__lazy("ui", "menu_logo",
                            URL(c = "static",
                                f = "img",
-                               args = ["eden_asp_small.png"],
+                               args = ["eden_small.png"],
                                )
                            )
 

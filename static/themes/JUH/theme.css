@@ -2023,7 +2023,7 @@ body.rtl .sub-nav.about-menu {
 /* line 339, ../scss/theme/_page.scss */
 #poweredby img {
   margin-right: 5px;
-  vertical-align: text-bottom;
+  vertical-align: middle;
 }
 /* line 343, ../scss/theme/_page.scss */
 [dir=rtl] #poweredby {
