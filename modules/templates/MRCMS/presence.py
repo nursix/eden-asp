@@ -31,6 +31,8 @@ class PresenceList(CRUDMethod):
                 attr: controller parameters
         """
 
+        output = None
+
         if r.http == "GET":
             output = self.presence_list(r, **attr)
         else:
@@ -55,10 +57,9 @@ class PresenceList(CRUDMethod):
         shelter_name = record.name
         data = self.lookup(record)
 
-        fmt = r.representation
-        if fmt == "xlsx":
+        output = None
+        if r.representation == "xlsx":
             output = self.xlsx(shelter_name, data)
-        # TODO support other formats?
         else:
             r.error(415, current.ERROR.BAD_FORMAT)
 

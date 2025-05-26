@@ -180,7 +180,7 @@ class CRShelterNoteModel(DataModel):
         # ---------------------------------------------------------------------
         # Pass names back to global scope (s3.*)
         #
-        return None
+        # return None
 
     # -------------------------------------------------------------------------
     @staticmethod
@@ -305,4 +305,3 @@ def cr_configure_shelter_note_form(r):
                    )
 
 # END =========================================================================
-

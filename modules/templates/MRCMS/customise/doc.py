@@ -158,16 +158,17 @@ def dvr_document_prep(r):
         return False
 
     # Get the case doc_id
+    doc_ids = []
     case = db(query).select(ctable.doc_id,
                             ctable.organisation_id,
                             limitby = (0, 1),
                             orderby = ~ctable.modified_on,
                             ).first()
-    if case:
-        doc_ids = [case.doc_id] if case.doc_id else []
-    else:
+    if not case:
         # No case found
         r.error(404, "Case not found")
+    elif case.doc_id:
+        doc_ids.append(case.doc_id)
 
     # Set default organisation_id to case org
     table.organisation_id.default = case.organisation_id

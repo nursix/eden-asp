@@ -1178,7 +1178,7 @@ class IDCardLayoutL(PDFCardLayout):
         c.restoreState()
 
     # -------------------------------------------------------------------------
-    def draw_string(self, x, y, value, width=120, height=40, size=7, bold=False, halign=None, box=False):
+    def draw_string(self, x, y, value, *, width=120, height=40, size=7, bold=False, halign=None, box=False):
         """
             Draws a string
 
@@ -1209,7 +1209,7 @@ class IDCardLayoutL(PDFCardLayout):
                                )
 
     # -------------------------------------------------------------------------
-    def draw_vertical_string(self, x, y, value, width=120, height=40, size=7, bold=False, halign=None, box=False):
+    def draw_vertical_string(self, x, y, value, *, width=120, height=40, size=7, bold=False, halign=None, box=False):
         """
             Draws a vertical string
 
@@ -1247,7 +1247,7 @@ class IDCardLayoutL(PDFCardLayout):
         return result
 
     # -------------------------------------------------------------------------
-    def draw_value(self, x, y, value, width=120, height=40, size=7, bold=True, valign=None, halign=None, box=False):
+    def draw_value(self, x, y, value, *, width=120, height=40, size=7, bold=True, valign=None, halign=None, box=False):
         """
             Helper function to draw a centered text above position (x, y);
             allows the text to wrap if it would otherwise exceed the given

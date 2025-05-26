@@ -412,7 +412,7 @@ $.filterOptionsS3({
     return show_inline
 
 # -------------------------------------------------------------------------
-def configure_case_form(resource,
+def configure_case_form(resource, *,
                         organisation_id=None,
                         shelters=None,
                         person_id=None,

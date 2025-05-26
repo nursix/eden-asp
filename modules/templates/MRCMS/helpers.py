@@ -988,7 +988,7 @@ class AbsenceFilter(RangeFilter):
             # if user has not set any of the limits, we get [] in values.
             value = values.get(variable, None)
             if value not in [None, []]:
-                if type(value) is list:
+                if isinstance(value, list):
                     value = value[0]
                 try:
                     value = int(value)

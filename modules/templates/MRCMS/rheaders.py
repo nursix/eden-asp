@@ -289,6 +289,7 @@ def org_rheader(r, tabs=None):
         resource = r.resource
 
     rheader = None
+    rheader_title = None
     rheader_fields = []
 
     if record:
@@ -358,6 +359,7 @@ def cr_rheader(r, tabs=None):
         resource = r.resource
 
     rheader = None
+    rheader_title = None
     rheader_fields = []
 
     if record:

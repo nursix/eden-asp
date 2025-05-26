@@ -37,6 +37,8 @@ class ShelterOverview(CRUDMethod):
         if not r.record:
             r.error(405, current.ERROR.BAD_METHOD)
 
+        output = None
+
         if r.http == "GET":
             if r.representation == "html":
                 output = self.overview(r, **attr)
@@ -453,6 +455,8 @@ class ResidentsList:
 
         for i, persons in enumerate((c, p)):
 
+            css = ""
+
             if i == 0:
                 # Checked-in residents
                 occupied = len(persons)
@@ -473,10 +477,10 @@ class ResidentsList:
                     group_id = gid
                     even, odd = odd, even
                 unit_section.append(cls.resident(person,
-                                             css = "resident %s %s" % (css, even),
-                                             show_link = show_links,
-                                             presence_repr = presence_repr,
-                                             ))
+                                                 css = "resident %s %s" % (css, even),
+                                                 show_link = show_links,
+                                                 presence_repr = presence_repr,
+                                                 ))
 
             # Render placeholder rows for unoccupied capacity
             total = unit.capacity if unit else None
