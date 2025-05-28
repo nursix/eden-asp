@@ -116,6 +116,14 @@ def dvr_rheader(r, tabs=None):
                         tabs.extend([(T("Items Received"), "distribution_item"),
                                      ])
 
+                    elif c == "med":
+                        # Medical Perspective
+                        tabs.extend([(T("Background"), "anamnesis"),
+                                     (T("Vaccinations"), "vaccination"),
+                                     (T("Medication"), "medication"),
+                                     (T("Care Occasions"), "patient"),
+                                     ])
+
                     else:
                         # Management Perspective
                         tabs.extend([(T("Family Members"), "group_membership/"),
@@ -210,6 +218,7 @@ def dvr_rheader(r, tabs=None):
                     perspectives = (("dvr", T("Manage")),
                                     ("counsel", T("Counseling")),
                                     ("supply", T("Supply")),
+                                    ("med", T("Medical")),
                                     )
                     icon = "arrow-circle-left"
                     for cntr, label in perspectives:

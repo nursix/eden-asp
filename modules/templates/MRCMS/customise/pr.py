@@ -1506,7 +1506,7 @@ def pr_person_controller(**attr):
     # Add custom components
     # - must happen before prep, so selectors from filters do not
     #   get resolved as virtual fields prematurely
-    if current.request.controller in ("dvr", "counsel", "supply"):
+    if current.request.controller in ("dvr", "counsel", "supply", "med"):
         configure_person_tags()
 
     # Only one staff record per person
@@ -1524,27 +1524,39 @@ def pr_person_controller(**attr):
             # Enforce closed=0
             r.vars["closed"] = r.get_vars["closed"] = "0"
 
-        # Call standard prep
-        if r.controller in ("dvr", "counsel", "supply"):
+        controller = r.controller
+
+        # Is this a case file view?
+        case_file = controller in ("dvr", "counsel", "supply") or \
+                    controller == "med" and not r.viewing
+
+        if case_file:
+            # Call custom dvr/person prep
             from .dvr import dvr_person_prep
             result = dvr_person_prep(r)
         else:
+            # Call standard prep
             result = standard_prep(r) if callable(standard_prep) else True
 
         get_vars = r.get_vars
 
-        # Adjust list title for invalid cases (normally "Archived")
-        archived = get_vars.get("archived")
-        if archived in ("1", "true", "yes"):
-            crud_strings = s3.crud_strings["pr_person"]
-            crud_strings["title_list"] = T("Invalid Cases")
+        if case_file:
+            # Adjust list title for invalid cases (normally "Archived")
+            archived = get_vars.get("archived")
+            if archived in ("1", "true", "yes"):
+                crud_strings = s3.crud_strings["pr_person"]
+                crud_strings["title_list"] = T("Invalid Cases")
 
-        controller = r.controller
-        if controller in ("dvr", "counsel", "supply"):
+            # Configure case perspective
             configure_dvr_person_controller(r,
                                             privileged = privileged,
                                             administration = administration,
                                             )
+
+        # TODO person-tab of patient file
+        #elif controller == "med":
+        #    configure_med_person_controller(r)
+
         elif controller == "security":
             configure_security_person_controller(r)
 
@@ -1606,8 +1618,10 @@ def pr_person_controller(**attr):
     s3.postp = postp
 
     # Custom rheader tabs
+    controller = current.request.controller
     from ..rheaders import dvr_rheader, hrm_rheader, default_rheader
-    if current.request.controller in ("dvr", "counsel", "supply"):
+    if controller in ("dvr", "counsel", "supply") or \
+       controller == "med" and not current.request.get_vars.get("viewing"):
 
         attr["rheader"] = dvr_rheader
         attr["variable_columns"] = True
@@ -1618,16 +1632,19 @@ def pr_person_controller(**attr):
                                      "field": managed_orgs_field,
                                      }]
 
-    elif current.request.controller == "hrm":
-        attr["rheader"] = hrm_rheader
-    elif current.request.controller == "default":
-        attr["rheader"] = default_rheader
+        # Activate filters on component tabs
+        attr["hide_filter"] = {"response_action": False,
+                               "distribution_item": False,
+                               "case_task": False,
+                               }
 
-    # Activate filters on component tabs
-    attr["hide_filter"] = {"response_action": False,
-                           "distribution_item": False,
-                           "case_task": False,
-                           }
+    # TODO person-tab of patient file
+    #elif controller == "med":
+    #    attr["rheader"] = med_rheader
+    elif controller == "hrm":
+        attr["rheader"] = hrm_rheader
+    elif controller == "default":
+        attr["rheader"] = default_rheader
 
     return attr
 
