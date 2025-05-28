@@ -27,6 +27,17 @@ def index_alt():
 def unit():
     """ Medical Units - CRUD Controller """
 
+    def prep(r):
+
+        if r.record:
+            # Organisation cannot be changed
+            table = r.resource.table
+            field = table.organisation_id
+            field.writable = False
+
+        return True
+    s3.prep = prep
+
     return crud_controller(rheader=s3db.med_rheader)
 
 # =============================================================================

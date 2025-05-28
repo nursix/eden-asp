@@ -34,6 +34,7 @@ __all__ = ("MedUnitModel",
            "MedEpicrisisModel",
            "MedMedicationModel",
            "MedVaccinationModel",
+           "med_UnitRepresent",
            "med_rheader",
            )
 
@@ -69,12 +70,9 @@ class MedUnitModel(DataModel):
         tablename = "med_unit"
         define_table(tablename,
                      super_link("pe_id", "pr_pentity"),
-                     # TODO should be readonly in update-form (=>prep):
                      self.org_organisation_id(),
                      self.org_site_id(),
                      Field("name", length=64,
-                           # TODO should be unique within the organisation
-                           #      => onvalidation
                            requires = IS_NOT_EMPTY(),
                            represent = lambda v, row=None: v if v else "-",
                            ),
@@ -87,6 +85,7 @@ class MedUnitModel(DataModel):
 
         # Table configuration
         configure(tablename,
+                  onvalidation = self.unit_onvalidation,
                   onaccept = self.unit_onaccept,
                   super_entity = ("pr_pentity",),
                   )
@@ -106,7 +105,7 @@ class MedUnitModel(DataModel):
             )
 
         # Foreign key template
-        represent = S3Represent(lookup=tablename)
+        represent = med_UnitRepresent()
         unit_id = FieldTemplate("unit_id", "reference %s" % tablename,
                                 label = T("Unit"),
                                 ondelete = "RESTRICT",
@@ -149,8 +148,6 @@ class MedUnitModel(DataModel):
         define_table(tablename,
                      unit_id(),
                      Field("name", length=64,
-                           # TODO should be unique within the unit
-                           #      => onvalidation
                            requires = IS_NOT_EMPTY(),
                            represent = lambda v, row=None: v if v else "-",
                            ),
@@ -176,6 +173,11 @@ class MedUnitModel(DataModel):
                            ),
                      CommentsField(),
                      )
+
+        # Table configuration
+        configure(tablename,
+                  onvalidation = self.area_onvalidation,
+                  )
 
         # CRUD strings
         area_label = settings.get_med_area_label()
@@ -237,12 +239,66 @@ class MedUnitModel(DataModel):
 
     # -------------------------------------------------------------------------
     @staticmethod
+    def unit_onvalidation(form):
+        """
+            Form validation for medical units
+            - name must be unique within the organisation
+        """
+
+        # Get form record id
+        record_id = get_form_record_id(form)
+
+        # Get form record data
+        table = current.s3db.med_unit
+        data = get_form_record_data(form, table, ["organisation_id", "name"])
+
+        name = data.get("name")
+        if name:
+            # Name must be unique within the organisation
+            query = (table.name == name)
+            if record_id:
+                query &= (table.id != record_id)
+            query &= (table.organisation_id == data.get("organisation_id")) & \
+                     (table.deleted == False)
+            duplicate = current.db(query).select(table.id, limitby=(0, 1)).first()
+            if duplicate:
+                form.errors.name = current.T("A unit with that name already exists")
+
+    # -------------------------------------------------------------------------
+    @staticmethod
     def unit_onaccept(form):
         """
             Update Affiliation, record ownership and component ownership
         """
 
         current.s3db.org_update_affiliations("med_unit", form.vars)
+
+    # -------------------------------------------------------------------------
+    @staticmethod
+    def area_onvalidation(form):
+        """
+            Form validation for treatment areas
+            - name must be unique within the unit
+        """
+
+        # Get form record id
+        record_id = get_form_record_id(form)
+
+        # Get form record data
+        table = current.s3db.med_area
+        data = get_form_record_data(form, table, ["unit_id", "name"])
+
+        name = data.get("name")
+        if name:
+            # Name must be unique within the unit
+            query = (table.name == name)
+            if record_id:
+                query &= (table.id != record_id)
+            query &= (table.unit_id == data.get("unit_id")) & \
+                     (table.deleted == False)
+            duplicate = current.db(query).select(table.id, limitby=(0, 1)).first()
+            if duplicate:
+                form.errors.name = current.T("An area with that name already exists")
 
 # =============================================================================
 class MedPatientModel(DataModel):
@@ -1507,6 +1563,112 @@ class MedVaccinationModel(DataModel):
         """ Safe defaults for names in case the module is disabled """
 
         return {}
+
+# =============================================================================
+class med_UnitRepresent(S3Represent):
+    """ Representation of medical units """
+
+    def __init__(self, *, show_org=None, show_link=False):
+        """
+            Args:
+                show_org: include the organisation name (True|False)
+                show_link: represent as link to the unit
+        """
+
+        super().__init__(lookup = "med_unit",
+                         show_link = show_link,
+                         )
+
+        self._show_org = show_org
+
+    # -------------------------------------------------------------------------
+    @property
+    def show_org(self):
+        """
+            Determines whether to include the organisation name in
+            the representation; defaults to True when the user can
+            read med_units from more than one organisation; can be
+            overridden by explicit True|False constructor parameter
+            "show_org"
+
+            Returns:
+                boolean
+        """
+
+        show_org = self._show_org
+        if show_org is None:
+
+            permissions = current.auth.permission
+            permitted_realms = permissions.permitted_realms("med_unit", "read")
+
+            if permitted_realms is None:
+                show_org = True
+            elif permitted_realms:
+                orgs = current.s3db.pr_get_entities(permitted_realms,
+                                                    types = ["org_organisation"],
+                                                    represent = False,
+                                                    )
+                show_org = len(orgs) != 1
+            else:
+                show_org = True
+
+            self._show_org = show_org
+
+        return show_org
+
+    # -------------------------------------------------------------------------
+    def lookup_rows(self, key, values, fields=None):
+        """
+            Custom rows lookup
+
+            Args:
+                key: the key Field
+                values: the values
+                fields: list of fields to look up (unused)
+        """
+
+        count = len(values)
+        if count == 1:
+            query = (key == values[0])
+        else:
+            query = key.belongs(values)
+
+        table = self.table
+        fields = [table.id, table.name]
+
+        if self.show_org:
+            # Left join org?
+            otable = current.s3db.org_organisation
+            left = otable.on(otable.id == table.organisation_id)
+            fields.append(otable.name)
+        else:
+            left = None
+
+        rows = current.db(query).select(*fields, left=left, limitby=(0, count))
+        self.queries += 1
+
+        return rows
+
+    # -------------------------------------------------------------------------
+    def represent_row(self, row):
+        """
+            Generates a string representation from a Row
+
+            Args:
+                row: the Row
+        """
+
+        if self.show_org and hasattr(row, "org_organisation"):
+            org_name = row.org_organisation.name
+            row = row.med_unit
+        else:
+            org_name = None
+
+        reprstr = "%s" % row.name
+        if org_name:
+            reprstr = "%s (%s)" % (reprstr, org_name)
+
+        return reprstr
 
 # =============================================================================
 def med_rheader(r, tabs=None):
