@@ -201,6 +201,10 @@
             });
 
             insertDetached(lastRow);
+
+            // Update select-all checkbox
+            let deselected = $('.column-select:not(:checked)', container).length;
+            $('.column-select-all', container).prop('checked', !deselected);
         },
 
         /**
@@ -488,10 +492,12 @@
 
             // Alternative if drag&drop not available
             $('.column-left', container).off(ns).on('click' + ns, function() {
-                $(this).closest('tr').insertBefore(row.prev());
+                let row = $(this).closest('tr');
+                row.insertBefore(row.prev());
             });
             $('.column-right', container).off(ns).on('click' + ns, function() {
-                $(this).closest('tr').insertAfter(row.next());
+                let row = $(this).closest('tr');
+                row.insertAfter(row.next());
             });
 
             // Select/deselect all
@@ -516,12 +522,14 @@
                   self = this;
 
             // Configuration selection
-            $('.cfg-select-options', container).off(ns).on('change' + ns, function() {
+            const handleSelection = function() {
                 let configID = $(this).val();
                 if (configID) {
                     self._loadConfig(container, configID - 0);
                 }
-            });
+            };
+            $('.cfg-select-options', container).off(ns).on('change' + ns, handleSelection);
+            $('.cfg-select-options', container).off(ns).on('click' + ns, 'option', handleSelection);
             $('.cfg-select-save', container).off(ns).on('click' + ns, function() {
                 self._toggleConfigSave(container, true);
             });
