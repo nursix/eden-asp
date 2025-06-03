@@ -1055,6 +1055,14 @@ def allowance():
                            )
 
 # =============================================================================
+# Grants
+#
+def grant_type():
+
+    # TODO rheader with beneficiaries on tab
+    return crud_controller()
+
+# =============================================================================
 # Appointments
 #
 def case_appointment():

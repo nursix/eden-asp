@@ -40,6 +40,8 @@ __all__ = ("DVRCaseModel",
            "DVRResponseModel",
            "DVRVulnerabilityModel",
            "DVRServiceContactModel",
+           "DVRGrantModel",
+
            "dvr_CaseActivityRepresent",
            "dvr_DocEntityRepresent",
            "dvr_ResponseActionThemeRepresent",
@@ -1114,7 +1116,7 @@ class DVRCaseFlagDistributionModel(DataModel):
         # ---------------------------------------------------------------------
         # Pass names back to global scope (s3.*)
         #
-        return None
+        #return {}
 
 # =============================================================================
 class DVRNeedsModel(DataModel):
@@ -1650,7 +1652,7 @@ class DVRNotesModel(DataModel):
         # ---------------------------------------------------------------------
         # Pass names back to global scope (s3.*)
         #
-        return None
+        # return {}
 
 # =============================================================================
 class DVRReferralModel(DataModel):
@@ -4255,13 +4257,7 @@ class DVRResidenceStatusModel(DataModel):
         # ---------------------------------------------------------------------
         # Pass names back to global scope (s3.*)
         #
-        return None
-
-    # -------------------------------------------------------------------------
-    def defaults(self):
-        """ Safe defaults for names in case the module is disabled """
-
-        return None
+        # return {}
 
 # =============================================================================
 class DVRCaseAllowanceModel(DataModel):
@@ -4823,13 +4819,7 @@ class DVRCaseEventModel(DataModel):
         # ---------------------------------------------------------------------
         # Pass names back to global scope (s3.*)
         #
-        return None
-
-    # -------------------------------------------------------------------------
-    def defaults(self):
-        """ Safe defaults for names in case the module is disabled """
-
-        return None
+        # return {}
 
     # -------------------------------------------------------------------------
     @staticmethod
@@ -5226,13 +5216,7 @@ class DVRVulnerabilityModel(DataModel):
         # ---------------------------------------------------------------------
         # Pass names back to global scope (s3.*)
         #
-        return None
-
-    # -------------------------------------------------------------------------
-    def defaults(self):
-        """ Safe defaults for names in case the module is disabled """
-
-        return None
+        # return {}
 
     # -------------------------------------------------------------------------
     @staticmethod
@@ -5406,13 +5390,253 @@ class DVRServiceContactModel(DataModel):
         # ---------------------------------------------------------------------
         # Pass names back to global scope (s3.*)
         #
-        return None
+        # return {}
 
-    # -------------------------------------------------------------------------
-    def defaults(self):
-        """ Safe defaults for names in case the module is disabled """
+# =============================================================================
+class DVRGrantModel(DataModel):
+    """ Model for Beneficiary Grants """
 
-        return None
+    names = ("dvr_grant_type",
+             "dvr_grant",
+             "dvr_grant_history",
+             )
+
+    def model(self):
+
+        T = current.T
+        db = current.db
+        s3 = current.response.s3
+
+        crud_strings = s3.crud_strings
+
+        amount_represent = lambda v, row=None: \
+                           IS_FLOAT_AMOUNT.represent(v, precision=2, fixed=False)
+
+        # ---------------------------------------------------------------------
+        # Grant Type
+        # TODO import XSLT
+        #
+        aid_types = {"CASH": T("Cash"),
+                     "SUPPLY": T("Supplies"),
+                     "WORK": T("Work"),
+                     "COUNSEL": T("Counsel"),
+                     "SHELTER": T("Shelter"),
+                     "OTHER": T("Other"),
+                     }
+
+        tablename = "dvr_grant_type"
+        self.define_table(tablename,
+                          Field("name", length=128, notnull=True, unique=True,
+                                label = T("Title"),
+                                requires = [IS_NOT_EMPTY(),
+                                            IS_LENGTH(128, minsize=1),
+                                            IS_NOT_ONE_OF(db, "%s.name" % tablename),
+                                            ],
+                                ),
+                          CommentsField("description",
+                                        label = T("Description"),
+                                        ),
+                          Field("granting_entity",
+                                label = T("Granting Entity"),
+                                ),
+                          Field("aid_type",
+                                label = T("Type of Aid"),
+                                default = "CASH",
+                                requires = IS_IN_SET(aid_types, zero=None),
+                                represent = represent_option(aid_types),
+                                ),
+                          Field("um", length=64,
+                                label = T("Unit of Measure"),
+                                requires = IS_LENGTH(64, minsize=1),
+                                represent = lambda v, row=None: v if v else "-"
+                                ),
+                          Field("total_beneficiaries", "integer",
+                                label = T("Total Beneficiaries"),
+                                default = 0,
+                                represent = lambda v, row=None: v if v is not None else "-",
+                                readable = False,
+                                writable = False,
+                                ),
+                          Field("total_amount_granted", "double",
+                                label = T("Total Amount Granted"),
+                                default = 0.0,
+                                represent = amount_represent,
+                                readable = False,
+                                writable = False,
+                                ),
+                          Field("total_amount_delivered", "double",
+                                label = T("Total Amount Delivered"),
+                                default = 0.0,
+                                represent = amount_represent,
+                                readable = False,
+                                writable = False,
+                                ),
+                          Field("obsolete", "boolean",
+                                label = T("obsolete"),
+                                default = False,
+                                represent = BooleanRepresent(labels = False,
+                                                             # Reverse icons semantics
+                                                             icons = (BooleanRepresent.NEG,
+                                                                      BooleanRepresent.POS,
+                                                                      ),
+                                                             flag = True,
+                                                             ),
+                                ),
+                          CommentsField(),
+                          )
+
+        # Components
+        self.add_components(tablename,
+                            dvr_grant = "type_id",
+                            )
+
+        # CRUD strings
+        crud_strings[tablename] = Storage(
+            label_create = T("Create Grant Type"),
+            title_display = T("Grant Type Details"),
+            title_list = T("Grant Types"),
+            title_update = T("Edit Grant Type"),
+            label_list_button = T("List Grant Types"),
+            label_delete_button = T("Delete Grant Type"),
+            msg_record_created = T("Grant Type added"),
+            msg_record_modified = T("Grant Type updated"),
+            msg_record_deleted = T("Grant Type deleted"),
+            msg_list_empty = T("No Grant Types currently registered"),
+            )
+
+        # Foreign key template
+        represent = S3Represent(lookup=tablename)
+        grant_type_id = FieldTemplate("type_id", "reference %s" % tablename,
+                                      label = T("Grant Type"),
+                                      ondelete = "CASCADE",
+                                      represent = represent,
+                                      requires = IS_EMPTY_OR(
+                                                    IS_ONE_OF(db, "%s.id" % tablename,
+                                                              represent,
+                                                              )),
+                                      )
+
+        # ---------------------------------------------------------------------
+        # Grant
+        # TODO make person component (multiple?)
+        # TODO expose in BETRA (tab or inline?)
+        #
+        grant_status = (("REQ", T("Requested")),
+                        ("APR", T("Approved")),
+                        ("RCV", T("Received")),
+                        ("DCL", T("Declined")),
+                        ("SSP", T("Suspended")),
+                        ("RSC", T("Rescinded")),
+                        )
+        status_represent = S3PriorityRepresent(grant_status,
+                                               {"REQ": "lightblue",
+                                                "APR": "lightgreen",
+                                                "RCV": "green",
+                                                "DCL": "red",
+                                                "SSP": "grey",
+                                                "RSC": "black",
+                                                }).represent
+        tablename = "dvr_grant"
+        self.define_table(tablename,
+                          grant_type_id(
+                              empty = False,
+                              ondelete = "RESTRICT",
+                              ),
+                          self.pr_person_id(), # beneficiary
+                          DateField(
+                              label = T("Date"),
+                              default="now",
+                              empty = False,
+                              ),
+                          Field("refno",
+                                label = T("Ref.No."),
+                                ),
+                          Field("amount_granted", "double",
+                                label = T("Amount granted"),
+                                default = 0.0,
+                                requires = IS_FLOAT_AMOUNT(minimum=0.0),
+                                represent = amount_represent,
+                                ),
+                          Field("amount_received", "double",
+                                label = T("Amount received"),
+                                default = 0.0,
+                                requires = IS_FLOAT_AMOUNT(minimum=0.0),
+                                represent = amount_represent,
+                                ),
+                          Field("status", length=16,
+                                label = T("Status"),
+                                default = "APPROVED",
+                                requires = IS_IN_SET(grant_status,
+                                                     sort = False,
+                                                     zero = None,
+                                                     ),
+                                represent = status_represent,
+                                ),
+                          Field("vhash",
+                                readable = False,
+                                writable = False,
+                                ),
+                          CommentsField(),
+                          )
+
+        # TODO onvalidation to validate amounts
+        # TODO onaccept to compute vhash and update history
+        #      onaccept to compute grant type totals, too
+
+        # CRUD strings
+        crud_strings[tablename] = Storage(
+            label_create = T("Register Grant"),
+            title_display = T("Grant Details"),
+            title_list = T("Grants"),
+            title_update = T("Edit Grant"),
+            label_list_button = T("List Grants"),
+            label_delete_button = T("Delete Grant"),
+            msg_record_created = T("Grant registered"),
+            msg_record_modified = T("Grant updated"),
+            msg_record_deleted = T("Grant deleted"),
+            msg_list_empty = T("No Grants currently registered"),
+            )
+
+        # ---------------------------------------------------------------------
+        # History trail of a grant
+        # - TODO written automatically onaccept
+        #
+        tablename = "dvr_grant_history"
+        self.define_table(tablename,
+                          Field("grant_id", "reference dvr_grant",
+                                ondelete = "CASCADE",
+                                readable = False,
+                                writable = False,
+                                ),
+                          DateField(
+                              label = T("Date"),
+                              writable = False,
+                              ),
+                          Field("refno",
+                                label = T("Ref.No."),
+                                writable = False,
+                                ),
+                          Field("amount_granted", "double",
+                                label = T("Amount granted"),
+                                represent = amount_represent,
+                                writable = False,
+                                ),
+                          Field("amount_received", "double",
+                                label = T("Amount received"),
+                                represent = amount_represent,
+                                writable = False,
+                                ),
+                          Field("status", length=16,
+                                label = T("Status"),
+                                represent = status_represent,
+                                writable = False
+                                ),
+                          )
+
+        # ---------------------------------------------------------------------
+        # Pass names back to global scope (s3.*)
+        #
+        # return {}
 
 # =============================================================================
 def dvr_get_case(person_id, archived=None):
@@ -6752,7 +6976,7 @@ class dvr_ResponseThemeRepresent(S3Represent):
 class dvr_CaseActivityRepresent(S3Represent):
     """ Representation of case activity IDs """
 
-    def __init__(self,
+    def __init__(self, *,
                  show_as = None,
                  fmt = None,
                  show_link = False,
@@ -6913,7 +7137,7 @@ class dvr_CaseActivityRepresent(S3Represent):
 class dvr_DocEntityRepresent(S3Represent):
     """ Module context-specific representation of doc-entities """
 
-    def __init__(self,
+    def __init__(self, *,
                  case_label = None,
                  case_group_label = None,
                  activity_label = None,
@@ -7377,7 +7601,8 @@ class AppointmentEvent:
             following = (db(query), atable.start_date)
 
             # The first of the two that matches the type and has status 2|4
-            for dbset, orderby in (preceding, following):
+            for t in (preceding, following):
+                dbset, orderby = t
                 row = dbset.select(*fields,
                                    orderby = orderby,
                                    limitby = (0, 1),
@@ -7726,6 +7951,8 @@ class DVRManageAppointments(CRUDMethod):
         get_vars = r.get_vars
         response = current.response
 
+        output = None
+
         if not self._permitted("update"):
             r.unauthorised()
 
@@ -7900,7 +8127,6 @@ class DVRManageAppointments(CRUDMethod):
                           }
 
                 response.view = "list_filter.html"
-                return output
 
             elif r.representation == "aadata":
 
@@ -7909,18 +8135,19 @@ class DVRManageAppointments(CRUDMethod):
                     echo = int(get_vars["draw"])
                 else:
                     echo = None
-                items = dt.json(totalrows,
-                                filteredrows,
-                                echo,
-                                dt_bulk_actions = dt_bulk_actions,
-                                )
+                output = dt.json(totalrows,
+                                 filteredrows,
+                                 echo,
+                                 dt_bulk_actions = dt_bulk_actions,
+                                 )
                 response.headers["Content-Type"] = "application/json"
-                return items
 
             else:
                 r.error(415, current.ERROR.BAD_FORMAT)
         else:
             r.error(405, current.ERROR.BAD_METHOD)
+
+        return output
 
 # =============================================================================
 class DVRManageAllowance(CRUDMethod):
@@ -8690,8 +8917,8 @@ class DVRRegisterCaseEvent(CRUDMethod):
         return json.dumps(output)
 
     # -------------------------------------------------------------------------
-    @staticmethod
-    def get_form_data(person, formfields, data, hidden, permitted=False):
+    @classmethod
+    def get_form_data(cls, person, formfields, data, hidden, *, permitted=False):
         """
             Helper function to extend the form
 
@@ -9673,7 +9900,8 @@ class DVRRegisterPayment(DVRRegisterCaseEvent):
         return json.dumps(output)
 
     # -------------------------------------------------------------------------
-    def get_form_data(self, person, formfields, data, hidden, permitted=False):
+    @classmethod
+    def get_form_data(cls, person, formfields, data, hidden, *, permitted=False):
         """
             Helper function to extend the form
 
@@ -9691,7 +9919,7 @@ class DVRRegisterPayment(DVRRegisterCaseEvent):
         T = current.T
 
         if person and permitted:
-            payments = self.get_payment_data(person.id)
+            payments = cls.get_payment_data(person.id)
         else:
             payments = []
 
@@ -9703,7 +9931,7 @@ class DVRRegisterPayment(DVRRegisterCaseEvent):
         formfields.extend([Field("details",
                                  label = T("Pending Payments"),
                                  writable = False,
-                                 represent = self.payment_data_represent,
+                                 represent = cls.payment_data_represent,
                                  ),
                            Field("date",
                                  label = T("Payment Date"),
