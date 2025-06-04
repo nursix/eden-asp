@@ -55,6 +55,10 @@ def config(settings):
     settings.auth.registration_link_user_to_default = ["staff"]
     # Disable password-retrieval feature
     settings.auth.password_retrieval = False
+    # Types of entities for which roles can be assigned
+    settings.auth.realm_entity_types = ("org_group",
+                                        "org_organisation",
+                                        )
 
     # Approval emails get sent to all admins
     settings.mail.approver = "ADMIN"
@@ -164,6 +168,10 @@ def config(settings):
                                       "SHELTER_MANAGER": ("ORG_GROUP_ADMIN", "SHELTER_ADMIN"),
                                       "SUPPLY_ADMIN": ("ORG_GROUP_ADMIN", "SUPPLY_ADMIN"),
                                       "SUPPLY_MANAGER": ("ORG_GROUP_ADMIN", "SUPPLY_ADMIN"),
+                                      "MED_ADMIN": "ADMIN",
+                                      "MED_PRACTITIONER": "MED_ADMIN",
+                                      "MED_ASSISTANT": "MED_ADMIN",
+                                      "MED_READER": "MED_ADMIN",
                                       # These are restricted for now until better-defined
                                       "CASE_ASSISTANT": "ADMIN",
                                       "QUARTERMASTER": "ADMIN",
@@ -445,6 +453,13 @@ def config(settings):
     #
     settings.inv.facility_label = "Facility"
     settings.inv.facility_manage_staff = False
+
+    # -------------------------------------------------------------------------
+    # MED Module Settings
+    #
+    from .customise.med import med_patient_resource
+
+    settings.customise_med_patient_resource = med_patient_resource
 
     # -------------------------------------------------------------------------
     # Organisations Module Settings

@@ -108,7 +108,7 @@ class MedUnitModel(DataModel):
         represent = med_UnitRepresent()
         unit_id = FieldTemplate("unit_id", "reference %s" % tablename,
                                 label = T("Unit"),
-                                ondelete = "RESTRICT",
+                                ondelete = "CASCADE",
                                 represent = represent,
                                 requires = IS_EMPTY_OR(
                                                 IS_ONE_OF(db, "%s.id" % tablename,
@@ -353,7 +353,10 @@ class MedPatientModel(DataModel):
         #
         tablename = "med_patient"
         define_table(tablename,
-                     self.med_unit_id(),
+                     self.med_unit_id(
+                         empty = False,
+                         ondelete = "RESTRICT",
+                         ),
                      Field("refno",
                            label = T("No."),
                            writable = False,
@@ -1247,6 +1250,10 @@ class MedAnamnesisModel(DataModel):
                                    label = T("Disabilities"),
                                    comment = None,
                                    ),
+                     CommentsField("history",
+                                   label = T("Medical History"),
+                                   comment = None,
+                                   ),
                      Field("height", "integer",
                            label = T("Height (cm)##body"),
                            requires = IS_EMPTY_OR(IS_INT_IN_RANGE(30, 280)),
@@ -1357,23 +1364,27 @@ class MedMedicationModel(DataModel):
         # ---------------------------------------------------------------------
         # Pharmaceutical forms
         #
-        pforms = {"TBL": T("Tbl##pharma"),
-                  "CPS": T("Cps##pharma"),
-                  "INH": T("Inh##pharma"),
-                  "INJ": T("Inj##pharma"),
-                  "INF": T("Inf##pharma"),
-                  "SPP": T("Spp##pharma"),
+        pforms = {"TBL": T("Tbl##pharma"),  # tablet
+                  "CPS": T("Cps##pharma"),  # capsule
+                  "INH": T("Inh##pharma"),  # inhalation
+                  "INJ": T("Inj##pharma"),  # injection
+                  "INF": T("Inf##pharma"),  # infusion
+                  "GTTS": T("Gtts##pharma"), # guttae/drops
+                  "OINT": T("Oint##pharma"), # ointment/salve
+                  "PULV": T("Pulv##pharma"), # pulver/powder
+                  "SUPP": T("Supp##pharma"), # suppository
                   "OTH": T("Other"),
                   }
 
         # ---------------------------------------------------------------------
         # Application forms
         #
-        aforms = (("PO", T("p.o.##medical")),
-                  ("SC", T("s.c.##medical")),
-                  ("IV", T("i.v.##medical")),
-                  ("IM", T("i.m.##medical")),
-                  ("PR", T("p.r.##medical")),
+        aforms = (("PO", T("p.o.##medical")), # oral
+                  ("SC", T("s.c.##medical")), # subcutaneous
+                  ("IV", T("i.v.##medical")), # intravenous
+                  ("IM", T("i.m.##medical")), # intramuscular
+                  ("PR", T("p.r.##medical")), # per rectal
+                  ("PA", T("p.a.##medical")), # partibus affectis
                   ("OTH", T("Other")),
                   )
 

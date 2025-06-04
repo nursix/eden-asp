@@ -265,12 +265,8 @@ def pr_person_resource(r, tablename):
     # record upon forced realm update
     s3db.configure("pr_person",
                    deletable = False,
-                   realm_components = ("address",
-                                       "case_activity",
-                                       "case_details",
-                                       "case_language",
-                                       "case_note",
-                                       "case_task",
+                   realm_components = (# PR --------------------
+                                       "address",
                                        "contact",
                                        "contact_emergency",
                                        "group_membership",
@@ -278,12 +274,27 @@ def pr_person_resource(r, tablename):
                                        "image",
                                        "person_details",
                                        "person_tag",
+                                       # DVR -------------------
+                                       "case_activity",
+                                       "case_details",
+                                       "case_language",
+                                       "case_note",
+                                       "case_task",
                                        "residence_status",
                                        "response_action",
                                        "service_contact",
+                                       "vulnerability",
+                                       # CR --------------------
                                        "shelter_registration",
                                        "shelter_registration_history",
-                                       "vulnerability",
+                                       # ACT -------------------
+                                       "beneficiary"
+                                       # MED -------------------
+                                       "anamnesis",
+                                       "medication",
+                                       "vaccination",
+                                       # SECURITY --------------
+                                       "seized_item",
                                        ),
                    )
 

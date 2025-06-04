@@ -23,6 +23,8 @@ def realm_entity(table, row):
 
     realm_entity = 0
 
+    # PR ============================================================
+
     if tablename == "pr_person":
 
         organisation_id = None
@@ -53,29 +55,43 @@ def realm_entity(table, row):
         if organisation_id:
             realm_entity = s3db.pr_get_pe_id("org_organisation", organisation_id)
 
-    elif tablename == "act_activity_type":
-        # No realm entity
-        realm_entity = None
-
-    #elif tablename == "act_activity":
-    #    # Owned by the organisation registering them (default okay)
-    #    pass
-
-    elif tablename == "act_beneficiary":
+    elif tablename in ("pr_group_membership",
+                       "pr_identity",
+                       "pr_person_details",
+                       "pr_person_tag",
+                       ):
         # Inherit from person via person_id
         table = s3db.table(tablename)
         realm_entity = person_realm_entity(table, row, default=realm_entity)
 
-    #elif tablename in ("act_issue", "act_task"):
-    #    # Owned by the organisation managing them (default okay)
-    #    pass
+    elif tablename in ("pr_address",
+                       "pr_contact",
+                       "pr_contact_emergency",
+                       "pr_image",
+                       ):
+        # Inherit from person via pe_id
+        table = s3db.table(tablename)
+        realm_entity = person_realm_entity(table, row, key="pe_id", default=realm_entity)
 
-    #elif tablename in ("dvr_case_flag",
-    #                   "dvr_appointment_type",
-    #                   "dvr_case_event_type",
-    #                   ):
-    #    # Owned by the organisation for which they are defined (default okay)
-    #    pass
+    elif tablename == "pr_group":
+         # No realm-entity for case groups
+        table = s3db.pr_group
+        query = table._id == row.id
+        group = db(query).select(table.group_type, limitby=(0, 1)).first()
+        if group and group.group_type == 7:
+            realm_entity = None
+
+    elif tablename == "pr_filter":
+        realm_entity = None
+
+    # DVR ===========================================================
+
+    elif tablename in ("dvr_case_flag",
+                       "dvr_appointment_type",
+                       "dvr_case_event_type",
+                       ):
+        # Owned by the organisation for which they are defined (default okay)
+        pass
 
     elif tablename == "dvr_case_flag_case":
 
@@ -116,36 +132,6 @@ def realm_entity(table, row):
             # Inherit from person via person_id
             realm_entity = person_realm_entity(table, row, default=realm_entity)
 
-    elif tablename in ("dvr_case_activity",
-                       "dvr_case_details",
-                       "dvr_case_language",
-                       "dvr_note",
-                       "dvr_task",
-                       "dvr_residence_status",
-                       "dvr_response_action",
-                       "dvr_service_contact",
-                       "dvr_vulnerability",
-                       "pr_group_membership",
-                       "pr_identity",
-                       "pr_person_details",
-                       "pr_person_tag",
-                       "cr_shelter_registration",
-                       "cr_shelter_registration_history",
-                       "security_seized_item",
-                       ):
-        # Inherit from person via person_id
-        table = s3db.table(tablename)
-        realm_entity = person_realm_entity(table, row, default=realm_entity)
-
-    elif tablename in ("pr_address",
-                       "pr_contact",
-                       "pr_contact_emergency",
-                       "pr_image",
-                       ):
-        # Inherit from person via pe_id
-        table = s3db.table(tablename)
-        realm_entity = person_realm_entity(table, row, key="pe_id", default=realm_entity)
-
     elif tablename == "dvr_case_activity_update":
         realm_entity = inherit_realm(tablename, row, "dvr_case_activity", "case_activity_id")
 
@@ -157,29 +143,19 @@ def realm_entity(table, row):
                        ):
         realm_entity = inherit_realm(tablename, row, "dvr_vulnerability", "vulnerability_id")
 
-    elif tablename == "pr_group":
-         # No realm-entity for case groups
-        table = s3db.pr_group
-        query = table._id == row.id
-        group = db(query).select(table.group_type,
-                                 limitby = (0, 1),
-                                 ).first()
-        if group and group.group_type == 7:
-            realm_entity = None
-
-    elif tablename in ("doc_document", "doc_image"):
-        # Inherit from doc entity, alternatively context organisation
-        table = s3db.table(tablename)
-        realm_entity = doc_realm_entity(table, row)
-
-    #elif tablename == "cr_shelter":
-    #    # Self-owned, OU of managing organisation (default ok)
-    #    pass
-
-    elif tablename in ("cr_shelter_unit",
-                       "cr_shelter_note",
+    elif tablename in ("dvr_case_activity",
+                       "dvr_case_details",
+                       "dvr_case_language",
+                       "dvr_note",
+                       "dvr_task",
+                       "dvr_residence_status",
+                       "dvr_response_action",
+                       "dvr_service_contact",
+                       "dvr_vulnerability",
                        ):
-        realm_entity = inherit_realm(tablename, row, "cr_shelter", "shelter_id")
+        # Inherit from person via person_id
+        table = s3db.table(tablename)
+        realm_entity = person_realm_entity(table, row, default=realm_entity)
 
     elif tablename in ("dvr_case_activity_status",
                        "dvr_need",
@@ -188,33 +164,108 @@ def realm_entity(table, row):
                        "dvr_response_type",
                        "dvr_service_contact_type",
                        "dvr_vulnerability_type",
-                       "pr_filter",
                        ):
         realm_entity = None
 
-    #elif tablename in ("org_group",
-    #                   "org_organisation",
-    #                   ):
-    #    # Self-owned (default ok)
-    #    pass
+    # CR ============================================================
 
-    #elif tablename in ("org_site_presence",
-    #                   "org_site_presence_event",
-    #                   ):
-    #    # Owned by the site, OU of managing organisation (default ok)
-    #    pass
+    elif tablename == "cr_shelter":
+        # Self-owned, controlled by OU hierarchy (default ok)
+        pass
 
-    #elif tablename == "security_seized_item_depository":
-    #
-    #    # Owned by the managing organisation (default ok)
-    #    pass
+    elif tablename in ("cr_shelter_unit",
+                       "cr_shelter_note",
+                       ):
+        realm_entity = inherit_realm(tablename, row, "cr_shelter", "shelter_id")
 
-    #elif tablename in ("supply_catalog",
-    #                   "supply_distribution_set",
-    #                   "supply_distribution",
-    #                   ):
-    #    # Owned by the managing organisation (default ok)
-    #    pass
+    elif tablename in ("cr_shelter_registration",
+                       "cr_shelter_registration_history",
+                       ):
+        # Inherit from person via person_id
+        table = s3db.table(tablename)
+        realm_entity = person_realm_entity(table, row, default=realm_entity)
+
+    # DOC ===========================================================
+
+    elif tablename in ("doc_document",
+                       "doc_image",
+                       ):
+        # Inherit from doc entity, alternatively context organisation
+        table = s3db.table(tablename)
+        realm_entity = doc_realm_entity(table, row)
+
+    # ORG ====================================================
+
+    elif tablename in ("org_group",
+                       "org_organisation",
+                       ):
+        # Self-owned, controlled by OU hierarchy (default ok)
+        pass
+
+    elif tablename in ("org_site_presence",
+                       "org_site_presence_event",
+                       ):
+        # Owned by the site, OU of managing organisation (default ok)
+        pass
+
+    # ACT ===========================================================
+
+    elif tablename in ("act_activity",
+                       "act_issue",
+                       "act_task",
+                       ):
+        # Owned by the organisation registering them (default okay)
+        pass
+
+    elif tablename == "act_activity_type":
+        # No realm entity
+        realm_entity = None
+
+    elif tablename in ("act_beneficiary",
+                       ):
+        # Inherit from person via person_id
+        table = s3db.table(tablename)
+        realm_entity = person_realm_entity(table, row, default=realm_entity)
+
+    # MED ===================================================
+
+    elif tablename == "med_unit":
+        # Self-owned, controlled by OU hierarchy (default ok)
+        pass
+
+    elif tablename in ("med_area",
+                       "med_patient",
+                       ):
+        realm_entity = inherit_realm(tablename, row, "med_unit", "unit_id")
+
+    elif tablename in ("med_anamnesis",
+                       "med_medication",
+                       "med_vaccination",
+                       ):
+        # Inherit from person via person_id
+        table = s3db.table(tablename)
+        realm_entity = person_realm_entity(table, row, default=realm_entity)
+
+    elif tablename in ("med_status",
+                       "med_vitals",
+                       "med_treatment",
+                       "med_epicrisis",
+                       ):
+        realm_entity = inherit_realm(tablename, row, "med_patient", "patient_id")
+
+    elif tablename in ("med_substance",
+                       "med_vaccination_type",
+                       ):
+        realm_entity = None
+
+    # SUPPLY ========================================================
+
+    elif tablename in ("supply_catalog",
+                       "supply_distribution_set",
+                       "supply_distribution",
+                       ):
+        # Owned by the managing organisation (default ok)
+        pass
 
     elif tablename in ("supply_item_category",
                        "supply_catalog_item",
@@ -230,6 +281,20 @@ def realm_entity(table, row):
     elif tablename == "supply_distribution_item":
         # Inherit from distribution via distribution_id
         realm_entity = inherit_realm(tablename, row, "supply_distribution", "distribution_id")
+
+    # SECURITY ======================================================
+
+    elif tablename == "security_seized_item_depository":
+        # Owned by the managing organisation (default ok)
+        pass
+
+    elif tablename in ("security_seized_item",
+                       ):
+        # Inherit from person via person_id
+        table = s3db.table(tablename)
+        realm_entity = person_realm_entity(table, row, default=realm_entity)
+
+    # ===============================================================
 
     return realm_entity
 

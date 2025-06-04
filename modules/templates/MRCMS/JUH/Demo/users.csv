@@ -1,8 +1,10 @@
 First Name,Last Name,Email,Password,Role,Organisation,Language
 Admin,JUH,juh_admin@example.com,eden,"ORG_GROUP_ADMIN/0, NEWSLETTER_AUTHOR/0,STAFF",Johanniter-Unfall-Hilfe,de
-Admin,LUK RD,rd_admin@example.com,eden,"ORG_ADMIN, SHELTER_ADMIN, SUPPLY_ADMIN, STAFF",Betreuungsverband LUK Rendsburg,de
-Case Admin,LUK RD,rd_case_admin@example.com,eden,"CASE_ADMIN, SHELTER_MANAGER, SUPPLY_MANAGER, STAFF",Betreuungsverband LUK Rendsburg,de
+Admin,LUK RD,rd_admin@example.com,eden,"ORG_ADMIN, SHELTER_ADMIN, SUPPLY_ADMIN,MED_ADMIN, STAFF",Betreuungsverband LUK Rendsburg,de
+Case Admin,LUK RD,rd_case_admin@example.com,eden,"CASE_ADMIN, SHELTER_MANAGER, SUPPLY_MANAGER,STAFF",Betreuungsverband LUK Rendsburg,de
 Case Manager,LUK RD,rd_case_manager@example.com,eden,"CASE_MANAGER, CHECKPOINT, STAFF",Betreuungsverband LUK Rendsburg,de
+MedMedic,LUK RD,rd_medic@example.com,eden,"MED_PRACTITIONER,STAFF",Betreuungsverband LUK Rendsburg,de
+MedAssistant,LUK RD,rd_med_assistant@example.com,eden,"MED_ASSISTANT,STAFF",Betreuungsverband LUK Rendsburg,de
 Supply Manager,LUK RD,rd_supply_manager@example.com,eden,"CASE_ADMIN, SUPPLY_MANAGER, STAFF",Betreuungsverband LUK Rendsburg,de
 Caterer,LUK RD,rd_caterer@example.com,eden,"CATERING,STAFF",Betreuungsverband LUK Rendsburg,de
 Quartermaster,LUK RD,rd_quartermaster@example.com,eden,"QUARTERMASTER, STAFF",Betreuungsverband LUK Rendsburg,de

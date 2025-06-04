@@ -83,6 +83,7 @@ class MainMenu(default.MainMenu):
                ),
             MM("Counseling", c=("counsel", "pr"), f=("person", "*")),
             MM("Supply", c=("supply", "pr"), f=("person", "*")),
+            MM("Med-Point", c=("med", "pr"), f=("patient", "*")),
             shelter_menu,
             org_menu,
             MM("Security", c="security", f="seized_item"),
@@ -385,6 +386,27 @@ class OptionsMenu(default.OptionsMenu):
                     M("Service Contact Types", f="service_contact_type", restrict=ADMIN),
                     ),
                 )
+
+    # -------------------------------------------------------------------------
+    @staticmethod
+    def med():
+        """ Medical Journal """
+
+        ADMIN = current.session.s3.system_roles.ADMIN
+
+        return M(c="med")(
+                    M("Patients", f="patient")(
+                        M("Create", m="create"),
+                        ),
+                    # M("Persons", f="person"),
+                    M("Units", f="unit")(
+                        M("Create", m="create"),
+                        ),
+                    M("Administration", link=False, restrict=[ADMIN])(
+                        M("Medicines", f="substance"),
+                        M("Vaccination Types", f="vaccination_type"),
+                        ),
+                    )
 
     # -------------------------------------------------------------------------
     @staticmethod
