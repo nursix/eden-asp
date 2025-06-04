@@ -242,10 +242,8 @@ class OptionsMenu(default.OptionsMenu):
                     ),
                 M("Administration", link=False, restrict=ADMIN)(
                     # Global types
-                    M("Case Status", f="case_status", restrict=ADMIN),
-                    M("Residence Status Types", f="residence_status_type"),
-                    M("Residence Permit Types", f="residence_permit_type"),
-                    M("Service Contact Types", f="service_contact_type"),
+                    M("Case Status", f="case_status"),
+                    M("Grant Types", f="grant_type")
                     ),
                 )
 
