@@ -5414,7 +5414,6 @@ class DVRGrantModel(DataModel):
 
         # ---------------------------------------------------------------------
         # Grant Type
-        # TODO import XSLT
         #
         aid_types = {"CASH": T("Cash"),
                      "SUPPLY": T("Supplies"),
@@ -5449,6 +5448,12 @@ class DVRGrantModel(DataModel):
                                 label = T("Unit of Measure"),
                                 requires = IS_LENGTH(64, minsize=1),
                                 represent = lambda v, row=None: v if v else "-"
+                                ),
+                          Field("relative", "boolean",
+                                label = T("Relative Amount"),
+                                default = True,
+                                represent = BooleanRepresent(flag=True),
+                                comment = T("Granted amounts are relative (e.g. percentage of costs)"),
                                 ),
                           Field("total_beneficiaries", "integer",
                                 label = T("Total Beneficiaries"),
@@ -5538,15 +5543,23 @@ class DVRGrantModel(DataModel):
                                                 }).represent
         tablename = "dvr_grant"
         self.define_table(tablename,
-                          grant_type_id(
-                              empty = False,
-                              ondelete = "RESTRICT",
-                              ),
-                          self.pr_person_id(), # beneficiary
                           DateField(
                               label = T("Date"),
                               default="now",
                               empty = False,
+                              ),
+                          self.pr_person_id( # beneficiary
+                              empty = False,
+                              ondelete = "RESTRICT",
+                              comment = None,
+                              # TODO should not be updateable => prep
+                              # writable = False,
+                              ),
+                          grant_type_id(
+                              empty = False,
+                              ondelete = "RESTRICT",
+                              # TODO should not be updateable => prep
+                              # writable = False,
                               ),
                           Field("refno",
                                 label = T("Ref.No."),
@@ -5579,9 +5592,19 @@ class DVRGrantModel(DataModel):
                           CommentsField(),
                           )
 
+        # Components
+        self.add_components(tablename,
+                            dvr_grant_history = {"name": "history",
+                                                 "joinby": "grant_id",
+                                                 },
+                            )
+
+        # Table configuration
         # TODO onvalidation to validate amounts
-        # TODO onaccept to compute vhash and update history
-        #      onaccept to compute grant type totals, too
+        self.configure(tablename,
+                       onaccept = self.grant_onaccept,
+                       ondelete = self.grant_ondelete,
+                       )
 
         # CRUD strings
         crud_strings[tablename] = Storage(
@@ -5599,7 +5622,7 @@ class DVRGrantModel(DataModel):
 
         # ---------------------------------------------------------------------
         # History trail of a grant
-        # - TODO written automatically onaccept
+        # - written automatically onaccept
         #
         tablename = "dvr_grant_history"
         self.define_table(tablename,
@@ -5608,8 +5631,19 @@ class DVRGrantModel(DataModel):
                                 readable = False,
                                 writable = False,
                                 ),
-                          DateField(
+                          DateTimeField(
                               label = T("Date"),
+                              writable = False,
+                              ),
+                          self.pr_person_id( # beneficiary
+                              empty = False,
+                              ondelete = "CASCADE",
+                              comment = None,
+                              writable = False,
+                              ),
+                          grant_type_id(
+                              empty = False,
+                              ondelete = "RESTRICT",
                               writable = False,
                               ),
                           Field("refno",
@@ -5633,10 +5667,157 @@ class DVRGrantModel(DataModel):
                                 ),
                           )
 
+        # Table configuration
+        self.configure(tablename,
+                       insertable = False,
+                       editable = False,
+                       deletable = False,
+                       )
+
         # ---------------------------------------------------------------------
         # Pass names back to global scope (s3.*)
         #
         # return {}
+
+    # -------------------------------------------------------------------------
+    @staticmethod
+    def update_grant_type_totals(grant_type_id):
+        """
+            Updates the totals of a grant type
+
+            Args:
+                grant_type_id: the grant type record ID
+        """
+
+        db = current.db
+        s3db = current.s3db
+
+        table = s3db.dvr_grant_type
+        query = (table.id == grant_type_id) & \
+                (table.deleted == False)
+        grant_type = db(query).select(table.id,
+                                      table.relative,
+                                      limitby=(0, 1),
+                                      ).first()
+
+        if not grant_type:
+            return
+        absolute = not grant_type.relative
+
+        gtable = s3db.dvr_grant
+        query = (gtable.type_id == grant_type.id) & \
+                (gtable.status.belongs({"APR", "RCV", "SSP"})) & \
+                (gtable.deleted == False)
+        total_beneficiaries = gtable.person_id.count(distinct=True)
+        totals = [total_beneficiaries]
+
+        if absolute:
+            total_amount_granted = gtable.amount_granted.sum()
+            total_amount_received = gtable.amount_received.sum()
+            totals.extend([total_amount_granted, total_amount_received])
+
+        row = db(query).select(*totals).first()
+        update = {"total_beneficiaries": row[total_beneficiaries],
+                  "total_amount_granted": None,
+                  "total_amount_delivered": None,
+                  }
+        if not grant_type.relative:
+            update["total_amount_granted"] = row[total_amount_granted]
+            update["total_amount_delivered"] = row[total_amount_received]
+
+        grant_type.update_record(**update)
+
+    # -------------------------------------------------------------------------
+    @classmethod
+    def grant_onaccept(cls, form):
+        """
+            Onaccept-routine for grants:
+            - check if record has changed => write history entry, if so
+            - update grant type totals as necessary
+
+            Args:
+                form: the FORM
+        """
+
+        db = current.db
+        s3db = current.s3db
+        auth = current.auth
+
+        record_id = get_form_record_id(form)
+        if not record_id:
+            return
+
+        table = s3db.dvr_grant
+        query = (table.id == record_id) & (table.deleted == False)
+        record = db(query).select(table.id,
+                                  table.type_id,
+                                  table.person_id,
+                                  table.refno,
+                                  table.amount_granted,
+                                  table.amount_received,
+                                  table.status,
+                                  table.vhash,
+                                  limitby = (0, 1),
+                                  ).first()
+        if not record:
+            return
+
+        # Compute vhash
+        values = [record.type_id,
+                  record.person_id,
+                  record.refno,
+                  "%0.2f" % record.amount_granted,
+                  "%0.2f" % record.amount_received,
+                  record.status,
+                  ]
+        vhash = datahash(values)
+        if vhash != record.vhash:
+            htable = s3db.dvr_grant_history
+
+            # Get last history entry
+            query = (htable.grant_id == record.id) & \
+                    (htable.deleted == False)
+            last_entry = db(query).select(htable.id,
+                                          htable.type_id,
+                                          limitby = (0, 1),
+                                          orderby = ~htable.id,
+                                          ).first()
+            if last_entry and last_entry.type_id != record.type_id:
+                # Update totals for the original type, too
+                cls.update_grant_type_totals(last_entry.type_id)
+
+            # Write new history entry
+            entry = {"grant_id": record.id,
+                     "date": current.request.utcnow,
+                     "type_id": record.type_id,
+                     "person_id": record.person_id,
+                     "refno": record.refno,
+                     "amount_granted": record.amount_granted,
+                     "amount_received": record.amount_received,
+                     "status": record.status,
+                     }
+            entry["id"] = entry_id = htable.insert(**entry)
+            if entry_id:
+                s3db.update_super(htable, entry)
+                auth.s3_set_record_owner(htable, entry_id)
+                auth.s3_make_session_owner(htable, entry_id)
+                s3db.onaccept(htable, entry, method="create")
+
+            # Update vhash
+            record.update_record(vhash=vhash)
+
+        # Update grant type totals
+        cls.update_grant_type_totals(record.type_id)
+
+    # -------------------------------------------------------------------------
+    @classmethod
+    def grant_ondelete(cls, row):
+        """
+            Ondelete-routine for grants:
+            - update grant type totals
+        """
+
+        cls.update_grant_type_totals(row.type_id)
 
 # =============================================================================
 def dvr_get_case(person_id, archived=None):
