@@ -5693,8 +5693,7 @@ class DVRGrantModel(DataModel):
         s3db = current.s3db
 
         table = s3db.dvr_grant_type
-        query = (table.id == grant_type_id) & \
-                (table.deleted == False)
+        query = (table.id == grant_type_id) & (table.deleted == False)
         grant_type = db(query).select(table.id,
                                       table.relative,
                                       limitby=(0, 1),
@@ -5721,7 +5720,7 @@ class DVRGrantModel(DataModel):
                   "total_amount_granted": None,
                   "total_amount_delivered": None,
                   }
-        if not grant_type.relative:
+        if absolute:
             update["total_amount_granted"] = row[total_amount_granted]
             update["total_amount_delivered"] = row[total_amount_received]
 

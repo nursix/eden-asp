@@ -13,6 +13,7 @@
          Aid Type....................string..........Type of Aid
                                                      "CASH"|"SUPPLY"|"WORK"|"COUNSEL"|"SHELTER"|"OTHER"
          Unit........................string..........Unit of Measure (e.g. currency, or "hours")
+         Relative....................boolean.........Unit is relative (e.g. percent), true|false
          Comments....................string..........Comments
 
     *********************************************************************** -->
@@ -46,6 +47,15 @@
             </data>
             <data field="um">
                 <xsl:value-of select="normalize-space(col[@field='Unit']/text())"/>
+            </data>
+            <xsl:variable name="relative" select="normalize-space(col[@field='Relative']/text())"/>
+            <data field="relative">
+                <xsl:attribute name="value">
+                    <xsl:choose>
+                        <xsl:when test="$relative='true'">true</xsl:when>
+                        <xsl:otherwise>false</xsl:otherwise>
+                    </xsl:choose>
+                </xsl:attribute>
             </data>
             <data field="comments">
                 <xsl:value-of select="col[@field='Comments']/text()"/>
