@@ -1800,7 +1800,7 @@ class med_DocEntityRepresent(S3Represent):
         if instance_type == "med_patient":
             table = current.s3db.med_patient
             patient = row.med_patient
-            title = "%s %s" % (table.date.represent(patient.date),
+            title = "%s %s" % (current.calendar.format_date(patient.date, local=True),
                                patient.reason,
                                )
             label = self.patient_label
