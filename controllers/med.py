@@ -59,10 +59,11 @@ def patient():
             # Filter to open/closed patient records
             if not invalid:
                 closed = get_vars.get("closed")
+                open_status = ("ARRIVED", "TREATMENT")
                 if closed == "only":
-                    query &= FS("closed") == True
+                    query &= ~(FS("status").belongs(open_status))
                 elif closed not in ("1", "include"):
-                    query &= FS("closed") == False
+                    query &= FS("status").belongs(open_status)
 
             r.resource.add_filter(query)
 

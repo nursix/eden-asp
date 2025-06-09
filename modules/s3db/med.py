@@ -322,6 +322,24 @@ class MedPatientModel(DataModel):
         # configure = self.configure
 
         # ---------------------------------------------------------------------
+        # Patient Status
+        #
+        patient_status = (("ARRIVED", T("Arrived")),
+                          ("TREATMENT", T("In Treatment")),
+                          ("DISCHARGED", T("Discharged")),
+                          ("TRANSFERRED", T("Transferred")),
+                          ("DECEASED", T("Deceased")),
+                          )
+
+        status_represent = S3PriorityRepresent(patient_status,
+                                               {"ARRIVED": "lightblue",
+                                                "TREATMENT": "blue",
+                                                "DISCHARGED": "grey",
+                                                "TRANSFERRED": "grey",
+                                                "DECEASED": "black",
+                                                }).represent
+
+        # ---------------------------------------------------------------------
         # Triage Priorities
         #
         triage_priorities = (("A", T("Immediate")),
@@ -420,17 +438,13 @@ class MedPatientModel(DataModel):
                            requires = IS_IN_SET(triage_priorities, zero=None, sort=False),
                            represent = triage_represent,
                            ),
-                     # TODO deceased (maybe in person record instead?)
-                     # TODO deceased_on (maybe in person record instead?)
                      # TODO inbound route (where did the patient come from?)
                      # TODO outbound route (destination)
-                     # TODO replace by status:
-                     # Flag to indicate that the care patient is concluded
-                     # - TODO once set, the patient cannot be re-opened
-                     # - TODO there can only be once patient open at any one time
-                     Field("closed", "boolean",
-                           label = T("Closed##status"),
-                           default = False,
+                     Field("status",
+                           label = T("Status"),
+                           default = "ARRIVED",
+                           requires = IS_IN_SET(patient_status, zero=None, sort=False),
+                           represent = status_represent,
                            ),
                      # Flag to indicate that this is an invalid record
                      # - TODO filter out invalid records from all operative contexts
@@ -457,11 +471,12 @@ class MedPatientModel(DataModel):
         # TODO show unit if user can see multiple
         area_label = T("Area") if settings.get_med_area_label() == "area" else T("Room")
         list_fields = [(area_label, "area_id$name"),
-                       "priority",
                        "refno",
                        "person_id",
+                       "priority",
                        "reason",
                        "date",
+                       "status",
                        #end_date,       # Only when viewing previous patients
                        (T("Hazards"), "hazards"),
                        "comments",
@@ -530,14 +545,15 @@ class MedPatientModel(DataModel):
 
         # Get form record data
         table = current.s3db.med_patient
-        data = get_form_record_data(form, table, ["person_id", "closed"])
+        data = get_form_record_data(form, table, ["person_id", "status"])
 
         # Verify that there are no (other) open patient records for the same person
-        closed = data.get("closed")
-        if not closed:
+        status = data.get("status")
+        open_status = ("ARRIVED", "TREATMENT")
+        if status in open_status:
             person_id = data.get("person_id")
             query = (table.person_id == person_id) & \
-                    (table.closed == False)
+                    (table.status.belongs(open_status))
             if record_id:
                 query &= (table.id != record_id)
             query &= (table.deleted == False)
@@ -1798,7 +1814,6 @@ class med_DocEntityRepresent(S3Represent):
         instance_type = row.instance_type
 
         if instance_type == "med_patient":
-            table = current.s3db.med_patient
             patient = row.med_patient
             title = "%s %s" % (current.calendar.format_date(patient.date, local=True),
                                patient.reason,
@@ -1896,9 +1911,10 @@ def med_rheader(r, tabs=None):
                                  (T("Vaccinations"), "vaccination/"),
                                  ]
 
-            rheader_fields = [["priority", "hazards"],
+            rheader_fields = [[(T("Reason for visit"), "reason", 3)],
+                              ["priority", "hazards"],
                               ["date", "hazards_advice"],
-                              ["reason"],
+                              ["status"],
                               ]
             rheader_title = "person_id"
 
