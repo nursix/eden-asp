@@ -1060,8 +1060,7 @@ def allowance():
 def grant_type():
     """ Beneficiary Grant Types: CRUD Controller """
 
-    # TODO rheader with beneficiaries on tab
-    return crud_controller()
+    return crud_controller(rheader=s3db.dvr_rheader)
 
 def grant():
     """ Beneficiary Grants: CRUD Controller """

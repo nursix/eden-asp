@@ -45,21 +45,17 @@ def dvr_rheader(r, tabs=None):
                 tabs = [(T("Basic Details"), None),
                         (T("Contact Information"), "contacts"),
                         (T("Needs"), "case_activity"),
+                        (T("Grants"), "grant"),
                         (T("Tasks"), "case_task"),
                         (T("Photos"), "image"),
                         (T("Documents"), "document/"),
                         (T("Notes"), "case_note"),
                         ]
 
-            case = resource.select(["dvr_case.status_id",
+            case = resource.select(["dvr_case.organisation_id",
+                                    "dvr_case.status_id",
                                     "dvr_case.archived",
-                                    "dvr_case.reference",
-                                    "first_name",
-                                    "last_name",
-                                    "person_details.nationality",
-                                    "shelter_registration.shelter_id",
-                                    "shelter_registration.shelter_unit_id",
-                                    #"absence",
+                                    "dvr_grant.refno",
                                     ],
                                     represent = True,
                                     raw_data = True,
@@ -69,17 +65,18 @@ def dvr_rheader(r, tabs=None):
                 # Extract case data
                 case = case[0]
                 raw = case["_row"]
-                case_reference = lambda row: case["dvr_case.reference"]
+                organisation = lambda row: case["dvr_case.organisation_id"]
+                grant_refno = lambda row: case["dvr_grant.refno"]
                 case_status = lambda row: case["dvr_case.status_id"]
             else:
                 # Target record exists, but doesn't match filters
                 return None
 
-            rheader_fields = [[(T("ID"), "pe_label"),
-                               (T("Principal Ref.No."), case_reference),
+            rheader_fields = [[(T("Grant Ref.No."), grant_refno),
                                ],
-                              ["date_of_birth",
-                               (T("Case Status"), case_status),
+                              [(T("Organization"), organisation),
+                               ],
+                              [(T("Case Status"), case_status),
                                ],
                               ]
 
@@ -113,7 +110,7 @@ def dvr_rheader(r, tabs=None):
                 if not render_switch:
                     links = None
 
-            rheader_title = client_name_age
+            rheader_title = s3_fullname
 
             # Generate rheader XML
             rheader = S3ResourceHeader(rheader_fields, tabs, title=rheader_title)

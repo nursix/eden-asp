@@ -5523,7 +5523,6 @@ class DVRGrantModel(DataModel):
 
         # ---------------------------------------------------------------------
         # Grant
-        # TODO make person component (multiple?)
         # TODO expose in BETRA (tab or inline?)
         #
         grant_status = (("REQ", T("Requested")),
@@ -5555,15 +5554,22 @@ class DVRGrantModel(DataModel):
                               # TODO should not be updateable => prep
                               # writable = False,
                               ),
+                          Field("refno", length=128,
+                                label = T("Ref.No."),
+                                requires = IS_EMPTY_OR([
+                                                IS_LENGTH(128, minsize=1),
+                                                IS_NOT_ONE_OF(db, "%s.refno" % tablename,
+                                                              error_message = T("A grant with this reference number is already registered"),
+                                                              ),
+                                                ]),
+                                represent = lambda v, row=None: v if v else "-",
+                                ),
                           grant_type_id(
                               empty = False,
                               ondelete = "RESTRICT",
                               # TODO should not be updateable => prep
                               # writable = False,
                               ),
-                          Field("refno",
-                                label = T("Ref.No."),
-                                ),
                           Field("amount_granted", "double",
                                 label = T("Amount granted"),
                                 default = 0.0,
@@ -5600,8 +5606,8 @@ class DVRGrantModel(DataModel):
                             )
 
         # Table configuration
-        # TODO onvalidation to validate amounts
         self.configure(tablename,
+                       onvalidation = self.grant_onvalidation,
                        onaccept = self.grant_onaccept,
                        ondelete = self.grant_ondelete,
                        )
@@ -5725,6 +5731,31 @@ class DVRGrantModel(DataModel):
             update["total_amount_delivered"] = row[total_amount_received]
 
         grant_type.update_record(**update)
+
+    # -------------------------------------------------------------------------
+    @staticmethod
+    def grant_onvalidation(form):
+        """
+            Form validation of grants
+            - amount_received must be less or equal amount_granted
+            - any other status than requested|declined requires a ref.no
+        """
+
+        table = current.s3db.dvr_grant
+        data = get_form_record_data(form, table, ["amount_granted",
+                                                  "amount_received",
+                                                  "refno",
+                                                  "status",
+                                                  ])
+        granted = data.get("amount_granted")
+        received = data.get("amount_received")
+        if granted is not None and received is not None and granted < received:
+            form.errors.amount_received = current.T("Amount received must not exceed the amount granted")
+
+        refno = data.get("refno")
+        status = data.get("status")
+        if status not in ("REQ", "DCL") and not refno:
+            form.errors.refno = current.T("Ref.no. required for status")
 
     # -------------------------------------------------------------------------
     @classmethod
@@ -10569,9 +10600,9 @@ def dvr_rheader(r, tabs=None):
                         ]
 
             rheader_fields = [[(T("ID"), "pe_label")],
-                              [(T("Name"), s3_fullname)],
                               ["date_of_birth"],
                               ]
+            rheader_title = s3_fullname
 
         elif tablename == "dvr_case":
 
@@ -10580,9 +10611,9 @@ def dvr_rheader(r, tabs=None):
                         (T("Activities"), "case_activity"),
                         ]
 
-            rheader_fields = [["reference"],
-                              ["status_id"],
+            rheader_fields = [["status_id"],
                               ]
+            rheader_title = "reference"
 
         elif tablename == "dvr_task":
 
@@ -10593,11 +10624,24 @@ def dvr_rheader(r, tabs=None):
             rheader_fields = [["person_id"],
                               ["status"],
                               ]
+            rheader_title = "name"
 
-        rheader = S3ResourceHeader(rheader_fields, tabs)(r,
-                                                         table = resource.table,
-                                                         record = record,
-                                                         )
+        elif tablename == "dvr_grant_type":
+
+            if not tabs:
+                tabs = [(T("Basic Details"), None),
+                        (T("Beneficiaries"), "grant"),
+                        ]
+            rheader_fields = [["aid_type"],
+                              ["granting_entity"],
+                              ]
+            rheader_title = "name"
+
+        else:
+            return None
+
+        rheader = S3ResourceHeader(rheader_fields, tabs, title=rheader_title)
+        rheader = rheader(r, table=resource.table, record=record)
 
     return rheader
 

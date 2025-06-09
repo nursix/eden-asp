@@ -1207,6 +1207,7 @@ class PRPersonModel(DataModel):
                        dvr_case_language = "person_id",
                        dvr_response_action = "person_id",
                        dvr_allowance = "person_id",
+                       dvr_grant = "person_id",
                        dvr_note = {"name": "case_note",
                                    "joinby": "person_id",
                                    },
@@ -2058,7 +2059,7 @@ class PRPersonModel(DataModel):
 
         # If no results then search other fields
         # @ToDo: Do these searches anyway & merge results together
-        if not len(rows):
+        if not rows:
             rfilter = resource.rfilter
             if dob:
                 # Try DoB
@@ -2071,7 +2072,7 @@ class PRPersonModel(DataModel):
                 rows = resource.select(fields=fields,
                                        start=0,
                                        limit=MAX_SEARCH_RESULTS)["rows"]
-            if not len(rows) and email:
+            if not rows and email:
                 # Try Email
                 # Remove the name or DoB filter (last one in)
                 rfilter.filters.pop()
@@ -2082,7 +2083,7 @@ class PRPersonModel(DataModel):
                 rows = resource.select(fields=fields,
                                        start=0,
                                        limit=MAX_SEARCH_RESULTS)["rows"]
-            if not len(rows) and mobile_phone:
+            if not rows and mobile_phone:
                 # Try Mobile Phone
                 # Remove the name or DoB or email filter (last one in)
                 rfilter.filters.pop()
@@ -2093,7 +2094,7 @@ class PRPersonModel(DataModel):
                 rows = resource.select(fields=fields,
                                        start=0,
                                        limit=MAX_SEARCH_RESULTS)["rows"]
-            if not len(rows) and home_phone:
+            if not rows and home_phone:
                 # Try Home Phone
                 # Remove the name or DoB or email or mobile filter (last one in)
                 rfilter.filters.pop()
@@ -2885,8 +2886,10 @@ class PRGroupTagModel(DataModel):
                                                  ),
                        )
 
+        # ---------------------------------------------------------------------
         # Pass names back to global scope (s3.*)
-        return None
+        #
+        #return {}
 
 # =============================================================================
 class PRForumModel(DataModel):
@@ -3884,7 +3887,7 @@ class PRImageModel(DataModel):
         # ---------------------------------------------------------------------
         # Pass names back to global scope (s3.*)
         #
-        return None
+        #return {}
 
     # -------------------------------------------------------------------------
     @staticmethod
@@ -4326,7 +4329,7 @@ class PRAvailabilityModel(DataModel):
         # ---------------------------------------------------------------------
         # Pass names back to global scope (s3.*)
         #
-        return None
+        #return {}
 
     # -------------------------------------------------------------------------
     @staticmethod
@@ -4486,7 +4489,7 @@ class PRUnavailabilityModel(DataModel):
         # ---------------------------------------------------------------------
         # Pass names back to global scope (s3.*)
         #
-        return None
+        #return {}
 
 # =============================================================================
 class PRDescriptionModel(DataModel):
@@ -5108,7 +5111,7 @@ class PREducationModel(DataModel):
         # ---------------------------------------------------------------------
         # Return model-global names to response.s3
         #
-        return None
+        #return {}
 
 # =============================================================================
 class PRIdentityModel(DataModel):
@@ -5268,7 +5271,7 @@ class PRIdentityModel(DataModel):
         # ---------------------------------------------------------------------
         # Pass names back to global scope (s3.*)
         #
-        return None
+        #return {}
 
 # =============================================================================
 class PRLanguageModel(DataModel):
@@ -5331,7 +5334,7 @@ class PRLanguageModel(DataModel):
         # ---------------------------------------------------------------------
         # Pass names back to global scope (s3.*)
         #
-        return None
+        #return {}
 
 # =============================================================================
 class PROccupationModel(DataModel):
@@ -5422,7 +5425,7 @@ class PROccupationModel(DataModel):
         # ---------------------------------------------------------------------
         # Pass names back to global scope (s3.*)
         #
-        return None
+        #return {}
 
 # =============================================================================
 class PRPersonDetailsModel(DataModel):
@@ -5639,8 +5642,10 @@ class PRPersonTagModel(DataModel):
                                                  ),
                        )
 
+        # ---------------------------------------------------------------------
         # Pass names back to global scope (s3.*)
-        return None
+        #
+        #return {}
 
 # =============================================================================
 class PRImageLibraryModel(DataModel):
@@ -6445,10 +6450,8 @@ class pr_PersonRepresentContact(pr_PersonRepresent):
         except AttributeError:
             pass
         else:
-            if self.show_email:
-                email = self._email.get(pe_id)
-            if self.show_phone:
-                phone = self._phone.get(pe_id)
+            email = self._email.get(pe_id) if self.show_email else None
+            phone = self._phone.get(pe_id) if self.show_phone else None
             if email or phone:
                 details = DIV(_class="contact-details")
                 if email:
@@ -7369,6 +7372,7 @@ def pr_compose():
     #    url = URL(f="group", args=record_id)
 
     else:
+        pe_id = title = url = None
         current.session.error = current.T("Record not found")
         redirect(URL(f="index"))
 
@@ -7383,8 +7387,7 @@ def pr_compose():
     #        redirect(URL(f="index"))
 
     # Create the form
-    output = current.msg.compose(recipient = pe_id,
-                                 url = url)
+    output = current.msg.compose(recipient=pe_id, url=url)
 
     output["title"] = title
 
@@ -8747,9 +8750,8 @@ def pr_get_descendants(pe_ids, entity_types=None, skip=None, ids=True):
 
     if not pe_ids:
         return []
-    if type(pe_ids) is not set:
-        pe_ids = set(pe_ids) \
-                 if isinstance(pe_ids, (list, tuple)) else {pe_ids}
+    if not isinstance(pe_ids, set):
+        pe_ids = set(pe_ids) if isinstance(pe_ids, (list, tuple)) else {pe_ids}
 
     db = current.db
     s3db = current.s3db
@@ -8789,7 +8791,7 @@ def pr_get_descendants(pe_ids, entity_types=None, skip=None, ids=True):
 
     if ids:
         if entity_types is not None:
-            if type(entity_types) is not set:
+            if not isinstance(entity_types, set):
                 if not isinstance(entity_types, (tuple, list)):
                     entity_types = {entity_types}
                 else:
@@ -8927,6 +8929,10 @@ def pr_image_modify(image_file,
             pil_imported = True
         except ImportError:
             pil_imported = False
+    try:
+        ANTIALIAS = Image.LANCZOS
+    except AttributeError:
+        ANTIALIAS = Image.ANTIALIAS
 
     if pil_imported:
         from tempfile import TemporaryFile
@@ -8947,7 +8953,7 @@ def pr_image_modify(image_file,
         else:
             thumb_size.append(size[1])
         try:
-            im.thumbnail(thumb_size, Image.ANTIALIAS)
+            im.thumbnail(thumb_size, ANTIALIAS)
         except IOError:
             # Maybe need to reinstall pillow:
             #pip uninstall pillow
@@ -9130,7 +9136,7 @@ def pr_address_list_layout(list_id, item_id, resource, rfields, record):
         l = raw.get("gis_location.%s" % level, None)
         if l:
             locations.append(l)
-    if len(locations):
+    if locations:
         location = " | ".join(locations)
         location = P(ICON("globe"),
                      " ",
@@ -9907,7 +9913,7 @@ def summary_urls(resource, url, filters):
     for (k, v) in get_vars.items():
         if v is None:
             continue
-        values = v if type(v) is list else [v]
+        values = v if isinstance(v, list) else [v]
         for value in values:
             if value is not None:
                 list_vars.append((k, value))

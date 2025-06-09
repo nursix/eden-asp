@@ -342,7 +342,10 @@ def config(settings):
     settings.pr.name_format= "%(last_name)s, %(first_name)s"
     settings.pr.generate_pe_label = True
 
-    from .customise.pr import pr_person_controller
+    from .customise.pr import pr_person_resource, \
+                              pr_person_controller
+
+    settings.customise_pr_person_resource = pr_person_resource
     settings.customise_pr_person_controller = pr_person_controller
 
     # -------------------------------------------------------------------------

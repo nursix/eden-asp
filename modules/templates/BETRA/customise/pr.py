@@ -8,11 +8,38 @@ from gluon import current
 
 from core import CustomForm, InlineComponent
 
+from ..helpers import permitted_orgs
+
+# -------------------------------------------------------------------------
+def configure_case_list_fields(resource, fmt=None):
+
+    list_fields = ["dvr_case.organisation_id",
+                   # "pe_label",
+                   "last_name",
+                   "first_name",
+                   "address.location_id$L3",
+                   "grant.refno",
+                   "dvr_case.date",
+                   "dvr_case.status_id",
+                   ]
+
+    resource.configure(list_fields=list_fields)
+
+# -------------------------------------------------------------------------
+def pr_person_resource(r, tablename):
+
+    T = current.T
+
+    table = current.s3db.pr_person
+
+    field = table.pe_label
+    field.label = T("ID")
+
 # -------------------------------------------------------------------------
 def pr_person_controller(**attr):
 
     T = current.T
-    s3db = current.s3db
+    auth = current.auth
 
     s3 = current.response.s3
 
@@ -25,16 +52,32 @@ def pr_person_controller(**attr):
         if r.controller == "dvr":
 
             resource = r.resource
+            table = resource.table
 
-            from ..helpers import permitted_orgs
+            cases = resource.components.get("dvr_case")
+            case_table = cases.table
+
+            # Default organisation_id if user is permitted for only one organisation
             organisation_ids = permitted_orgs("create", "pr_person")
-
-            case_table = s3db.dvr_case
             if len(organisation_ids) == 1:
                 field = case_table.organisation_id
                 field.default = organisation_ids[0]
                 field.readable = True
                 field.writable = False
+
+            # Hide invalid-flag, unless the user is a coordinator
+            if not auth.s3_has_role("COORDINATOR"):
+                field = case_table.archived
+                field.readable = field.writable = False
+
+            # Make pe_label read-only, remove comment
+            field = table.pe_label
+            field.readable = False # currently unused
+            field.writable = False
+            field.comment = None
+
+            # Fields for case list
+            configure_case_list_fields(resource, fmt=r.representation)
 
             crud_form = CustomForm(
                 # Case Details ----------------------------
@@ -43,9 +86,9 @@ def pr_person_controller(**attr):
                 (T("Case Status"), "dvr_case.status_id"),
 
                 # Person Details --------------------------
-                (T("ID"), "pe_label"),
-                "first_name",
+                # (T("ID"), "pe_label"), # currently unused
                 "last_name",
+                "first_name",
                 "person_details.nationality",
 
                 # Contact Information ---------------------
@@ -73,11 +116,16 @@ def pr_person_controller(**attr):
                         link = False,
                         multiple = False,
                         ),
+
+                # Comments --------------------------------
                 "comments",
+
+                # Archived-flag ---------------------------
+                (T("Invalid"), "dvr_case.archived"),
                 )
 
             subheadings = {"dvr_case_date": T("Case Status"),
-                           "pe_label": T("Person Details"),
+                           "last_name": T("Person Details"),
                            "emailemail": T("Contact Information"),
                            "address": T("Address"),
                            "comments": T("Comments"),
