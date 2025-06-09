@@ -328,7 +328,6 @@ class MedPatientModel(DataModel):
                           ("TREATMENT", T("In Treatment")),
                           ("DISCHARGED", T("Discharged")),
                           ("TRANSFERRED", T("Transferred")),
-                          ("DECEASED", T("Deceased")),
                           )
 
         status_represent = S3PriorityRepresent(patient_status,
@@ -336,7 +335,6 @@ class MedPatientModel(DataModel):
                                                 "TREATMENT": "blue",
                                                 "DISCHARGED": "grey",
                                                 "TRANSFERRED": "grey",
-                                                "DECEASED": "black",
                                                 }).represent
 
         # ---------------------------------------------------------------------
