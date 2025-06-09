@@ -353,6 +353,7 @@ class MedPatientModel(DataModel):
         #
         tablename = "med_patient"
         define_table(tablename,
+                     self.super_link("doc_id", "doc_entity"),
                      self.med_unit_id(
                          empty = False,
                          ondelete = "RESTRICT",
@@ -472,6 +473,7 @@ class MedPatientModel(DataModel):
                        onaccept = self.patient_onaccept,
                        # TODO if not using areas, order by priority
                        orderby = "med_area.name",
+                       super_entity = ("doc_entity",),
                        )
 
         # Foreign key template
@@ -1742,6 +1744,7 @@ def med_rheader(r, tabs=None):
                         # TODO lab results
                         # TODO examinations / interventions
                         (T("Epicrisis"), "epicrisis"),
+                        (T("Documents"), "document"),
                         ]
                 if record.person_id:
                     tabs[1:1] = [(T("Person Details"), "person/"),

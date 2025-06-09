@@ -73,13 +73,14 @@ class DocumentEntityModel(DataModel):
                         "fin_expense": T("Expense"),
                         "fire_station": T("Fire Station"),
                         "hms_hospital": T("Hospital"),
-                        "hrm_human_resource": T("Human Resource"),
+                        "hrm_human_resource": T("Staff Record"),
                         "hrm_training_event_report": T("Training Event Report"),
                         "inv_adj": T("Stock Adjustment"),
                         "inv_recv": T("Incoming Shipment"),
                         "inv_send": T("Sent Shipment"),
                         "inv_warehouse": T("Warehouse"),
-                        "pr_group": T("Team"),
+                        "med_patient": T("Patient"),
+                        "pr_group": T("Group"),
                         "project_project": T("Project"),
                         "project_activity": T("Project Activity"),
                         "project_task": T("Task"),
@@ -557,8 +558,10 @@ class DocumentTagModel(DataModel):
                                                  ),
                        )
 
+        # ---------------------------------------------------------------------
         # Pass names back to global scope (s3.*)
-        return None
+        #
+        #return {}
 
 # =============================================================================
 def doc_rheader(r, tabs=None):
