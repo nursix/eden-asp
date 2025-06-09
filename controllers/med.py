@@ -132,16 +132,16 @@ def person():
                                   deletable = False,
                                   )
             s3.crud_strings["med_patient"] = Storage(
-                label_create = T("Add Care Occasion"),
-                title_display = T("Care Occasion"),
-                title_list = T("Care Occasions"),
-                title_update = T("Edit Care Occasion"),
-                label_list_button = T("List Care Occasions"),
-                label_delete_button = T("Delete Care Occasion"),
-                msg_record_created = T("Care Occasion added"),
-                msg_record_modified = T("Care Occasion updated"),
-                msg_record_deleted = T("Care Occasion deleted"),
-                msg_list_empty = T("No Care Occasions currently registered"),
+                # label_create = T("Add Treatment Occasion"),
+                title_display = T("Treatment Occasion"),
+                title_list = T("Treatment Occasions"),
+                # title_update = T("Edit Treatment Occasion"),
+                label_list_button = T("List Treatment Occasions"),
+                # label_delete_button = T("Delete Treatment Occasion"),
+                # msg_record_created = T("Treatment Occasion added"),
+                # msg_record_modified = T("Treatment Occasion updated"),
+                # msg_record_deleted = T("Treatment Occasion deleted"),
+                msg_list_empty = T("No Treatment Occasions currently registered"),
                 )
 
         resource = r.resource
@@ -187,6 +187,94 @@ def person():
     s3.postp = postp
 
     return crud_controller("pr", "person", rheader=s3db.med_rheader)
+
+# =============================================================================
+# Documents
+#
+def document():
+    """
+        Module-context specific document controller, viewing person or
+        patient files
+    """
+
+    def prep(r):
+
+        table = r.table
+        resource = r.resource
+
+        viewing = r.viewing
+        if viewing:
+            vtablename, record_id = viewing
+        else:
+            return False
+
+        ptable = s3db.med_patient
+        auth = current.auth
+        has_permission = auth.s3_has_permission
+        accessible_query = auth.s3_accessible_query
+
+        if vtablename == "pr_person":
+            if not has_permission("read", "pr_person", record_id):
+                r.unauthorised()
+            query = accessible_query("read", ptable) & \
+                    (ptable.person_id == record_id) & \
+                    (ptable.deleted == False)
+
+        elif vtablename == "med_patient":
+            query = accessible_query("read", ptable) & \
+                    (ptable.id == record_id) & \
+                    (ptable.deleted == False)
+        else:
+            # Unsupported
+            return False
+
+        # Get the patient doc_ids
+        patients = db(query).select(ptable.doc_id,
+                                    orderby = ~ptable.date, # latest first
+                                    )
+        doc_ids = [patient.doc_id for patient in patients]
+
+        field = r.table.doc_id
+
+        # Make doc_id readable and visible in table
+        field.represent = s3db.med_DocEntityRepresent(show_link=True)
+        field.label = T("Attachment of")
+        field.readable = True
+        s3db.configure("doc_document",
+                       list_fields = ["id",
+                                      (T("Attachment of"), "doc_id"),
+                                      "name",
+                                      "file",
+                                      "date",
+                                      "comments",
+                                      ],
+                       )
+
+        # Apply filter and defaults
+        if len(doc_ids) == 1:
+            # Single doc_id => set default, hide field
+            doc_id = doc_ids[0]
+            field.default = doc_id
+            r.resource.add_filter(FS("doc_id") == doc_id)
+        else:
+            # Multiple doc_ids => default to case, make selectable
+            field.default = doc_ids[0]
+            field.readable = field.writable = True
+            field.requires = IS_ONE_OF(db, "doc_entity.doc_id",
+                                       field.represent,
+                                       filterby = "doc_id",
+                                       filter_opts = doc_ids,
+                                       orderby = "instance_type",
+                                       sort = False,
+                                       )
+            r.resource.add_filter(FS("doc_id").belongs(doc_ids))
+
+        return True
+    s3.prep = prep
+
+    return crud_controller("doc", "document",
+                           rheader = s3db.med_rheader,
+                           )
 
 # =============================================================================
 # Vaccinations

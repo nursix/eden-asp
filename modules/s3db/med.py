@@ -35,6 +35,7 @@ __all__ = ("MedUnitModel",
            "MedMedicationModel",
            "MedVaccinationModel",
            "med_UnitRepresent",
+           "med_DocEntityRepresent",
            "med_rheader",
            )
 
@@ -70,7 +71,7 @@ class MedUnitModel(DataModel):
         tablename = "med_unit"
         define_table(tablename,
                      super_link("pe_id", "pr_pentity"),
-                     self.org_organisation_id(),
+                     self.org_organisation_id(empty = False),
                      self.org_site_id(),
                      Field("name", length=64,
                            requires = IS_NOT_EMPTY(),
@@ -146,7 +147,7 @@ class MedUnitModel(DataModel):
         #
         tablename = "med_area"
         define_table(tablename,
-                     unit_id(),
+                     unit_id(empty=False),
                      Field("name", length=64,
                            requires = IS_NOT_EMPTY(),
                            represent = lambda v, row=None: v if v else "-",
@@ -302,7 +303,7 @@ class MedUnitModel(DataModel):
 
 # =============================================================================
 class MedPatientModel(DataModel):
-    """ Patient (Care Occasion) Data Model """
+    """ Patient (Treatment Occasion) Data Model """
 
     names = ("med_patient",
              "med_patient_id",
@@ -1694,6 +1695,147 @@ class med_UnitRepresent(S3Represent):
         return reprstr
 
 # =============================================================================
+class med_DocEntityRepresent(S3Represent):
+    """ Module context-specific representation of doc-entities """
+
+    def __init__(self, *,
+                 patient_label = None,
+                 show_link = False,
+                 ):
+        """
+            Args:
+                patient_label: label for patient records (default: "Treatment Occasion")
+                show_link: show representation as clickable link
+        """
+
+        super().__init__(lookup = "doc_entity",
+                         show_link = show_link,
+                         )
+
+        T = current.T
+
+        if patient_label:
+            self.patient_label = patient_label
+        else:
+            self.patient_label = T("Treatment Occasion")
+
+    # -------------------------------------------------------------------------
+    def lookup_rows(self, key, values, fields=None):
+        """
+            Custom rows lookup
+
+            Args:
+                key: the key Field
+                values: the values
+                fields: unused (retained for API compatibility)
+        """
+
+        db = current.db
+        s3db = current.s3db
+
+        table = self.table
+
+        count = len(values)
+        if count == 1:
+            query = (key == values[0])
+        else:
+            query = key.belongs(values)
+
+        rows = db(query).select(table.doc_id,
+                                table.instance_type,
+                                limitby = (0, count),
+                                orderby = table.instance_type,
+                                )
+        self.queries += 1
+
+        # Sort by instance type
+        doc_ids = {}
+        for row in rows:
+            doc_id = row.doc_id
+            instance_type = row.instance_type
+            if instance_type not in doc_ids:
+                doc_ids[instance_type] = {doc_id: row}
+            else:
+                doc_ids[instance_type][doc_id] = row
+
+        for instance_type in ("med_patient",):
+
+            doc_entities = doc_ids.get(instance_type)
+            if not doc_entities:
+                continue
+
+            # The instance table
+            itable = s3db[instance_type]
+
+            # Look up person and instance data
+            query = itable.doc_id.belongs(set(doc_entities.keys()))
+            fields = [itable.id,
+                      itable.doc_id,
+                      ]
+            if instance_type == "med_patient":
+                fields.extend((itable.date,
+                               itable.reason,
+                               ))
+            irows = db(query).select(*fields)
+            self.queries += 1
+
+            # Add the person+instance data to the entity rows
+            for irow in irows:
+                entity = doc_entities[irow.doc_id]
+                entity[instance_type] = irow
+
+        return rows
+
+    # -------------------------------------------------------------------------
+    def represent_row(self, row):
+        """
+            Represent a row
+
+            Args:
+                row: the Row
+        """
+
+        instance_type = row.instance_type
+
+        if instance_type == "med_patient":
+            table = current.s3db.med_patient
+            patient = row.med_patient
+            title = "%s %s" % (table.date.represent(patient.date),
+                               patient.reason,
+                               )
+            label = self.patient_label
+        else:
+            title = "%s" % row.doc_id
+            label = T("unknown")
+
+        return "%s (%s)" % (s3_str(title), s3_str(label))
+
+    # -------------------------------------------------------------------------
+    def link(self, k, v, row=None):
+        """
+            Represent a (key, value) as hypertext link
+
+            Args:
+                k: the key (doc_entity.doc_id)
+                v: the representation of the key
+                row: the row with this key
+        """
+
+        link = v
+
+        if row:
+            if row.instance_type == "med_patient":
+                url = URL(c = "med",
+                          f = "patient",
+                          args = [row.med_patient.id,
+                                  ],
+                          extension="",
+                          )
+                link = A(v, _href=url)
+
+        return link
+
+# =============================================================================
 def med_rheader(r, tabs=None):
     """ MED resource headers """
 
@@ -1722,9 +1864,10 @@ def med_rheader(r, tabs=None):
                         (T("Background"), "anamnesis"),
                         (T("Vaccinations"), "vaccination"),
                         (T("Medication"), "medication"),
-                        (T("Care Occasions"), "patient"),
+                        (T("Treatment Occasions"), "patient"),
                         # TODO lab results
                         # TODO examinations / interventions
+                        (T("Documents"), "document/"),
                         ]
             rheader_fields = [["date_of_birth"],
                               ]

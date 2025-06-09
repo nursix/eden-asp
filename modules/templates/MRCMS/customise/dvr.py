@@ -1377,6 +1377,25 @@ def dvr_person_prep(r):
             field = component.table.human_resource_id
             field.default = current.auth.s3_logged_in_human_resource()
 
+        elif r.component_name == "patient":
+
+            r.component.configure(insertable = False,
+                                  editable = False,
+                                  deletable = False,
+                                  )
+            s3.crud_strings["med_patient"] = Storage(
+                # label_create = T("Add Treatment Occasion"),
+                title_display = T("Treatment Occasion"),
+                title_list = T("Treatment Occasions"),
+                # title_update = T("Edit Treatment Occasion"),
+                label_list_button = T("List Treatment Occasions"),
+                # label_delete_button = T("Delete Treatment Occasion"),
+                # msg_record_created = T("Treatment Occasion added"),
+                # msg_record_modified = T("Treatment Occasion updated"),
+                # msg_record_deleted = T("Treatment Occasion deleted"),
+                msg_list_empty = T("No Treatment Occasions currently registered"),
+                )
+
     return True
 
 # =============================================================================

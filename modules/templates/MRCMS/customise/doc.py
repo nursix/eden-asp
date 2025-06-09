@@ -271,7 +271,7 @@ def doc_document_controller(**attr):
 
     current.deployment_settings.ui.export_formats = None
 
-    if current.request.controller in ("dvr", "counsel"):
+    if current.request.controller in ("dvr", "counsel", "med"):
 
         # Use custom rheader for case perspective
         from ..rheaders import dvr_rheader
