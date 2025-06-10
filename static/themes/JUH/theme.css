@@ -3861,6 +3861,36 @@ table th, table td {
   padding: 0;
 }
 
+/* line 93, ../../default/scss/theme/_datalists.scss */
+.med-status {
+  padding: 0.7rem;
+}
+/* line 95, ../../default/scss/theme/_datalists.scss */
+.med-status .dl-field-label, .med-status .dl-field-value {
+  display: block;
+}
+/* line 98, ../../default/scss/theme/_datalists.scss */
+.med-status .dl-field-label {
+  font-size: 0.9rem;
+}
+/* line 101, ../../default/scss/theme/_datalists.scss */
+.med-status .dl-field-value {
+  white-space: pre-wrap;
+  margin-bottom: 0.5rem;
+}
+
+/* line 106, ../../default/scss/theme/_datalists.scss */
+.med-status-header {
+  padding: 0.3rem;
+  border: 1px solid #ccc;
+}
+/* line 109, ../../default/scss/theme/_datalists.scss */
+.med-status-header .meta {
+  display: inline-block;
+  font-weight: bold;
+  padding: 0 0.5rem;
+}
+
 /* line 11, ../../default/scss/theme/_summary.scss */
 #summary-tabs {
   margin-top: 10px;

@@ -89,4 +89,28 @@
     padding: 0;
 }
 
+// Medical Status Reports
+.med-status {
+    padding: 0.7rem;
+    .dl-field-label, .dl-field-value {
+        display: block;
+    }
+    .dl-field-label {
+        font-size: 0.9rem;
+    }
+    .dl-field-value {
+        white-space: pre-wrap;
+        margin-bottom: 0.5rem;
+    }
+}
+.med-status-header {
+    padding: 0.3rem;
+    border: 1px solid #ccc;
+    .meta {
+        display: inline-block;
+        font-weight: bold;
+        padding: 0 0.5rem;
+    }
+}
+
 // END ========================================================================

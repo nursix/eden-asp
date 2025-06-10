@@ -96,13 +96,13 @@ class BasicCRUD(CRUDMethod):
             elif isinstance(populate, dict):
                 self.data = populate
 
+        output = None
         method = self.method
 
         if r.http == "DELETE" or self.method == "delete":
             output = self.delete(r, **attr)
 
         elif method == "create":
-
             output = self.create(r, **attr)
 
         elif method == "read":
@@ -139,6 +139,7 @@ class BasicCRUD(CRUDMethod):
                 output = self.review(r, **attr)
             else:
                 output = self.unapproved(r, **attr)
+
         else:
             r.error(405, current.ERROR.BAD_METHOD)
 
@@ -1203,11 +1204,19 @@ class BasicCRUD(CRUDMethod):
             else:
                 default_filters = None
 
-            get_vars = r.get_vars
-            attr = dict(attr)
+            # Determine default list type
+            if representation == "aadata":
+                list_type = "datatable"
+            elif representation == "dl":
+                list_type = "datalist"
+            else:
+                list_type = attr.get("list_type")
+            if list_type is None:
+                list_type = get_config("list_type", "datatable")
 
-            # Data
-            list_type = attr.get("list_type", "datatable")
+            get_vars = r.get_vars
+
+            # Render the table/list
             if list_type == "datalist":
                 filter_ajax = True
                 target = "datalist"
@@ -1223,11 +1232,13 @@ class BasicCRUD(CRUDMethod):
                     if default_filters:
                         ajax_vars.update(default_filters)
                     dtargs["dt_ajax_url"] = r.url(representation="aadata", vars=ajax_vars)
+                    attr = dict(attr)
                     attr["dtargs"] = dtargs
                 filter_ajax = True
                 target = "datatable"
                 output = self._datatable(r, **attr)
 
+            # Done here if Ajax
             if representation in ("aadata", "dl"):
                 return output
 
@@ -1833,6 +1844,7 @@ class BasicCRUD(CRUDMethod):
                                ajaxurl = ajax_url)
             data = dl
         else:
+            data = None
             r.error(415, current.ERROR.BAD_FORMAT)
 
 
@@ -2072,28 +2084,25 @@ class BasicCRUD(CRUDMethod):
 
             _next = r.url(id="[id]", method="review")
 
+            reviewing = False
             if self._permitted("approve"):
-
                 approve = FORM(INPUT(_value = T("Approve"),
                                      _type = "submit",
                                      _name = "approve-btn",
                                      _id = "approve-btn",
                                      _class = "action-btn",
                                      ))
-
                 reject = FORM(INPUT(_value = T("Reject"),
                                     _type = "submit",
                                     _name = "reject-btn",
                                     _id = "reject-btn",
                                     _class = "action-btn",
                                     ))
-
                 edit = A(T("Edit"),
                          _href = r.url(id = r.id, method = "update",
                                        vars = {"_next": r.url(id=r.id, method="review")}),
                          _class = "action-btn",
                          )
-
                 cancel = A(T("Cancel"),
                            _href = r.url(id=0),
                            _class = "action-lnk",
@@ -2108,11 +2117,11 @@ class BasicCRUD(CRUDMethod):
                                              _id = "approve_form",
                                              )
 
-                reviewing = False
                 if approve.accepts(r.post_vars, session, formname="approve"):
                     resource = current.s3db.resource(r.tablename, r.id,
-                                                     approved=False,
-                                                     unapproved=True)
+                                                     approved = False,
+                                                     unapproved = True,
+                                                     )
                     try:
                         success = resource.approve()
                     except:
@@ -3262,6 +3271,7 @@ class BasicCRUD(CRUDMethod):
         elif numrows == 1:
             message = get_crud_string(dresource.tablename, "msg_record_deleted")
         else:
+            message = None
             r.error(404, dresource.error)
 
         # Return a JSON message

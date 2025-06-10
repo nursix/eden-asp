@@ -693,8 +693,6 @@ class MedStatusModel(DataModel):
 
         # ---------------------------------------------------------------------
         # Medical Status Report
-        # TODO make person component and add to tabs in med/person
-        # TODO make r/o except for the original author
         #
         tablename = "med_status"
         define_table(tablename,
@@ -703,11 +701,11 @@ class MedStatusModel(DataModel):
                          empty = False,
                          comment = None,
                          readable = False,
-                         writable = False, # TODO set onaccept
+                         writable = False,
                          ),
                      self.med_patient_id(
-                         readable = False, # TODO make readable in person perspective
-                         writable = False, # TODO set onaacept
+                         readable = False,
+                         writable = False,
                          ),
                      DateTimeField(
                         default = "now",
@@ -735,27 +733,36 @@ class MedStatusModel(DataModel):
                                    represent = s3_text_represent,
                                    comment = None
                                    ),
-                     # TODO show this field for the original author
-                     Field("complete", "boolean",
+                     Field("is_final", "boolean",
                            default = False,
-                           label = T("Complete"),
+                           label = T("Mark report as final"),
                            readable = False,
                            writable = False,
                            ),
-                     # TODO show this field for the original author
-                     Field("invalid", "boolean",
-                           default = False,
-                           label = T("Invalid"),
+                     Field("vhash",
                            readable = False,
                            writable = False,
                            ),
                      )
 
+        # List fields incl. author
+        list_fields = ["id",
+                       "patient_id",
+                       "date",
+                       "created_by",
+                       "situation",
+                       "background",
+                       "assessment",
+                       "recommendation",
+                       ]
+
         # Table configuration
-        # TODO list_fields (include author+date+role)
         self.configure(tablename,
+                       list_fields = list_fields,
+                       list_type = "datalist",
+                       list_layout = med_StatusListLayout(),
                        onaccept = self.status_onaccept,
-                       # TODO orderby: newest first
+                       orderby = "%s.date desc" % tablename,
                        )
 
         # CRUD Strings
@@ -786,7 +793,11 @@ class MedStatusModel(DataModel):
     # -------------------------------------------------------------------------
     @staticmethod
     def status_onaccept(form):
-        # TODO docstring
+        """
+            Onaccept-routine for status reports
+            - set person_id
+            - compute vhash if final
+        """
 
         db = current.db
         s3db = current.s3db
@@ -798,11 +809,44 @@ class MedStatusModel(DataModel):
         record = db(query).select(table.id,
                                   table.person_id,
                                   table.patient_id,
+                                  table.is_final,
                                   limitby = (0, 1),
                                   ).first()
 
-        if record:
-            MedPatientModel.set_patient(record)
+        if not record:
+            return
+
+        MedPatientModel.set_patient(record)
+
+        if record.is_final:
+            record = db(query).select(table.id,
+                                      table.person_id,
+                                      table.patient_id,
+                                      table.date,
+                                      table.situation,
+                                      table.background,
+                                      table.assessment,
+                                      table.recommendation,
+                                      limitby = (0, 1),
+                                      ).first()
+
+            # Compute vhash
+            dt = record.date
+            if dt:
+                dtstr = dt.replace(microsecond=0).isoformat()
+            else:
+                dtstr = "-"
+            values = [record.person_id,
+                      record.patient_id,
+                      dtstr,
+                      ]
+            for fn in ("situation", "background", "assessment", "recommendation"):
+                value = record[fn]
+                if not value:
+                    value = "-"
+                values.append(value)
+            vhash = datahash(values)
+            record.update_record(vhash=vhash)
 
 # =============================================================================
 class MedVitalsModel(DataModel):
@@ -1134,9 +1178,13 @@ class MedEpicrisisModel(DataModel):
                          writable = False,
                          ),
                      self.med_patient_id(
-                         readable = False, # TODO make readable in person perspective
+                         readable = False,
                          writable = False,
                          ),
+                     DateTimeField(
+                        default = "now",
+                        writable = False,
+                        ),
                      CommentsField("situation",
                                    label = T("Initial Situation Details"),
                                    comment = None,
@@ -1157,9 +1205,15 @@ class MedEpicrisisModel(DataModel):
                                    label = T("Recommendation"),
                                    comment = None,
                                    ),
-                     Field("closed", "boolean",
-                           label = T("Closed##status"),
+                     Field("is_final", "boolean",
                            default = False,
+                           label = T("Mark report as final"),
+                           readable = False,
+                           writable = False,
+                           ),
+                     Field("vhash",
+                           readable = False,
+                           writable = False,
                            ),
                      )
 
@@ -1196,7 +1250,11 @@ class MedEpicrisisModel(DataModel):
     # -------------------------------------------------------------------------
     @staticmethod
     def epicrisis_onaccept(form):
-        # TODO docstring
+        """
+            Onaccept-routine for epicrisis reports
+            - set person_id
+            - compute vhash if final
+        """
 
         db = current.db
         s3db = current.s3db
@@ -1211,8 +1269,41 @@ class MedEpicrisisModel(DataModel):
                                   limitby = (0, 1),
                                   ).first()
 
-        if record:
-            MedPatientModel.set_patient(record)
+        if not record:
+            return
+
+        MedPatientModel.set_patient(record)
+
+        if record.is_final:
+            record = db(query).select(table.id,
+                                      table.person_id,
+                                      table.patient_id,
+                                      table.date,
+                                      table.situation,
+                                      table.diagnoses,
+                                      table.progress,
+                                      table.outcome,
+                                      table.recommendation,
+                                      limitby = (0, 1),
+                                      ).first()
+
+            # Compute vhash
+            dt = record.date
+            if dt:
+                dtstr = dt.replace(microsecond=0).isoformat()
+            else:
+                dtstr = "-"
+            values = [record.person_id,
+                      record.patient_id,
+                      dtstr,
+                      ]
+            for fn in ("situation", "diagnoses", "progress", "outcome", "recommendation"):
+                value = record[fn]
+                if not value:
+                    value = "-"
+                values.append(value)
+            vhash = datahash(values)
+            record.update_record(vhash=vhash)
 
 # =============================================================================
 class MedAnamnesisModel(DataModel):
@@ -1847,6 +1938,169 @@ class med_DocEntityRepresent(S3Represent):
                 link = A(v, _href=url)
 
         return link
+
+# =============================================================================
+class med_StatusListLayout(S3DataListLayout):
+    """ List layout for patient status reports """
+
+    def __init__(self, profile=None):
+
+        super().__init__(profile=profile)
+
+        self.editable = []
+        self.visible = []
+
+    # -------------------------------------------------------------------------
+    def prep(self, resource, records):
+        """
+            Bulk lookups for cards
+
+            Args:
+                resource: the resource
+                records: the records as returned from CRUDResource.select
+        """
+
+        record_ids = [r["med_status.id"] for r in records]
+
+        user = current.auth.user
+        user_id = user.id if user else None
+
+        db = current.db
+        table = current.s3db.med_status
+
+        # Visible only if final or created by the current user
+        query = table.id.belongs(record_ids) & \
+                ((table.is_final==True) | (table.created_by==user_id)) & \
+                (table.deleted == False)
+        rows = db(query).select(table.id)
+        visible = self.visible = [row.id for row in rows]
+
+        # Editable only if not final and created by the current user
+        query = table.id.belongs(visible) & \
+                (table.is_final==False) & \
+                (table.created_by==user_id) & \
+                (table.deleted == False)
+        rows = db(query).select(table.id)
+        self.editable = [row.id for row in rows]
+
+    # -------------------------------------------------------------------------
+    def render_header(self, list_id, item_id, resource, rfields, record):
+        """
+            Render the card header
+
+            Args:
+                list_id: the HTML ID of the list
+                item_id: the HTML ID of the item
+                resource: the CRUDResource to render
+                rfields: the S3ResourceFields to render
+                record: the record as dict
+        """
+
+        record_id = record["med_status.id"]
+
+        header = DIV(_class="med-status-header")
+        if record_id in self.editable:
+            header.add_class("editable")
+
+        # Get the labels
+        for colname in ("med_status.date", "med_status.created_by"):
+            if colname not in record:
+                continue
+            content = DIV(record[colname], _class="meta")
+            header.append(content)
+
+        # TODO render toolbox if editable
+
+        return header
+
+    # -------------------------------------------------------------------------
+    def render_body(self, list_id, item_id, resource, rfields, record):
+        """
+            Render the card body
+
+            Args:
+                list_id: the HTML ID of the list
+                item_id: the HTML ID of the item
+                resource: the CRUDResource to render
+                rfields: the S3ResourceFields to render
+                record: the record as dict
+        """
+
+        record_id = record["med_status.id"]
+
+        body = DIV(_class="med-status")
+        if record_id in self.editable:
+            body.add_class("editable")
+
+        for rfield in rfields:
+            if rfield.colname in ("med_status.situation",
+                                  "med_status.background",
+                                  "med_status.assessment",
+                                  "med_status.recommendation",
+                                  ):
+                content = self.render_column(item_id, rfield, record)
+                if content:
+                    body.append(content)
+
+        # TODO alternate style if editable
+
+        return body
+
+    # -------------------------------------------------------------------------
+    def render_toolbox(self, list_id, resource, record):
+        """
+            Render the toolbox
+
+            Args:
+                list_id: the HTML ID of the list
+                resource: the CRUDResource to render
+                record: the record as dict
+        """
+
+        return None
+
+    # ---------------------------------------------------------------------
+    def render_column(self, item_id, rfield, record):
+        """
+            Render a data column.
+
+            Args:
+                item_id: the HTML element ID of the item
+                rfield: the S3ResourceField for the column
+                record: the record (from CRUDResource.select)
+        """
+
+        colname = rfield.colname
+        if colname not in record:
+            return None
+
+        raw = record["_row"]
+        if rfield.colname in ("med_status.situation",
+                              "med_status.background",
+                              "med_status.assessment",
+                              "med_status.recommendation",
+                              ):
+            # Use raw data
+            value = raw[colname]
+            if value:
+                value = value.strip()
+        else:
+            value = record[colname]
+
+        if not value:
+            return None
+
+        value_id = "%s-%s" % (item_id, rfield.colname.replace(".", "_"))
+
+        label = LABEL("%s:" % rfield.label,
+                      _for = value_id,
+                      _class = "dl-field-label")
+
+        value = P(value,
+                  _id = value_id,
+                  _class = "dl-field-value")
+
+        return TAG[""](label, value)
 
 # =============================================================================
 def med_rheader(r, tabs=None):

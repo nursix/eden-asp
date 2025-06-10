@@ -44,6 +44,9 @@ def unit():
 def patient():
     """ Patients - CRUD Controller """
 
+    user = current.auth.user
+    user_id = user.id if user else None
+
     def prep(r):
 
         get_vars = r.get_vars
@@ -67,24 +70,54 @@ def patient():
 
             r.resource.add_filter(query)
 
-        if r.component_name in ("status", "epicrisis") and r.component_id:
+        if r.component_name in ("status", "epicrisis"):
 
-            # Records only editable/deletable for original author
-            rows = r.component.load()
-            record = rows[0] if rows else None
+            if r.component_id:
+                rows = r.component.load()
+                record = rows[0] if rows else None
+            else:
+                record = None
 
-            user = current.auth.user
-            user_id = user.id if user else None
-
-            if record and record.created_by != user_id:
+            if record and (record.is_final or record.created_by != user_id):
+                # Records are only editable/deletable while not yet marked
+                # as final and only for original author
                 r.component.configure(editable = False,
                                       deletable = False,
                                       )
+            else:
+                # Expose is_final flag when not yet marked as final
+                ctable = r.component.table
+                field = ctable.is_final
+                field.readable = field.writable = not record or not record.is_final
+
         return True
     s3.prep = prep
 
-    # TODO postp
-    # * status/epicrisis components: set filter for deletable records
+    def postp(r, output):
+
+        if r.component_name in ("status", "epicrisis"):
+            if r.interactive and r.record and not r.component_id:
+                # No delete-action by default
+                s3_action_buttons(r, deletable=False)
+
+                # Add delete-action only for records that are not
+                # yet final and have been created by the current user
+                ctable = r.component.table
+                query = (ctable.is_final == False) & \
+                        (ctable.created_by == user_id) & \
+                        (ctable.deleted == False)
+                rows = db(query).select(ctable.id)
+                restrict = [str(row.id) for row in rows]
+                s3.actions.append(
+                    {"label": s3_str(s3.crud_labels.DELETE),
+                     "url": URL(c="med", f="person",
+                                args = [r.record.id, "status", "[id]", "delete"],
+                                ),
+                     "_class": "delete-btn",
+                     "restrict": restrict,
+                     })
+        return output
+    s3.postp = postp
 
     return crud_controller(rheader=s3db.med_rheader)
 
