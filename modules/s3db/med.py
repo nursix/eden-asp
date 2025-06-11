@@ -716,6 +716,7 @@ class MedStatusModel(DataModel):
                      CommentsField("situation",
                                    label = T("Situation"),
                                    represent = s3_text_represent,
+                                   requires = IS_NOT_EMPTY(),
                                    comment = None,
                                    ),
                      CommentsField("background",
@@ -1941,7 +1942,7 @@ class med_DocEntityRepresent(S3Represent):
 
 # =============================================================================
 class med_StatusListLayout(S3DataListLayout):
-    """ List layout for patient status reports """
+    """ List layout for patient status reports (on tab of patient) """
 
     def __init__(self, profile=None):
 
@@ -1949,6 +1950,7 @@ class med_StatusListLayout(S3DataListLayout):
 
         self.editable = []
         self.visible = []
+        self.patient_id = None
 
     # -------------------------------------------------------------------------
     def prep(self, resource, records):
@@ -1972,15 +1974,17 @@ class med_StatusListLayout(S3DataListLayout):
         query = table.id.belongs(record_ids) & \
                 ((table.is_final==True) | (table.created_by==user_id)) & \
                 (table.deleted == False)
-        rows = db(query).select(table.id)
+        rows = db(query).select(table.id, table.patient_id)
         visible = self.visible = [row.id for row in rows]
+        if rows:
+            self.patient_id = rows.first().patient_id
 
         # Editable only if not final and created by the current user
         query = table.id.belongs(visible) & \
                 (table.is_final==False) & \
                 (table.created_by==user_id) & \
                 (table.deleted == False)
-        rows = db(query).select(table.id)
+        rows = db(query).select(table.id, table.patient_id)
         self.editable = [row.id for row in rows]
 
     # -------------------------------------------------------------------------
@@ -1996,20 +2000,25 @@ class med_StatusListLayout(S3DataListLayout):
                 record: the record as dict
         """
 
-        record_id = record["med_status.id"]
+        record_id = record["_row"]["med_status.id"]
+        editable = record_id in self.editable
 
         header = DIV(_class="med-status-header")
-        if record_id in self.editable:
+        if editable:
             header.add_class("editable")
 
-        # Get the labels
+        # Show date and original author
         for colname in ("med_status.date", "med_status.created_by"):
             if colname not in record:
                 continue
             content = DIV(record[colname], _class="meta")
             header.append(content)
 
-        # TODO render toolbox if editable
+        # Render roolbox if editable
+        if editable:
+            toolbox = self.render_toolbox(list_id, resource, record)
+            if toolbox:
+                header.append(toolbox)
 
         return header
 
@@ -2026,23 +2035,26 @@ class med_StatusListLayout(S3DataListLayout):
                 record: the record as dict
         """
 
-        record_id = record["med_status.id"]
+        record_id = record["_row"]["med_status.id"]
 
         body = DIV(_class="med-status")
         if record_id in self.editable:
             body.add_class("editable")
 
-        for rfield in rfields:
-            if rfield.colname in ("med_status.situation",
-                                  "med_status.background",
-                                  "med_status.assessment",
-                                  "med_status.recommendation",
-                                  ):
-                content = self.render_column(item_id, rfield, record)
-                if content:
-                    body.append(content)
-
-        # TODO alternate style if editable
+        if record_id in self.visible:
+            for rfield in rfields:
+                if rfield.colname in ("med_status.situation",
+                                      "med_status.background",
+                                      "med_status.assessment",
+                                      "med_status.recommendation",
+                                      ):
+                    content = self.render_column(item_id, rfield, record)
+                    if content:
+                        body.append(content)
+        else:
+            T = current.T
+            body.append(P(T("Report not yet completed"), _class="pending"))
+            body.add_class("pending")
 
         return body
 
@@ -2057,7 +2069,45 @@ class med_StatusListLayout(S3DataListLayout):
                 record: the record as dict
         """
 
-        return None
+        table = resource.table
+        tablename = resource.tablename
+        # record_id = record[str(resource._id)]
+        record_id = record["_row"]["med_status.id"]
+
+        toolbox = DIV(_class = "edit-bar fright")
+
+        # Look up the patient ID
+        patient_id = self.patient_id
+        if not patient_id:
+            return None
+
+        update_url = URL(c="med",
+                         f="patient",
+                         args = [patient_id, "status", record_id, "update.popup"],
+                         vars = {"refresh": list_id,
+                                 "record": record_id,
+                                 "profile": self.profile,
+                                 },
+                         )
+
+        has_permission = current.auth.s3_has_permission
+
+        if has_permission("update", table, record_id=record_id):
+            btn = A(ICON("edit"),
+                    _href = update_url,
+                    _class = "s3_modal",
+                    _title = get_crud_string(tablename, "title_update"),
+                    )
+            toolbox.append(btn)
+
+        if has_permission("delete", table, record_id=record_id):
+            btn = A(ICON("delete"),
+                    _class = "dl-item-delete",
+                    _title = get_crud_string(tablename, "label_delete_button"),
+                    )
+            toolbox.append(btn)
+
+        return toolbox
 
     # ---------------------------------------------------------------------
     def render_column(self, item_id, rfield, record):

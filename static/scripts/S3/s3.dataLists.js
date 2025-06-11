@@ -620,8 +620,8 @@
             }
 
             // 7. Also update the layer on the Map (if any)
-            // @ToDo: Which Map?
-            if (typeof map != 'undefined') {
+            var map; // TODO which Map?
+            if (map !== undefined) {
                 var layers = map.layers,
                     needle = idTokens.join('_');
                 Ext.iterate(layers, function(key, val, obj) {

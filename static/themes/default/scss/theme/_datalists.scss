@@ -32,7 +32,7 @@
             background-color: white;
         }
         &.odd, &.odd .dl-item {
-            background-color: #e2e4ff;
+            background-color: #f2f2f5;
         }
     }
     .dl-item {
@@ -61,6 +61,11 @@
     }
     .edit-bar.fright {
         float: right;
+    }
+    .edit-bar a {
+        font-size: 1rem;
+        padding: 0 0.2rem;
+        color: $black;
     }
     [dir=rtl] & {
         .dl-header {
@@ -92,24 +97,40 @@
 // Medical Status Reports
 .med-status {
     padding: 0.7rem;
+    &.editable {
+        background-color: #fff6e4;
+        border: 1px solid #b03737;
+    }
     .dl-field-label, .dl-field-value {
         display: block;
     }
     .dl-field-label {
-        font-size: 0.9rem;
+        font-size: 0.7rem;
     }
     .dl-field-value {
         white-space: pre-wrap;
         margin-bottom: 0.5rem;
     }
+    p.pending {
+        font-size: 0.7rem;
+        font-style: italic;
+        color: #b03737;
+    }
 }
 .med-status-header {
     padding: 0.3rem;
     border: 1px solid #ccc;
+    background-color: #7979792b;
     .meta {
         display: inline-block;
-        font-weight: bold;
+        // font-weight: bold;
         padding: 0 0.5rem;
+    }
+    &.editable {
+        .meta {
+            color: #b03737;
+        }
+        background-color: #fde7bd;
     }
 }
 

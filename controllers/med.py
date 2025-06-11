@@ -72,11 +72,25 @@ def patient():
 
         if r.component_name in ("status", "epicrisis"):
 
+            component = r.component
+            ctable = component.table
+
+            is_delete = r.http == "DELETE" or r.method == "delete"
+
             if r.component_id:
-                rows = r.component.load()
+                rows = component.load()
                 record = rows[0] if rows else None
+            elif r.http in ("POST", "DELETE") and r.representation == "dl" and "delete" in get_vars:
+                # Datalist delete-request
+                is_delete = True
+                record_id = get_vars.get("delete")
+                record = db(ctable.id == record_id).select(limitby=(0, 1)).first()
             else:
                 record = None
+
+            if is_delete and (not record or record.is_final):
+                # Finalized records must not be deleted
+                r.error(403, current.ERROR.NOT_PERMITTED)
 
             if record and (record.is_final or record.created_by != user_id):
                 # Records are only editable/deletable while not yet marked
@@ -86,7 +100,6 @@ def patient():
                                       )
             else:
                 # Expose is_final flag when not yet marked as final
-                ctable = r.component.table
                 field = ctable.is_final
                 field.readable = field.writable = not record or not record.is_final
 

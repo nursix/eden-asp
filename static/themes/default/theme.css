@@ -3787,7 +3787,7 @@ table th, table td {
 }
 /* line 34, ../scss/theme/_datalists.scss */
 .dl .dl-row.odd, .dl .dl-row.odd .dl-item {
-  background-color: #e2e4ff;
+  background-color: #f2f2f5;
 }
 /* line 38, ../scss/theme/_datalists.scss */
 .dl .dl-item {
@@ -3824,64 +3824,89 @@ table th, table td {
 .dl .edit-bar.fright {
   float: right;
 }
-/* line 66, ../scss/theme/_datalists.scss */
+/* line 65, ../scss/theme/_datalists.scss */
+.dl .edit-bar a {
+  font-size: 1rem;
+  padding: 0 0.2rem;
+  color: #444;
+}
+/* line 71, ../scss/theme/_datalists.scss */
 [dir=rtl] .dl .dl-header {
   text-align: left;
 }
-/* line 70, ../scss/theme/_datalists.scss */
+/* line 75, ../scss/theme/_datalists.scss */
 [dir=rtl] .dl .dl-item .dropdown .caret {
   margin-left: 0;
   margin-right: 0.2rem;
 }
-/* line 74, ../scss/theme/_datalists.scss */
+/* line 79, ../scss/theme/_datalists.scss */
 [dir=rtl] .dl .dl-item .attachments {
   margin-right: 0;
   margin-left: 0.2rem;
 }
-/* line 79, ../scss/theme/_datalists.scss */
+/* line 84, ../scss/theme/_datalists.scss */
 [dir=rtl] .dl .edit-bar.fright {
   float: left;
 }
 
-/* line 85, ../scss/theme/_datalists.scss */
+/* line 90, ../scss/theme/_datalists.scss */
 .dl-empty {
   font-style: italic;
   font-size: 0.825rem;
 }
 
-/* line 88, ../scss/theme/_datalists.scss */
+/* line 93, ../scss/theme/_datalists.scss */
 .dl-exports.list_formats {
   padding: 0;
 }
 
-/* line 93, ../scss/theme/_datalists.scss */
+/* line 98, ../scss/theme/_datalists.scss */
 .med-status {
   padding: 0.7rem;
 }
-/* line 95, ../scss/theme/_datalists.scss */
+/* line 100, ../scss/theme/_datalists.scss */
+.med-status.editable {
+  background-color: #fff6e4;
+  border: 1px solid #b03737;
+}
+/* line 104, ../scss/theme/_datalists.scss */
 .med-status .dl-field-label, .med-status .dl-field-value {
   display: block;
 }
-/* line 98, ../scss/theme/_datalists.scss */
+/* line 107, ../scss/theme/_datalists.scss */
 .med-status .dl-field-label {
-  font-size: 0.9rem;
+  font-size: 0.7rem;
 }
-/* line 101, ../scss/theme/_datalists.scss */
+/* line 110, ../scss/theme/_datalists.scss */
 .med-status .dl-field-value {
   white-space: pre-wrap;
   margin-bottom: 0.5rem;
 }
+/* line 114, ../scss/theme/_datalists.scss */
+.med-status p.pending {
+  font-size: 0.7rem;
+  font-style: italic;
+  color: #b03737;
+}
 
-/* line 106, ../scss/theme/_datalists.scss */
+/* line 120, ../scss/theme/_datalists.scss */
 .med-status-header {
   padding: 0.3rem;
   border: 1px solid #ccc;
+  background-color: #7979792b;
 }
-/* line 109, ../scss/theme/_datalists.scss */
+/* line 124, ../scss/theme/_datalists.scss */
 .med-status-header .meta {
   display: inline-block;
-  font-weight: bold;
   padding: 0 0.5rem;
+}
+/* line 129, ../scss/theme/_datalists.scss */
+.med-status-header.editable {
+  background-color: #fde7bd;
+}
+/* line 130, ../scss/theme/_datalists.scss */
+.med-status-header.editable .meta {
+  color: #b03737;
 }
 
 /* line 11, ../scss/theme/_summary.scss */
