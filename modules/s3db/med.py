@@ -39,10 +39,16 @@ __all__ = ("MedUnitModel",
            "med_rheader",
            )
 
+import datetime
+import re
+
 from gluon import *
 from gluon.storage import Storage
+from gluon.validators import Validator, ValidationError
 
 from ..core import *
+
+BP = r"^\s*([1-3]{1}\d{2}|[2-9]{1}\d)\s*(?:[/]{1}\s*([1]{1}\d{2}|[2-9]{1}\d)){0,1}\s*$"
 
 # =============================================================================
 class MedUnitModel(DataModel):
@@ -856,6 +862,7 @@ class MedVitalsModel(DataModel):
     names = ("med_vitals",
              )
 
+
     def model(self):
 
         T = current.T
@@ -869,16 +876,32 @@ class MedVitalsModel(DataModel):
 
         # ---------------------------------------------------------------------
         # Vital Signs
-        # TODO make person component and add to tabs in med/person
-        # TODO make r/o except for the original author
         #
-        avcpu = (("A", T("Alert##consciousness")),
-                 ("V", T("Verbal##consciousness")),
-                 ("C", T("Confused##consciousness")),
-                 ("P", T("Pain##consciousness")),
-                 ("U", T("Unresponsive##consciousness")),
-                 )
+        avcpus = (("A", T("Alert##consciousness")),
+                  ("V", T("Verbal##consciousness")),
+                  ("C", T("Confused##consciousness")),
+                  ("P", T("Pain##consciousness")),
+                  ("U", T("Unresponsive##consciousness")),
+                  ("S", T("Seizure##consciousness")),
+                  )
 
+        airway_status = (("N", T("Free##airways")),
+                         ("C", T("Compromised##airways")),
+                         )
+
+        risk_class = (("C", T("Critical")),
+                      ("H", T("High")),
+                      ("M", T("Medium")),
+                      ("L", T("Low")),
+                      )
+        risk_class_represent = S3PriorityRepresent(risk_class,
+                                                   {"C": "red",
+                                                    "H": "lightred",
+                                                    "M": "amber",
+                                                    "L": "green",
+                                                    }).represent
+
+        # TODO age-adjust normal-ranges for representation (=>prep)
         tablename = "med_vitals"
         define_table(tablename,
                      self.pr_person_id(
@@ -886,97 +909,92 @@ class MedVitalsModel(DataModel):
                          empty = False,
                          comment = None,
                          readable = False,
-                         writable = False, # TODO set onaccept
+                         writable = False,
                          ),
                      self.med_patient_id(
-                         readable = False, # TODO make readable in person perspective
-                         writable = False, # TODO set onaacept
+                         readable = False,
+                         writable = False,
                          ),
                      DateTimeField(
                         default = "now",
                         future = 0,
                         past = 6, # hours
                         ),
-                     # TODO Calculate onaccept
-                     Field("warning_score", "integer",
-                           label = T("Score"),
-                           requires = IS_INT_IN_RANGE(minimum=0, maximum=24),
+                     Field("risk_class",
+                           label = T("Risk"),
+                           default = "L",
+                           requires = IS_IN_SET(risk_class, zero=None, sort=False),
+                           represent = risk_class_represent,
+                           readable = False,
+                           writable = False,
+                           ),
+                     Field("airways",
+                           label = T("Airways"),
+                           default = "N",
+                           requires = IS_IN_SET(airway_status, zero=None, sort=False),
+                           represent = self.represent_discrete(dict(airway_status), normal={"N"}),
                            ),
                      Field("rf", "integer",
-                           label = T("RF"),
-                           requires = IS_INT_IN_RANGE(minimum=0, maximum=80),
+                           label = T("Respiratory Rate"),
+                           requires = IS_EMPTY_OR(IS_INT_IN_RANGE(minimum=2, maximum=80)),
+                           represent = represent_normal(12, 20),
                            ),
                      Field("o2sat", "integer",
                            label = T("O2 Sat%"),
-                           requires = IS_INT_IN_RANGE(minimum=0, maximum=100),
+                           requires = IS_EMPTY_OR(IS_INT_IN_RANGE(minimum=0, maximum=100)),
+                           represent = represent_normal(95, 100),
                            ),
                      Field("o2sub", "integer",
                            label = T("O2 L/min"),
-                           requires = IS_INT_IN_RANGE(minimum=0, maximum=20),
+                           requires = IS_EMPTY_OR(IS_INT_IN_RANGE(minimum=0, maximum=20)),
+                           represent = represent_normal(0, 0),
                            ),
                      Field("hypox", "boolean",
                            default = False,
                            label = T("Chronic Hypoxemia"),
                            ),
-                     #Field("bp",
-                     #      ),
-                     Field("bp_sys", "integer",
-                           label = T("BP sys"),
-                           requires = IS_INT_IN_RANGE(minimum=20, maximum=300),
-                           ),
-                     Field("bp_dia", "integer",
-                           label = T("BP dia"),
-                           requires = IS_INT_IN_RANGE(minimum=20, maximum=300),
+                     Field("bp",
+                           label = T("Blood Pressure"),
+                           requires = IS_EMPTY_OR(IS_BLOOD_PRESSURE()),
+                           represent = self.represent_bp(110, 220),
                            ),
                      Field("hf", "integer",
-                           label = T("HF"),
-                           requires = IS_INT_IN_RANGE(minimum=0, maximum=300),
+                           label = T("Heart Rate"),
+                           requires = IS_INT_IN_RANGE(minimum=10, maximum=300),
+                           represent = represent_normal(51, 90),
                            ),
                      Field("temp", "double",
-                           label = T("Temp"),
-                           requires = IS_FLOAT_IN_RANGE(minimum=25.0, maximum=44.0),
+                           label = T("Temperature"),
+                           requires = IS_EMPTY_OR(IS_FLOAT_IN_RANGE(minimum=25.0, maximum=44.0)),
+                           represent = represent_normal(36.1, 38.0),
                            ),
                      Field("consc",
                            default = "A",
                            label = T("Consciousness"),
-                           requires = IS_IN_SET(avcpu, zero=None, sort=False),
-                           represent = represent_option(dict(avcpu)),
-                           ),
-                     # TODO show this field for the original author
-                     Field("complete", "boolean",
-                           default = False,
-                           label = T("Complete"),
-                           readable = False,
-                           writable = False,
-                           ),
-                     # TODO show this field for the original author
-                     Field("invalid", "boolean",
-                           default = False,
-                           label = T("Invalid"),
-                           readable = False,
-                           writable = False,
+                           requires = IS_IN_SET(avcpus, zero=None, sort=False),
+                           represent = self.represent_discrete(dict(avcpus), normal={"A"}),
                            ),
                      )
 
         # List fields
         list_fields = ["date",
-                       "warning_score",
-                       "rf",
+                       "airways",
+                       (T("RF##vitals"), "rf"),
                        "o2sat",
                        "o2sub",
-                       "bp_sys",
-                       "bp_dia",
-                       "hf",
-                       "temp",
+                       (T("BP##vitals"), "bp"),
+                       (T("HF##vitals"), "hf"),
+                       (T("Temp"), "temp"),
                        "consc",
+                       "risk_class",
                        ]
 
         # Table configuration
-        # TODO list_fields (include author+date+role)
         self.configure(tablename,
                        list_fields = list_fields,
                        onaccept = self.vitals_onaccept,
-                       # TODO orderby: newest first
+                       orderby = "%s.date desc" % tablename,
+                       editable = False,
                        )
 
         # CRUD Strings
@@ -1007,7 +1025,11 @@ class MedVitalsModel(DataModel):
     # -------------------------------------------------------------------------
     @staticmethod
     def vitals_onaccept(form):
-        # TODO docstring
+        """
+            Onaccept-routine for vital signs
+            - set person/patient ID
+            - calculate risk class
+        """
 
         db = current.db
         s3db = current.s3db
@@ -1024,6 +1046,64 @@ class MedVitalsModel(DataModel):
 
         if record:
             MedPatientModel.set_patient(record)
+            RiskClass.calculator(record_id).update_risk()
+
+    # -------------------------------------------------------------------------
+    @staticmethod
+    def represent_bp(minimum=None, maximum=None):
+        """
+            Renders a representation of blood pressure, highlighting
+            abnormal values
+
+            Args:
+                minimum: the SBP minimum
+                maximum: the SBP maximum
+            Returns:
+                a representation function
+        """
+
+        def represent(value, row=None):
+
+            sbp, _ = med_parse_bp(value)
+            if sbp is not None:
+                if (minimum is None or minimum < sbp) and \
+                   (maximum is None or sbp < maximum):
+                    output = SPAN(value)
+                else:
+                    output = SPAN(value, _class="out-of-range")
+            else:
+                output = "-"
+            return output
+
+        return represent
+
+    # -------------------------------------------------------------------------
+    @staticmethod
+    def represent_discrete(options, *, normal=None):
+        """
+            Renders a representation of a discrete vital sign value, such
+            as airway status or conscience
+
+            Args:
+                options: a dict of valid options
+                normal: a set|tuple|list of normal options
+            Returns:
+                a representation function
+        """
+
+        def represent(value, row=None):
+
+            if value:
+                reprstr = options.get(value, "-")
+                if normal is None or value in normal:
+                    output = SPAN(reprstr)
+                else:
+                    output = SPAN(reprstr, _class="out-of-range")
+            else:
+                output = "-"
+            return output
+
+        return represent
 
 # =============================================================================
 class MedTreatmentModel(DataModel):
@@ -1695,6 +1775,291 @@ class MedVaccinationModel(DataModel):
         return {}
 
 # =============================================================================
+class RiskClass:
+    """
+        Risk class calculator
+        - calculates a risk stratification indicator (low=>high) for a set
+          of reported vital signs, based on NEWS2 National Early Warning Score
+    """
+
+    # Vital parameters used for calculation
+    indicators = ("airways", "rf", "o2sat", "o2sub", "hypox", "bp", "hf", "temp", "consc")
+
+    def __init__(self, vitals_id):
+        """
+            Args:
+                vitals_id: the med_vitals record ID
+        """
+
+        self._vitals_id = vitals_id
+        self._vitals = None
+
+        self._patient_id = None
+        self._patient = None
+
+    # -------------------------------------------------------------------------
+    @property
+    def vitals(self):
+        """
+            Returns the med_vitals record (lazy property)
+        """
+
+        vitals = self._vitals
+        if not vitals:
+            db = current.db
+            table = current.s3db.med_vitals
+            query = (table.id == self._vitals_id) & (table.deleted == False)
+
+            fields = [table.id, table.date, table.patient_id] + \
+                     [table[fn] for fn in self.indicators]
+            vitals = self._vitals = db(query).select(*fields,
+                                                     limitby = (0, 1),
+                                                     ).first()
+        return vitals
+
+    # -------------------------------------------------------------------------
+    @property
+    def patient_id(self):
+        """
+            Returns the patient record ID (lazy property)
+        """
+
+        patient_id = self._patient_id
+        if not patient_id:
+            patient_id = self._patient_id = self.vitals.patient_id
+
+        return patient_id
+
+    # -------------------------------------------------------------------------
+    @property
+    def patient(self):
+        """
+            Returns the patient record (lazy property)
+        """
+
+        patient = self._patient
+        if not patient:
+            db = current.db
+            table = current.s3db.med_patient
+            query = (table.id == self.patient_id) & (table.deleted == False)
+            patient = self._patient = db(query).select(table.id,
+                                                       table.person_id,
+                                                       limitby = (0, 1),
+                                                       ).first()
+        return patient
+
+    # -------------------------------------------------------------------------
+    @classmethod
+    def calculator(cls, vitals_id):
+        """
+            Factory method that permits overriding the standard
+            class with a custom calculator
+
+            Args:
+                vitals_id: the med_vitals record ID
+            Returns:
+                a RiskClass (or custom subclass thereof) instance
+        """
+
+        calculator = current.deployment_settings.get_med_risk_class_calculation()
+        if calculator is True:
+            calculator = cls # default
+        if isinstance(calculator, type):
+            calculator = calculator(vitals_id)
+        return calculator
+
+    # -------------------------------------------------------------------------
+    def parameters(self):
+        """
+            Extracts the relevant parameters for the calculation, re-using
+            certain earlier values if no current value available
+
+            Returns:
+                a dict of parameters
+        """
+
+        indicators = self.indicators
+
+        vitals = self.vitals
+        if not vitals:
+            return {fn: None for fn in indicators}
+
+        params = {fn: vitals[fn] for fn in indicators}
+
+        # Re-use earlier values for certain parameters
+        reusable = ("airways", "bp", "temp")
+        reuse = [fn for fn in reusable if params[fn] is None]
+        if reuse:
+            # Get all records up to 4 hours before the last record
+            earliest = vitals.date - datetime.timedelta(hours=4)
+            table = current.s3db.med_vitals
+            query = (table.patient_id == self.patient_id) & \
+                    (table.date >= earliest) & \
+                    (table.deleted == False)
+            rows = current.db(query).select(*[table[fn] for fn in reuse],
+                                            orderby=(~table.date, ~table.id),
+                                            )
+            for fn in reuse:
+                for row in rows:
+                    value = row[fn]
+                    if value is not None:
+                        params[fn] = value
+                        break
+
+        return params
+
+    # -------------------------------------------------------------------------
+    def calculate(self):
+        """
+            Calculates a score and from that determiens the risk class
+            for the current vitals record
+
+            Returns:
+                the risk class
+        """
+        # TODO adjust for age
+
+        score, risk = 0, None
+        params = self.parameters()
+
+        # A - Airways status
+        airways = params.get("airways")
+        if airways == "C":
+            score += 3
+            risk = "M"
+
+        # B - Breathing status
+        rf = params.get("rf")
+        if rf is not None:
+            if rf <= 8 or rf >= 25:
+                score += 3
+                risk = "M"
+            elif rf > 20:
+                score += 2
+            elif rf < 12:
+                score += 1
+
+        o2sub = params.get("o2sub") # O2 Substitution
+        if o2sub is None:
+            o2sub = 0
+        if o2sub > 0:
+            score += 2
+
+        o2sat = params.get("o2sat") # O2 Saturation
+        if o2sat is not None:
+            if params.get("hypox"):
+                # Special rules for hypoxic ventilation drive (e.g. COPD)
+                if o2sat <= 83:
+                    score += 3
+                    risk = "M"
+                elif o2sat < 86:
+                    score += 2
+                elif o2sat < 88:
+                    score += 1
+                elif o2sub > 0:
+                    if o2sat >= 97:
+                        score += 3
+                        risk = "M"
+                    elif o2sat > 94:
+                        score += 2
+                    elif o2sat > 92:
+                        score += 1
+            else:
+                if o2sat <= 92:
+                    score += 3
+                    risk = "M"
+                elif o2sat < 94:
+                    score += 2
+                elif o2sat < 96:
+                    score += 1
+
+        # C - Circulation
+        sbp, _ = med_parse_bp(params.get("bp"))
+        if sbp is not None:
+            if sbp <= 90 or sbp >= 220:
+                score += 3
+                risk = "M"
+            elif sbp <= 100:
+                score += 2
+            elif sbp <= 110:
+                score += 1
+
+        hf = params.get("hf")
+        if hf is not None:
+            if hf <= 40 or hf > 130:
+                score += 3
+                risk = "M"
+            elif hf > 110:
+                score += 2
+            elif hf <= 50 or hf > 90:
+                score += 1
+
+        # D - Disability
+        consc = params.get("consc")
+        if consc and consc != "A":
+            score += 3
+            risk = "M"
+
+        # E - Exposure
+        temp = params.get("temp")
+        if temp is not None:
+            if temp <= 35.0:
+                score += 3
+                risk = "M"
+            elif temp > 39.0:
+                score += 2
+            elif temp <= 36.0 or temp > 38.0:
+                score += 1
+
+        if score >= 7:
+            risk = "C"
+        elif score >= 5:
+            risk = "H"
+        elif not risk:
+            risk = "L"
+
+        return risk
+
+    # -------------------------------------------------------------------------
+    def update_risk(self):
+        """
+            Updates the EWS score for the vitals record
+        """
+
+        risk = self.calculate()
+
+        if self.vitals:
+            self.vitals.update_record(risk_class=risk)
+
+# =============================================================================
+class IS_BLOOD_PRESSURE(Validator):
+
+    def validate(self, value, record_id=None):
+        """
+            Validator for blood pressure expressions
+
+            Args:
+                value: the input value
+                record_id: the current record ID (unused, for API compatibility)
+
+            Returns:
+                the blood pressure expression
+
+            Notes:
+                - automatically reverses wrong DIA/SYS order if given two values
+        """
+
+        sbp, dbp = med_parse_bp(value)
+        if sbp and dbp:
+            if sbp - dbp < 10:
+                raise ValidationError(current.T("Implausible Value"))
+            value = "%s/%s" % (sbp, dbp)
+        elif value and sbp is None:
+            raise ValidationError(current.T("Enter blood pressure like SYS/DIA, or at least the systolic value"))
+
+        return value
+
+# =============================================================================
 class med_UnitRepresent(S3Represent):
     """ Representation of medical units """
 
@@ -2151,6 +2516,39 @@ class med_StatusListLayout(S3DataListLayout):
                   _class = "dl-field-value")
 
         return TAG[""](label, value)
+
+# =============================================================================
+def med_parse_bp(bpstr):
+    """
+        Returns the systolic/diastolic blood pressure values from a BP string
+
+        Args:
+            bpstr: the blood pressure as string expression, e.g. "120/80"
+        Returns:
+            tuple (sbp, dbp)
+
+        Notes:
+            - dbp can be None if the string only contains a single value
+            - sbp and dbp are both None if the string expression is invalid
+    """
+
+    sbp, dbp = None, None
+
+    if bpstr:
+        match = re.match(BP, bpstr)
+        if match:
+            try:
+                sbp = int(match.group(1))
+            except (ValueError, TypeError):
+                pass
+            try:
+                dbp = int(match.group(2))
+            except (ValueError, TypeError):
+                pass
+            if sbp and dbp and sbp < dbp:
+                sbp, dbp = dbp, sbp
+
+    return sbp, dbp
 
 # =============================================================================
 def med_rheader(r, tabs=None):

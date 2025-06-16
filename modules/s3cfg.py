@@ -4527,6 +4527,12 @@ class S3Config(Storage):
         """
         return self.med.get("area_label", "room")
 
+    def get_med_risk_class_calculation(self):
+        """
+            Which EWS class to use (True to use default EWS)
+        """
+        return self.__lazy("med", "risk_class_calculation", default=True)
+
     # -------------------------------------------------------------------------
     # Members
     #
@@ -5093,7 +5099,7 @@ class S3Config(Storage):
                     }
 
         tabs = self.get_pr_contacts_tabs()
-        label = tabs.get(group) if type(tabs) is dict else None
+        label = tabs.get(group) if isinstance(tabs, dict) else None
 
         if label is None:
             # Use default label

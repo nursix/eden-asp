@@ -48,6 +48,7 @@ __all__ = ("BooleanRepresent",
            "represent_image",
            "represent_option",
            "represent_hours",
+           "represent_normal",
            "represent_occupancy",
            )
 
@@ -556,7 +557,6 @@ class S3Represent:
                        parent not in lookup:
                         lookup[parent] = False
                         lookup_parent(parent)
-                    return
                 for node_id in list(lookup.keys()):
                     lookup_parent(node_id)
             else:
@@ -768,7 +768,6 @@ class S3RepresentLazy:
                 element.text = text
             else:
                 attributes[name] = text
-            return
 
 # =============================================================================
 class S3PriorityRepresent:
@@ -1215,6 +1214,33 @@ def represent_hours(colon=False):
             title = " ".join(formatted) if formatted else None
 
         return SPAN("%s" % round(value, 2), _title=title, _class="hours-formatted")
+
+    return represent
+
+# -------------------------------------------------------------------------
+def represent_normal(minimum=None, maximum=None):
+    """
+        Representation of a numerical value with highlighting values
+        outside of a given range
+
+        Args:
+            minimum: the lower end of the normal range
+            maximum: the upper end of the normal range
+
+        Returns:
+            SPAN, with CSS class "out-of-range" for abnormal values
+    """
+
+    def represent(value, row=None):
+
+        if value is None:
+            output = "-"
+        elif (minimum is None or minimum <= value) and \
+             (maximum is None or value <= maximum):
+            output = SPAN(value)
+        else:
+            output = SPAN(value, _class="out-of-range")
+        return output
 
     return represent
 

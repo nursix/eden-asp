@@ -8,7 +8,13 @@
 // ============================================================================
 // STYLES
 //
-// Request (req) Statuses
+// Generic classes ------------------------------------------------------------
+//
+.out-of-range {
+    color: #a00;
+}
+
+// Request (req) Statuses -----------------------------------------------------
 //
 .req_status_none {
     color: red;
@@ -128,6 +134,9 @@
 .prio-red {
     color: #E0E0E0;
     background-color: #d10000;
+}
+.prio-lightred {
+    background-color: #d17f7f;
 }
 .prio-amber {
     background-color: #ffaa00;

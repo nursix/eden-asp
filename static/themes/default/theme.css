@@ -165,47 +165,52 @@ button.toggle-text {
 }
 
 /* line 13, ../scss/theme/_represent.scss */
+.out-of-range {
+  color: #a00;
+}
+
+/* line 19, ../scss/theme/_represent.scss */
 .req_status_none {
   color: red;
   font-weight: bold;
 }
 
-/* line 17, ../scss/theme/_represent.scss */
+/* line 23, ../scss/theme/_represent.scss */
 .req_status_partial {
   color: darkorange;
   font-weight: bold;
 }
 
-/* line 21, ../scss/theme/_represent.scss */
+/* line 27, ../scss/theme/_represent.scss */
 .req_status_complete {
   color: green;
   font-weight: bold;
 }
 
-/* line 29, ../scss/theme/_represent.scss */
+/* line 35, ../scss/theme/_represent.scss */
 .hours-formatted {
   cursor: pointer;
 }
 
-/* line 36, ../scss/theme/_represent.scss */
+/* line 42, ../scss/theme/_represent.scss */
 .due-date {
   padding: 0 2px;
 }
-/* line 38, ../scss/theme/_represent.scss */
+/* line 44, ../scss/theme/_represent.scss */
 .due-date.due-now {
   background-color: #ff010194;
   color: black;
 }
-/* line 42, ../scss/theme/_represent.scss */
+/* line 48, ../scss/theme/_represent.scss */
 .due-date.due-next {
   background-color: #ff54005c;
 }
-/* line 45, ../scss/theme/_represent.scss */
+/* line 51, ../scss/theme/_represent.scss */
 .due-date.due-soon {
   background-color: #f7ff004a;
 }
 
-/* line 53, ../scss/theme/_represent.scss */
+/* line 59, ../scss/theme/_represent.scss */
 .avatar {
   background: none repeat scroll 0 0 #fff;
   border-bottom: 1px solid #d7d7d7;
@@ -216,66 +221,66 @@ button.toggle-text {
   padding: 4px;
   width: 55px;
 }
-/* line 62, ../scss/theme/_represent.scss */
+/* line 68, ../scss/theme/_represent.scss */
 [dir=rtl] .avatar {
   float: right;
 }
 
-/* line 70, ../scss/theme/_represent.scss */
+/* line 76, ../scss/theme/_represent.scss */
 .text-body {
   white-space: pre-wrap;
 }
 
 /* Truncated Texts */
-/* line 75, ../scss/theme/_represent.scss */
+/* line 81, ../scss/theme/_represent.scss */
 .s3-truncate-more,
 .s3-truncate-less {
   font-style: italic;
 }
 
-/* line 79, ../scss/theme/_represent.scss */
+/* line 85, ../scss/theme/_represent.scss */
 .s3-truncate-more:before,
 .s3-truncate-less:before {
   font-style: italic;
   content: "...";
 }
 
-/* line 89, ../scss/theme/_represent.scss */
+/* line 95, ../scss/theme/_represent.scss */
 .controls .bool {
   margin-left: 0.5rem;
 }
-/* line 91, ../scss/theme/_represent.scss */
+/* line 97, ../scss/theme/_represent.scss */
 [dir=rtl] .controls .bool {
   margin-left: 0;
   margin-right: 0.5rem;
 }
-/* line 96, ../scss/theme/_represent.scss */
+/* line 102, ../scss/theme/_represent.scss */
 .bool i {
   margin-right: 0.2rem;
 }
-/* line 98, ../scss/theme/_represent.scss */
+/* line 104, ../scss/theme/_represent.scss */
 [dir=rtl] .bool i {
   margin-right: 0;
   margin-left: 0.2rem;
 }
-/* line 103, ../scss/theme/_represent.scss */
+/* line 109, ../scss/theme/_represent.scss */
 .bool.bool-red {
   color: #d01717;
 }
-/* line 106, ../scss/theme/_represent.scss */
+/* line 112, ../scss/theme/_represent.scss */
 .bool.bool-green {
   color: #018801;
 }
-/* line 109, ../scss/theme/_represent.scss */
+/* line 115, ../scss/theme/_represent.scss */
 .bool.bool-blue {
   color: #1754b3;
 }
-/* line 112, ../scss/theme/_represent.scss */
+/* line 118, ../scss/theme/_represent.scss */
 .bool.bool-grey {
   color: #7f7f7f;
 }
 
-/* line 120, ../scss/theme/_represent.scss */
+/* line 126, ../scss/theme/_represent.scss */
 .prio {
   padding: 0 0.4rem;
   border: 1px solid #333;
@@ -285,148 +290,153 @@ button.toggle-text {
   white-space: pre;
 }
 
-/* line 128, ../scss/theme/_represent.scss */
+/* line 134, ../scss/theme/_represent.scss */
 .prio-red {
   color: #E0E0E0;
   background-color: #d10000;
 }
 
-/* line 132, ../scss/theme/_represent.scss */
+/* line 138, ../scss/theme/_represent.scss */
+.prio-lightred {
+  background-color: #d17f7f;
+}
+
+/* line 141, ../scss/theme/_represent.scss */
 .prio-amber {
   background-color: #ffaa00;
 }
 
-/* line 135, ../scss/theme/_represent.scss */
+/* line 144, ../scss/theme/_represent.scss */
 .prio-lightgreen {
   background-color: #a0d7a0;
 }
 
-/* line 138, ../scss/theme/_represent.scss */
+/* line 147, ../scss/theme/_represent.scss */
 .prio-green {
   color: #E0E0E0;
   background-color: #006100;
 }
 
-/* line 142, ../scss/theme/_represent.scss */
+/* line 151, ../scss/theme/_represent.scss */
 .prio-blue {
   color: white;
   background-color: #10427b;
 }
 
-/* line 146, ../scss/theme/_represent.scss */
+/* line 155, ../scss/theme/_represent.scss */
 .prio-lightblue {
   background-color: #b7ddff;
 }
 
-/* line 149, ../scss/theme/_represent.scss */
+/* line 158, ../scss/theme/_represent.scss */
 .prio-grey {
   background-color: silver;
 }
 
-/* line 152, ../scss/theme/_represent.scss */
+/* line 161, ../scss/theme/_represent.scss */
 .prio-black {
   color: #E0E0E0;
   background-color: #1f1f1f;
 }
 
-/* line 160, ../scss/theme/_represent.scss */
+/* line 169, ../scss/theme/_represent.scss */
 .occupancy-bar {
   border: 1px solid black;
   position: relative;
   padding: 0 2px;
   min-width: 4rem;
 }
-/* line 165, ../scss/theme/_represent.scss */
+/* line 174, ../scss/theme/_represent.scss */
 .occupancy-bar .occupancy {
   display: block;
   position: absolute;
   top: 0;
   left: 0;
 }
-/* line 166, ../scss/theme/_represent.scss */
+/* line 175, ../scss/theme/_represent.scss */
 .occupancy-bar .occupancy:before {
   content: "-";
   visibility: hidden;
 }
-/* line 174, ../scss/theme/_represent.scss */
+/* line 183, ../scss/theme/_represent.scss */
 .occupancy-bar .occupancy.occupancy-0 {
   width: 1%;
   background-color: rgba(0, 85, 0, 0.5);
 }
-/* line 178, ../scss/theme/_represent.scss */
+/* line 187, ../scss/theme/_represent.scss */
 .occupancy-bar .occupancy.occupancy-10 {
   width: 10%;
   background-color: rgba(0, 115, 0, 0.5);
 }
-/* line 182, ../scss/theme/_represent.scss */
+/* line 191, ../scss/theme/_represent.scss */
 .occupancy-bar .occupancy.occupancy-20 {
   width: 20%;
   background-color: rgba(0, 145, 0, 0.5);
 }
-/* line 186, ../scss/theme/_represent.scss */
+/* line 195, ../scss/theme/_represent.scss */
 .occupancy-bar .occupancy.occupancy-30 {
   width: 30%;
   background-color: rgba(70, 160, 0, 0.5);
 }
-/* line 190, ../scss/theme/_represent.scss */
+/* line 199, ../scss/theme/_represent.scss */
 .occupancy-bar .occupancy.occupancy-40 {
   width: 40%;
   background-color: rgba(100, 160, 0, 0.5);
 }
-/* line 194, ../scss/theme/_represent.scss */
+/* line 203, ../scss/theme/_represent.scss */
 .occupancy-bar .occupancy.occupancy-50 {
   width: 50%;
   background-color: rgba(160, 160, 0, 0.5);
 }
-/* line 198, ../scss/theme/_represent.scss */
+/* line 207, ../scss/theme/_represent.scss */
 .occupancy-bar .occupancy.occupancy-60 {
   width: 60%;
   background-color: rgba(175, 145, 0, 0.5);
 }
-/* line 202, ../scss/theme/_represent.scss */
+/* line 211, ../scss/theme/_represent.scss */
 .occupancy-bar .occupancy.occupancy-70 {
   width: 70%;
   background-color: rgba(190, 120, 0, 0.5);
 }
-/* line 206, ../scss/theme/_represent.scss */
+/* line 215, ../scss/theme/_represent.scss */
 .occupancy-bar .occupancy.occupancy-80 {
   width: 80%;
   background-color: rgba(205, 80, 0, 0.5);
 }
-/* line 210, ../scss/theme/_represent.scss */
+/* line 219, ../scss/theme/_represent.scss */
 .occupancy-bar .occupancy.occupancy-90 {
   width: 90%;
   background-color: rgba(220, 40, 0, 0.5);
 }
-/* line 214, ../scss/theme/_represent.scss */
+/* line 223, ../scss/theme/_represent.scss */
 .occupancy-bar .occupancy.occupancy-100 {
   width: 100%;
   background-color: rgba(235, 20, 0, 0.5);
 }
-/* line 218, ../scss/theme/_represent.scss */
+/* line 227, ../scss/theme/_represent.scss */
 .occupancy-bar .occupancy.occupancy-exc {
   width: 100%;
   background-color: rgba(200, 0, 0, 0.6);
 }
 
-/* line 228, ../scss/theme/_represent.scss */
+/* line 237, ../scss/theme/_represent.scss */
 .wh-schedule {
   list-style: none;
   white-space: pre;
   margin: 0;
   font-size: 0.7rem;
 }
-/* line 233, ../scss/theme/_represent.scss */
+/* line 242, ../scss/theme/_represent.scss */
 .wh-schedule .wh-dayname {
   width: 1.5rem;
   display: inline-block;
 }
-/* line 237, ../scss/theme/_represent.scss */
+/* line 246, ../scss/theme/_represent.scss */
 .wh-schedule .wh-dayname::after {
   content: ":";
 }
 
-/* line 245, ../scss/theme/_represent.scss */
+/* line 254, ../scss/theme/_represent.scss */
 .showall {
   display: none;
   position: absolute;
@@ -436,7 +446,7 @@ button.toggle-text {
   margin: 0 20px 0 -50px;
 }
 
-/* line 257, ../scss/theme/_represent.scss */
+/* line 266, ../scss/theme/_represent.scss */
 .newsletter-text {
   white-space: pre-line;
   background: #fcfcfc;
@@ -449,113 +459,113 @@ button.toggle-text {
   font-size: 0.85rem;
 }
 
-/* line 273, ../scss/theme/_represent.scss */
+/* line 282, ../scss/theme/_represent.scss */
 .file-repr i.fa {
   font-size: 1.1rem;
 }
-/* line 276, ../scss/theme/_represent.scss */
+/* line 285, ../scss/theme/_represent.scss */
 .file-repr .file-size {
   padding: 0 0.4rem;
   font-size: 0.7rem;
 }
 
-/* line 282, ../scss/theme/_represent.scss */
+/* line 291, ../scss/theme/_represent.scss */
 .img-preview {
   max-width: 120px;
   max-height: 80px;
 }
 
-/* line 290, ../scss/theme/_represent.scss */
+/* line 299, ../scss/theme/_represent.scss */
 .contact-repr {
   background-color: #FFF0C1;
   border: 1px solid #E0E0E0;
   padding: 0.25rem 0.5rem;
 }
-/* line 294, ../scss/theme/_represent.scss */
+/* line 303, ../scss/theme/_represent.scss */
 .contact-repr .contact-name {
   display: block;
   font-weight: bold;
   margin-bottom: 0.2rem;
 }
-/* line 299, ../scss/theme/_represent.scss */
+/* line 308, ../scss/theme/_represent.scss */
 .contact-repr .contact-info {
   white-space: nowrap;
   font-size: 0.8rem;
 }
-/* line 302, ../scss/theme/_represent.scss */
+/* line 311, ../scss/theme/_represent.scss */
 .contact-repr .contact-info .fa {
   padding-right: 0.4rem;
 }
 
-/* line 311, ../scss/theme/_represent.scss */
+/* line 320, ../scss/theme/_represent.scss */
 .workflow-options {
   white-space: pre;
 }
-/* line 313, ../scss/theme/_represent.scss */
+/* line 322, ../scss/theme/_represent.scss */
 .workflow-options.workflow-grey {
   color: #555;
 }
-/* line 316, ../scss/theme/_represent.scss */
+/* line 325, ../scss/theme/_represent.scss */
 .workflow-options.workflow-red {
   color: #c42626;
 }
-/* line 319, ../scss/theme/_represent.scss */
+/* line 328, ../scss/theme/_represent.scss */
 .workflow-options.workflow-amber {
   color: #ec8d27;
 }
-/* line 322, ../scss/theme/_represent.scss */
+/* line 331, ../scss/theme/_represent.scss */
 .workflow-options.workflow-green {
   color: green;
 }
-/* line 325, ../scss/theme/_represent.scss */
+/* line 334, ../scss/theme/_represent.scss */
 .workflow-options.workflow-advice {
   border: 1px solid #c42626;
   background-color: #ffdede;
   padding: 0.3rem 0.7rem;
 }
-/* line 330, ../scss/theme/_represent.scss */
+/* line 339, ../scss/theme/_represent.scss */
 .workflow-options .fa {
   margin-right: 0.2rem;
 }
-/* line 332, ../scss/theme/_represent.scss */
+/* line 341, ../scss/theme/_represent.scss */
 [dir=rtl] .workflow-options .fa {
   margin-right: 0;
   margin-left: 0.2rem;
 }
-/* line 337, ../scss/theme/_represent.scss */
+/* line 346, ../scss/theme/_represent.scss */
 .controls .workflow-options {
   margin-left: 0.5rem;
 }
-/* line 339, ../scss/theme/_represent.scss */
+/* line 348, ../scss/theme/_represent.scss */
 [dir=rtl] .controls .workflow-options {
   margin-left: 0;
   margin-right: 0.5rem;
 }
 
-/* line 349, ../scss/theme/_represent.scss */
+/* line 358, ../scss/theme/_represent.scss */
 .issue-date {
   display: block;
   font-size: 0.75rem;
   color: #666;
 }
 
-/* line 354, ../scss/theme/_represent.scss */
+/* line 363, ../scss/theme/_represent.scss */
 .issue-full {
   border: 1px solid #ccc;
   background-color: #fdf7de;
   padding: 0.5rem 0.75rem;
 }
-/* line 358, ../scss/theme/_represent.scss */
+/* line 367, ../scss/theme/_represent.scss */
 .issue-full h4 {
   font-size: 1rem;
 }
-/* line 361, ../scss/theme/_represent.scss */
+/* line 370, ../scss/theme/_represent.scss */
 .issue-full .issue-description {
   font-size: 0.85rem;
   font-style: italic;
 }
 
-/* line 370, ../scss/theme/_represent.scss */
+/* line 379, ../scss/theme/_represent.scss */
 .hazard-neg, .hazard-pos {
   display: inline-block;
   width: 20px;
@@ -567,17 +577,17 @@ button.toggle-text {
   background-position: center;
 }
 
-/* line 381, ../scss/theme/_represent.scss */
+/* line 390, ../scss/theme/_represent.scss */
 .hazard-bio.hazard-pos {
   background-image: url(../../img/hazard/bio.png);
 }
 
-/* line 384, ../scss/theme/_represent.scss */
+/* line 393, ../scss/theme/_represent.scss */
 .hazard-tox.hazard-pos {
   background-image: url(../../img/hazard/tox.png);
 }
 
-/* line 387, ../scss/theme/_represent.scss */
+/* line 396, ../scss/theme/_represent.scss */
 .hazard-rad.hazard-pos {
   background-image: url(../../img/hazard/rad.png);
 }
