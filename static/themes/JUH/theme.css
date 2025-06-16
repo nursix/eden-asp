@@ -5662,3 +5662,16 @@ h4.profile-sub-header {
 .case-file-perspectives .current-perspective {
   color: #970000;
 }
+
+/* line 445, ../scss/theme/_misc.scss */
+#rheader div.tabs span.med-vitals-tab {
+  border-color: #a00;
+}
+/* line 447, ../scss/theme/_misc.scss */
+#rheader div.tabs span.med-vitals-tab.tab_here {
+  border-bottom-color: transparent;
+}
+/* line 450, ../scss/theme/_misc.scss */
+#rheader div.tabs span.med-vitals-tab.tab_other, #rheader div.tabs span.med-vitals-tab.tab_last {
+  background-color: #a00;
+}

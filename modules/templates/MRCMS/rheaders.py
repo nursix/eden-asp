@@ -121,6 +121,7 @@ def dvr_rheader(r, tabs=None):
                         tabs.extend([(T("Background"), "anamnesis"),
                                      (T("Vaccinations"), "vaccination"),
                                      (T("Medication"), "medication"),
+                                     (T("Appointments"), "case_appointment"),
                                      (T("Treatment Occasions"), "patient"),
                                      (T("Documents"), "document/"),
                                      ])
@@ -348,6 +349,9 @@ def org_rheader(r, tabs=None):
                               ["location_id", "phone2"],
                               ]
             rheader_title = None
+
+        else:
+            return None
 
         rheader = S3ResourceHeader(rheader_fields, tabs, title=rheader_title)
         rheader = rheader(r, table=resource.table, record=record)

@@ -1514,6 +1514,8 @@ class S3ComponentTabs:
                 _class = "tab_last"
             else:
                 _class = "tab_other"
+            if tab._class:
+                _class = "%s %s" % (_class, tab._class)
 
             # Complete the tab URL with args, deal with "viewing"
             if component:
@@ -1658,12 +1660,14 @@ class S3ComponentTab:
 
         self.native = False
         self.method = None
+        self._class = None
 
         if len(tab) > 2:
             tab_vars = self.vars = Storage(tab[2])
             if "native" in tab_vars:
-                self.native = bool(tab_vars["native"])
-                del tab_vars["native"]
+                self.native = bool(tab_vars.pop("native"))
+            if "_class" in tab_vars:
+                self._class = tab_vars.pop("_class")
             if len(tab) > 3:
                 # Component Method
                 self.method = tab[3]

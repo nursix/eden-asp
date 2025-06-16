@@ -1408,7 +1408,7 @@ def configure_custom_actions(r, output, is_case_admin=False, is_org_admin=False)
     component_name = r.component_name
 
     controller = r.controller
-    if controller in ("dvr", "counsel", "supply"):
+    if controller in ("dvr", "counsel", "med", "supply"):
 
         if not r.component:
 
@@ -1509,7 +1509,7 @@ def pr_person_controller(**attr):
 
     administration = is_org_admin or is_case_admin
 
-    PRIVILEGED = ("CASE_MANAGER", "CASE_ASSISTANT")
+    PRIVILEGED = ("CASE_MANAGER", "CASE_ASSISTANT", "MED_PRACTITIONER")
     privileged = administration or auth.s3_has_roles(PRIVILEGED)
 
     QUARTERMASTER = auth.s3_has_role("QUARTERMASTER") and not privileged

@@ -2596,7 +2596,7 @@ def med_rheader(r, tabs=None):
                         # Background [viewing]
                         # Vaccinations [viewing]
                         # Medication [viewing]
-                        (T("Vital Signs"), "vitals"),
+                        (T("Vital Signs"), "vitals", {"_class": "med-vitals-tab"}),
                         (T("Status Reports"), "status"),
                         (T("Treatment"), "treatment"),
                         # TODO lab results

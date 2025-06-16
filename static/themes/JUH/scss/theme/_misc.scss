@@ -441,4 +441,15 @@
     }
 }
 
+// Tab highlighting ***********************************************************
+#rheader div.tabs span.med-vitals-tab {
+    border-color: #a00;
+    &.tab_here {
+        border-bottom-color: transparent;
+    }
+    &.tab_other, &.tab_last {
+        background-color: #a00;
+    }
+}
+
 // END ========================================================================
