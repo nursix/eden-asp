@@ -457,11 +457,9 @@ def config(settings):
     # -------------------------------------------------------------------------
     # MED Module Settings
     #
-    from .customise.med import med_patient_resource, \
-                               med_patient_controller
+    from .customise.med import med_patient_resource
 
     settings.customise_med_patient_resource = med_patient_resource
-    settings.customise_med_patient_controller = med_patient_controller
 
     # -------------------------------------------------------------------------
     # Organisations Module Settings
