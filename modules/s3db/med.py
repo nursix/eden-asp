@@ -836,13 +836,7 @@ class MedStatusModel(DataModel):
         # ---------------------------------------------------------------------
         # Pass names back to global scope (s3.*)
         #
-        return {}
-
-    # -------------------------------------------------------------------------
-    def defaults(self):
-        """ Safe defaults for names in case the module is disabled """
-
-        return {}
+        #return {}
 
     # -------------------------------------------------------------------------
     @staticmethod
@@ -1739,20 +1733,19 @@ class MedVaccinationModel(DataModel):
         T = current.T
         db = current.db
 
-        # s3 = current.response.s3
-        # crud_strings = s3.crud_strings
+        s3 = current.response.s3
+        crud_strings = s3.crud_strings
 
         define_table = self.define_table
-        # configure = self.configure
+        configure = self.configure
 
         # ---------------------------------------------------------------------
         # Vaccination Type
-        # TODO import XSLT
         #
         tablename = "med_vaccination_type"
         define_table(tablename,
                      Field("name",
-                           label = T("Name"),
+                           label = T("Designation"),
                            requires = IS_NOT_EMPTY(),
                            represent = lambda v, row=None: v if v else "-",
                            ),
@@ -1763,7 +1756,13 @@ class MedVaccinationModel(DataModel):
                      CommentsField(),
                      )
 
-        # TODO onvalidation to exclude duplicates
+        # Table configuration
+        configure(tablename,
+                  deduplicate = S3Duplicate(primary=("name",),
+                                            secondary=("vaccine_type",),
+                                            ),
+                  onvalidation = self.vaccination_type_onvalidation,
+                  )
 
         # Field template
         represent = S3Represent(lookup = tablename,
@@ -1780,7 +1779,19 @@ class MedVaccinationModel(DataModel):
                                                                   )),
                                             )
 
-        # TODO CRUD Strings
+        # CRUD Strings
+        crud_strings[tablename] = Storage(
+            label_create = T("Add Vaccination Type"),
+            title_display = T("Vaccination Type"),
+            title_list = T("Vaccination Types"),
+            title_update = T("Edit Vaccination Type"),
+            label_list_button = T("List Vaccination Types"),
+            label_delete_button = T("Delete Vaccination Type"),
+            msg_record_created = T("Vaccination Type added"),
+            msg_record_modified = T("Vaccination Type updated"),
+            msg_record_deleted = T("Vaccination Type deleted"),
+            msg_list_empty = T("No Vaccination Types currently registered"),
+            )
 
         # ---------------------------------------------------------------------
         # TODO m2m link vaccination_type <=> disease
@@ -1793,7 +1804,9 @@ class MedVaccinationModel(DataModel):
                      self.pr_person_id(
                          comment = None,
                          ),
-                     vaccination_type_id(),
+                     vaccination_type_id(
+                         empty = False,
+                         ),
                      Field("product", length=255,
                            label = T("Preparation / Trade Name"),
                            represent = lambda v, row=None: v if v else "-",
@@ -1808,18 +1821,55 @@ class MedVaccinationModel(DataModel):
                      CommentsField(),
                      )
 
-        # TODO CRUD Strings
+        # CRUD Strings
+        crud_strings[tablename] = Storage(
+            label_create = T("Add Vaccination"),
+            title_display = T("Vaccination"),
+            title_list = T("Vaccinations"),
+            title_update = T("Edit Vaccination"),
+            label_list_button = T("List Vaccinations"),
+            label_delete_button = T("Delete Vaccination"),
+            msg_record_created = T("Vaccination added"),
+            msg_record_modified = T("Vaccination updated"),
+            msg_record_deleted = T("Vaccination deleted"),
+            msg_list_empty = T("No Vaccinations currently registered"),
+            )
 
         # ---------------------------------------------------------------------
         # Pass names back to global scope (s3.*)
         #
-        return {}
+        #return {}
 
-    # -------------------------------------------------------------------------
-    def defaults(self):
-        """ Safe defaults for names in case the module is disabled """
+    # ---------------------------------------------------------------------
+    @staticmethod
+    def vaccination_type_onvalidation(form):
+        """
+            Form validation of vaccination types:
+            - prevent duplicates
+        """
 
-        return {}
+        # Get form record id
+        record_id = get_form_record_id(form)
+
+        # Get form record data
+        table = current.s3db.med_vaccination_type
+        data = get_form_record_data(form, table, ["name", "vaccine_type"])
+
+        name = data.get("name")
+        if name:
+            query = (table.name == name)
+            vaccine_type = data.get("vaccine_type")
+            if vaccine_type:
+                query &= (table.vaccine_type == vaccine_type)
+            if record_id:
+                query &= (table.id != record_id)
+            duplicate = current.db(query).select(table.id, limitby=(0, 1)).first()
+            if duplicate:
+                error = current.T("Vaccination Type already registered")
+                if vaccine_type and "vaccine_type" in form.vars:
+                    form.errors.vaccine_type = error
+                else:
+                    form.errors.name = error
 
 # =============================================================================
 class RiskClass:
@@ -2643,8 +2693,8 @@ def med_rheader(r, tabs=None):
                         # Background [viewing]
                         # Vaccinations [viewing]
                         # Medication [viewing]
-                        (T("Vital Signs"), "vitals", {"_class": "med-vitals-tab"}),
-                        (T("Status Reports"), "status"),
+                        (T("Vital Signs"), "vitals", {"_class": "emphasis"}),
+                        (T("Status Reports"), "status", {"_class": "emphasis"}),
                         (T("Treatment"), "treatment"),
                         # TODO lab results
                         # TODO examinations / interventions

@@ -2266,77 +2266,77 @@ body.rtl .sub-nav.about-menu {
   padding: 0 0.375rem;
 }
 
-/* line 27, ../../default/scss/theme/_rheader.scss */
+/* line 33, ../../default/scss/theme/_rheader.scss */
 #rheader {
   margin-bottom: 0.25rem;
   /* Rheader Tabs */
 }
-/* line 29, ../../default/scss/theme/_rheader.scss */
+/* line 35, ../../default/scss/theme/_rheader.scss */
 #rheader .rheader-title {
   color: #333;
   font-weight: bold;
   font-size: 1.1rem;
   line-height: 1.0;
 }
-/* line 35, ../../default/scss/theme/_rheader.scss */
+/* line 41, ../../default/scss/theme/_rheader.scss */
 #rheader .rheader-content {
   display: inline-block;
   max-width: 90%;
   padding: 0.5rem;
 }
-/* line 40, ../../default/scss/theme/_rheader.scss */
+/* line 46, ../../default/scss/theme/_rheader.scss */
 #rheader table {
   display: inline;
   margin-bottom: 10px;
   border: none;
   background: none;
 }
-/* line 45, ../../default/scss/theme/_rheader.scss */
+/* line 51, ../../default/scss/theme/_rheader.scss */
 #rheader table tbody, #rheader table tr {
   border: none;
   background: none;
 }
-/* line 49, ../../default/scss/theme/_rheader.scss */
+/* line 55, ../../default/scss/theme/_rheader.scss */
 #rheader table th, #rheader table td {
   font-size: 0.85rem;
   text-align: left;
   padding: 0.1rem 0.5rem 0.05rem 0;
   white-space: pre-line;
 }
-/* line 53, ../../default/scss/theme/_rheader.scss */
+/* line 59, ../../default/scss/theme/_rheader.scss */
 [dir=rtl] #rheader table th, [dir=rtl] #rheader table td {
   text-align: right;
   padding: 0.1rem 0 0.05rem 0.5rem;
 }
-/* line 59, ../../default/scss/theme/_rheader.scss */
+/* line 65, ../../default/scss/theme/_rheader.scss */
 #rheader table th {
   color: #7F7F7F;
   line-height: 1.1rem;
   font-weight: normal;
 }
-/* line 64, ../../default/scss/theme/_rheader.scss */
+/* line 70, ../../default/scss/theme/_rheader.scss */
 #rheader table td {
   padding-right: 1.25rem;
   line-height: 1.1rem;
   font-weight: bold;
 }
-/* line 68, ../../default/scss/theme/_rheader.scss */
+/* line 74, ../../default/scss/theme/_rheader.scss */
 #rheader table td a {
   font-weight: normal;
 }
-/* line 71, ../../default/scss/theme/_rheader.scss */
+/* line 77, ../../default/scss/theme/_rheader.scss */
 [dir=rtl] #rheader table td {
   padding-right: 0;
   padding-left: 1.25rem;
 }
-/* line 79, ../../default/scss/theme/_rheader.scss */
+/* line 85, ../../default/scss/theme/_rheader.scss */
 #rheader .rheader-qrcode {
   display: inline-block;
   border: 1px solid #eee;
   margin-right: 0.5rem;
   vertical-align: top;
 }
-/* line 87, ../../default/scss/theme/_rheader.scss */
+/* line 93, ../../default/scss/theme/_rheader.scss */
 #rheader .rheader-avatar {
   clear: none;
   display: inline-block;
@@ -2345,12 +2345,12 @@ body.rtl .sub-nav.about-menu {
   vertical-align: top;
   margin-right: 0.8rem;
 }
-/* line 94, ../../default/scss/theme/_rheader.scss */
+/* line 100, ../../default/scss/theme/_rheader.scss */
 [dir=rtl] #rheader .rheader-avatar {
   margin-right: 0;
   margin-left: 0.8rem;
 }
-/* line 101, ../../default/scss/theme/_rheader.scss */
+/* line 107, ../../default/scss/theme/_rheader.scss */
 #rheader div.tabs {
   display: block;
   clear: none;
@@ -2361,7 +2361,7 @@ body.rtl .sub-nav.about-menu {
   text-align: left;
   border-bottom: 1px solid #000548;
 }
-/* line 116, ../../default/scss/theme/_rheader.scss */
+/* line 122, ../../default/scss/theme/_rheader.scss */
 #rheader div.tabs span {
   float: left;
   position: relative;
@@ -2375,24 +2375,34 @@ body.rtl .sub-nav.about-menu {
   border-radius: 3px 3px 0 0;
   background-color: #000548;
 }
-/* line 134, ../../default/scss/theme/_rheader.scss */
+/* line 140, ../../default/scss/theme/_rheader.scss */
 #rheader div.tabs span:hover {
   background-color: #6084bf;
   border-color: #6084bf;
 }
-/* line 139, ../../default/scss/theme/_rheader.scss */
+/* line 144, ../../default/scss/theme/_rheader.scss */
+#rheader div.tabs span.emphasis {
+  border-color: #460048;
+  background-color: #460048;
+}
+/* line 147, ../../default/scss/theme/_rheader.scss */
+#rheader div.tabs span.emphasis:hover {
+  border-color: #460048;
+  background-color: #460048;
+}
+/* line 153, ../../default/scss/theme/_rheader.scss */
 #rheader div.tabs span a {
   line-height: 16px;
   color: #ffffff;
   text-decoration: none;
   background: transparent;
 }
-/* line 144, ../../default/scss/theme/_rheader.scss */
+/* line 158, ../../default/scss/theme/_rheader.scss */
 #rheader div.tabs span a:hover {
   color: #ffffff;
   background: transparent;
 }
-/* line 151, ../../default/scss/theme/_rheader.scss */
+/* line 165, ../../default/scss/theme/_rheader.scss */
 #rheader div.tabs span.tab_here {
   font-size: 14px;
   font-weight: bold;
@@ -2406,39 +2416,39 @@ body.rtl .sub-nav.about-menu {
   border-bottom-style: solid;
   border-bottom-color: #fefefe;
 }
-/* line 157, ../../default/scss/theme/_rheader.scss */
+/* line 171, ../../default/scss/theme/_rheader.scss */
 #rheader div.tabs span.tab_here:not(:first-child) {
   margin-left: 0.2rem;
 }
-/* line 173, ../../default/scss/theme/_rheader.scss */
+/* line 187, ../../default/scss/theme/_rheader.scss */
 #rheader div.tabs span.tab_here:hover {
   background-color: #f1edec;
 }
-/* line 176, ../../default/scss/theme/_rheader.scss */
+/* line 190, ../../default/scss/theme/_rheader.scss */
 #rheader div.tabs span.tab_here a {
   color: #666666 !important;
 }
-/* line 178, ../../default/scss/theme/_rheader.scss */
+/* line 192, ../../default/scss/theme/_rheader.scss */
 #rheader div.tabs span.tab_here a:hover {
   color: #666666 !important;
 }
-/* line 186, ../../default/scss/theme/_rheader.scss */
+/* line 200, ../../default/scss/theme/_rheader.scss */
 [dir=rtl] #rheader div.tabs {
   padding-left: 4px;
   padding-right: 0;
   text-align: right;
 }
-/* line 190, ../../default/scss/theme/_rheader.scss */
+/* line 204, ../../default/scss/theme/_rheader.scss */
 [dir=rtl] #rheader div.tabs span {
   float: right;
   margin-right: 0;
   margin-left: 0.2rem;
 }
-/* line 194, ../../default/scss/theme/_rheader.scss */
+/* line 208, ../../default/scss/theme/_rheader.scss */
 [dir=rtl] #rheader div.tabs span.tab_here {
   margin-left: 0.4rem;
 }
-/* line 196, ../../default/scss/theme/_rheader.scss */
+/* line 210, ../../default/scss/theme/_rheader.scss */
 [dir=rtl] #rheader div.tabs span.tab_here:not(:first-child) {
   margin-right: 0.2rem;
 }
@@ -5661,10 +5671,4 @@ h4.profile-sub-header {
 /* line 439, ../scss/theme/_misc.scss */
 .case-file-perspectives .current-perspective {
   color: #970000;
-}
-
-/* line 446, ../scss/theme/_misc.scss */
-#rheader div.tabs span.med-vitals-tab.tab_other, #rheader div.tabs span.med-vitals-tab.tab_last {
-  border-color: #460048;
-  background-color: #460048;
 }

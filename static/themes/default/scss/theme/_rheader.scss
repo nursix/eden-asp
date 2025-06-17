@@ -19,6 +19,12 @@ $rheader_tabs_bgcolor_inactive_hover: $button-background-hover !default;
 $rheader_tabs_fgcolor_inactive: #ffffff !default;
 $rheader_tabs_fgcolor_inactive_hover: #ffffff !default;
 
+// Emphasized tabs
+$rheader_tabs_bgcolor_emphasis: $button-background !default;
+$rheader_tabs_bgcolor_emphasis_hover: $button-background-hover !default;
+$rheader_tabs_fgcolor_emphasis: #ffffff !default;
+$rheader_tabs_fgcolor_emphasis_hover: #ffffff !default;
+
 // ============================================================================
 // STYLES
 //
@@ -134,6 +140,14 @@ $rheader_tabs_fgcolor_inactive_hover: #ffffff !default;
             &:hover {
                 background-color: $rheader_tabs_bgcolor_inactive_hover;
                 border-color: $rheader_tabs_bgcolor_inactive_hover;
+            }
+            &.emphasis {
+                border-color: $rheader_tabs_bgcolor_emphasis;
+                background-color: $rheader_tabs_bgcolor_emphasis;
+                &:hover {
+                    border-color: $rheader_tabs_bgcolor_emphasis_hover;
+                    background-color: $rheader_tabs_bgcolor_emphasis_hover;
+                }
             }
 
             a {
