@@ -386,15 +386,20 @@ class MedPatientModel(DataModel):
                            writable = False,
                            ),
                      # The patient
-                     Field("unidentified", "boolean",
-                           label = T("Unidentified Person"),
-                           default = False,
-                           ),
                      self.pr_person_id(
-                         label = T("Identity"),
+                         label = T("Person"),
                          represent = self.pr_PersonRepresent(show_link=True),
                          comment = None,
                          ),
+                     Field("unregistered", "boolean",
+                           label = T("Unregistered Person"),
+                           default = False,
+                           ),
+                     Field("person",
+                           label = T("Description"),
+                           represent = lambda v, row=None: v if v else "-",
+                           comment = T("Specify Name, Gender and Age if known"),
+                           ),
 
                      # TODO filterOptions
                      self.med_area_id(),
@@ -432,7 +437,7 @@ class MedPatientModel(DataModel):
                            ),
                      # TODO Display advice in rheader
                      Field("hazards_advice",
-                           label = T("Hazard Advice"),
+                           label = T("Hazards Advice"),
                            represent = lambda v, row=None: v if v else "-",
                            ),
 
@@ -470,6 +475,34 @@ class MedPatientModel(DataModel):
                                              },
                             )
 
+        # CRUD form
+        crud_form = CustomForm(# ------- Unit -----------------------
+                               "unit_id",
+                               "area_id",
+                               # ------- Patient --------------------
+                               "person_id",
+                               "unregistered",
+                               "person",
+                               # ------- Current Visit --------------
+                               "date",
+                               "refno",
+                               "reason",
+                               "priority",
+                               "status",
+                               # ------- Hazards --------------------
+                               "hazards",
+                               "hazards_advice",
+                               # ------- Administrative -------------
+                               "comments",
+                               "invalid",
+                               )
+        subheadings = {"unit_id": T("Unit"),
+                       "person_id": T("Patient"),
+                       "date": T("Current Visit"),
+                       "hazards": T("Hazards Advice"),
+                       "comments": T("Administrative"),
+                       }
+
         # List fields
         # TODO make using areas a deployment setting
         # TODO show unit if user can see multiple
@@ -488,6 +521,8 @@ class MedPatientModel(DataModel):
 
         # Table configuration
         self.configure(tablename,
+                       crud_form = crud_form,
+                       subheadings = subheadings,
                        list_fields = list_fields,
                        onvalidation = self.patient_onvalidation,
                        onaccept = self.patient_onaccept,
@@ -571,6 +606,8 @@ class MedPatientModel(DataModel):
     def patient_onaccept(form):
         """
             Onaccept routine for patient records:
+            - set reference number
+            - update unregistered/person fields
             - update person_id in component records
         """
 
@@ -591,10 +628,20 @@ class MedPatientModel(DataModel):
                                   ).first()
         if not record:
             return
+        update = {}
 
         # Set reference number
         if not record.refno:
-            record.update_record(refno=str(record.id))
+            update["refno"] = str(record.id)
+
+        # Update unregistered/person fields once person_id is set
+        person_id = record.person_id
+        if person_id:
+            update["unregistered"] = False
+            update["person"] = None
+
+        if update:
+            record.update_record(**update)
 
         # Update person_id in component records
         for tn in ("med_status",
@@ -604,9 +651,9 @@ class MedPatientModel(DataModel):
                    ):
             ctable = s3db.table(tn)
             query = (ctable.patient_id == record_id) & \
-                    (ctable.person_id != record.person_id) & \
+                    (ctable.person_id != person_id) & \
                     (ctable.deleted == False)
-            db(query).update(person_id = record.person_id,
+            db(query).update(person_id = person_id,
                              modified_by = ctable.modified_by,
                              modified_on = ctable.modified_on,
                              )

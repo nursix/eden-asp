@@ -51,7 +51,21 @@ def patient():
 
         get_vars = r.get_vars
 
-        if not r.record:
+        resource = r.resource
+        table = resource.table
+
+        record = r.record
+        if record:
+            if record.person_id:
+                # Person cannot be changed once set
+                field = table.person_id
+                field.writable = False
+                # Hide unregistered+person fields
+                field = table.unregistered
+                field.readable = field.writable = False
+                field = table.person
+                field.readable = field.writable = False
+        else:
             # Filter for valid/invalid patient records
             invalid = get_vars.get("invalid") == "1"
             if invalid:
@@ -68,7 +82,8 @@ def patient():
                 elif closed not in ("1", "include"):
                     query &= FS("status").belongs(open_status)
 
-            r.resource.add_filter(query)
+            resource.add_filter(query)
+
 
         if r.component_name in ("status", "epicrisis"):
 
