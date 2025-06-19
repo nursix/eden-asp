@@ -5028,7 +5028,7 @@ class DVRVulnerabilityModel(DataModel):
                                             ]),
                            ),
                      Field("obsolete", "boolean",
-                           label = T("obsolete"),
+                           label = T("Obsolete"),
                            default = False,
                            represent = BooleanRepresent(labels = False,
                                                         # Reverse icons semantics
@@ -5477,7 +5477,7 @@ class DVRGrantModel(DataModel):
                                 writable = False,
                                 ),
                           Field("obsolete", "boolean",
-                                label = T("obsolete"),
+                                label = T("Obsolete"),
                                 default = False,
                                 represent = BooleanRepresent(labels = False,
                                                              # Reverse icons semantics

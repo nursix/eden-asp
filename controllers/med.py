@@ -40,6 +40,14 @@ def unit():
 
     return crud_controller(rheader=s3db.med_rheader)
 
+def area():
+    """ Treatment Areas (Rooms) - CRUD Controller """
+
+    # Only used for options lookups (in patient form)
+    s3.prep = lambda r: r.http == "GET" and r.representation == "json"
+
+    return crud_controller()
+
 # =============================================================================
 def patient():
     """ Patients - CRUD Controller """
@@ -84,8 +92,11 @@ def patient():
 
             resource.add_filter(query)
 
+        if not r.component:
+            # Configure unit/area choices
+            s3db.med_configure_unit_id(table, record)
 
-        if r.component_name in ("status", "epicrisis"):
+        elif r.component_name in ("status", "epicrisis"):
 
             component = r.component
             ctable = component.table

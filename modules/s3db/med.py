@@ -36,6 +36,7 @@ __all__ = ("MedUnitModel",
            "MedVaccinationModel",
            "med_UnitRepresent",
            "med_DocEntityRepresent",
+           "med_configure_unit_id",
            "med_rheader",
            )
 
@@ -82,6 +83,17 @@ class MedUnitModel(DataModel):
                      Field("name", length=64,
                            requires = IS_NOT_EMPTY(),
                            represent = lambda v, row=None: v if v else "-",
+                           ),
+                     Field("obsolete", "boolean",
+                           label = T("Obsolete"),
+                           default = False,
+                           represent = BooleanRepresent(labels = False,
+                                                        # Reverse icons semantics
+                                                        icons = (BooleanRepresent.NEG,
+                                                                 BooleanRepresent.POS,
+                                                                 ),
+                                                        flag = True,
+                                                        ),
                            ),
                      )
 
@@ -2646,6 +2658,67 @@ def med_parse_bp(bpstr):
                 sbp, dbp = dbp, sbp
 
     return sbp, dbp
+
+# =============================================================================
+def med_configure_unit_id(table, patient=None):
+    """
+        Configure choices for the unit/area foreign keys in patient form
+
+        Args:
+            table: the med_patient table
+            patient: the current patient record (Row)
+    """
+
+    db = current.db
+    s3db = current.s3db
+
+    utable = s3db.med_unit
+    unit_id = None
+
+    query = (utable.obsolete == False)
+
+    # Check which units the user has permission to create patients for
+    realms = current.auth.permission.permitted_realms("med_patient", "create")
+    if realms is not None:
+        query &= (utable.pe_id.belongs(realms))
+    if patient and patient.unit_id:
+        query |= (utable.id == patient.unit_id)
+    dbset = db(query)
+    units = dbset(utable.deleted == False).select(utable.id,
+                                                  limitby = (0, 2),
+                                                  )
+    if len(units) == 1:
+        # Only one unit permitted
+        unit_id = units.first().id
+
+    field = table.unit_id
+    if unit_id:
+        # Set default unit_id
+        field.default = unit_id
+        #field.readable = False # really?
+        field.writable = False
+
+        # Limit area_id choices to this unit
+        areaset = db(s3db.med_area.unit_id == unit_id)
+        area_id = table.area_id
+        area_id.requires = IS_EMPTY_OR(IS_ONE_OF(areaset, "med_area.id",
+                                                 area_id.represent,
+                                                 ))
+    else:
+        # Configure unit_id choices
+        field.requires = IS_ONE_OF(dbset, "med_unit.id", field.represent)
+
+        # Set dynamic options filter for area_id
+        script = '''$.filterOptionsS3({
+ 'trigger':'unit_id',
+ 'target':'area_id',
+ 'lookupPrefix':'med',
+ 'lookupResource':'area',
+ 'optional':true
+})'''
+        jquery_ready = current.response.s3.jquery_ready
+        if script not in jquery_ready:
+            jquery_ready.append(script)
 
 # =============================================================================
 def med_rheader(r, tabs=None):
