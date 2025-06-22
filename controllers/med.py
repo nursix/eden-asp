@@ -96,6 +96,12 @@ def patient():
             # Configure unit/area choices
             s3db.med_configure_unit_id(table, record)
 
+            # Inject form control script
+            script = "s3.med.js" if s3.debug else "s3.med.min.js"
+            path = "/%s/static/scripts/S3/%s" % (current.request.application, script)
+            if path not in s3.scripts:
+                s3.scripts.append(path)
+
         elif r.component_name in ("status", "epicrisis"):
 
             component = r.component
@@ -157,11 +163,6 @@ def patient():
                      })
         return output
     s3.postp = postp
-
-    script = "s3.med.js" if s3.debug else "s3.med.min.js"
-    path = "/%s/static/scripts/S3/%s" % (current.request.application, script)
-    if path not in s3.scripts:
-        s3.scripts.append(path)
 
     return crud_controller(rheader=s3db.med_rheader)
 

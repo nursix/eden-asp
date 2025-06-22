@@ -32,25 +32,6 @@
         });
     };
 
-    /**
-     * Toggle person fields in patient form between person_id and person, gender, age
-     *
-     * @param {boolean} unregistered: show fields for unregistered persons
-     */
-    var togglePersonFields = function(unregistered) {
-
-        const tableName = 'med_patient',
-              personFields = ["person", "gender", "age"];
-
-        if (unregistered) {
-            toggleRows(tableName, ['person_id'], false);
-            toggleRows(tableName, personFields, true);
-        } else {
-            toggleRows(tableName, ['person_id'], true);
-            toggleRows(tableName, personFields, false);
-        }
-    };
-
     // ------------------------------------------------------------------------
     // DOCUMENT-READY
 
@@ -58,13 +39,13 @@
     $(function() {
 
         // If this is a patient form that contains an unregistered-Checkbox,
-        // toggle person fields dependent on the checkbox' status
+        // toggle "person" field dependent on the checkbox' status
         let unregisteredCheckbox = $('input#med_patient_unregistered[type="checkbox"]');
         if (unregisteredCheckbox.length) {
             unregisteredCheckbox.off(ns).on('change' + ns, function() {
-                togglePersonFields(unregisteredCheckbox.prop('checked'));
+                toggleRows("med_patient", ["person"], unregisteredCheckbox.prop('checked'));
             });
-            togglePersonFields(unregisteredCheckbox.prop('checked'));
+            toggleRows("med_patient", ["person"], unregisteredCheckbox.prop('checked'));
         }
     });
 

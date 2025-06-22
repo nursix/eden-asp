@@ -393,6 +393,8 @@ class MedPatientModel(DataModel):
                          empty = False,
                          ondelete = "RESTRICT",
                          ),
+                     self.med_area_id(),
+
                      Field("refno",
                            label = T("No."),
                            writable = False,
@@ -413,9 +415,6 @@ class MedPatientModel(DataModel):
                            comment = T("Specify Name, Gender and Age if known"),
                            ),
 
-                     # TODO filterOptions
-                     self.med_area_id(),
-
                      # Start and end date of the care occasion
                      DateTimeField(
                         default = "now",
@@ -433,8 +432,6 @@ class MedPatientModel(DataModel):
                            label = T("Reason for visit"),
                            requires = IS_NOT_EMPTY(),
                            ),
-                     # TODO room/place
-                     # TODO speciality?
 
                      # Contamination hazards
                      Field("hazards", "list:string",
@@ -447,7 +444,6 @@ class MedPatientModel(DataModel):
                                                            sort = False,
                                                            ),
                            ),
-                     # TODO Display advice in rheader
                      Field("hazards_advice",
                            label = T("Hazards Advice"),
                            represent = lambda v, row=None: v if v else "-",
@@ -544,7 +540,6 @@ class MedPatientModel(DataModel):
                        )
 
         # Foreign key template
-        # TODO Representation as date+reason
         represent = S3Represent(lookup=tablename, fields=["date", "reason"])
         patient_id = FieldTemplate("patient_id", "reference %s" % tablename,
                                    label = T("Patient"),
