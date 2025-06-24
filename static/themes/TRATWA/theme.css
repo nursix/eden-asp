@@ -594,6 +594,18 @@ button.toggle-text {
   background-image: url(../../img/hazard/rad.png);
 }
 
+/* line 403, ../../default/scss/theme/_represent.scss */
+.client-gender-age {
+  font-size: 0.7rem;
+  vertical-align: top;
+  color: #999;
+  margin: 0 1rem;
+}
+/* line 407, ../../default/scss/theme/_represent.scss */
+.client-gender-age .fa {
+  margin: 0 0.2rem;
+}
+
 /* line 24, ../../default/scss/theme/_widgets.scss */
 input[type="text"],
 input[type="password"],

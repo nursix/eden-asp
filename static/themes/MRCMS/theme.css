@@ -594,6 +594,18 @@ button.toggle-text {
   background-image: url(../../img/hazard/rad.png);
 }
 
+/* line 403, ../../default/scss/theme/_represent.scss */
+.client-gender-age {
+  font-size: 0.7rem;
+  vertical-align: top;
+  color: #999;
+  margin: 0 1rem;
+}
+/* line 407, ../../default/scss/theme/_represent.scss */
+.client-gender-age .fa {
+  margin: 0 0.2rem;
+}
+
 /* line 24, ../../default/scss/theme/_widgets.scss */
 input[type="text"],
 input[type="password"],
@@ -5208,119 +5220,107 @@ h4.profile-sub-header {
 }
 
 /* line 30, ../scss/theme/_misc.scss */
-.client-gender-age {
-  font-size: 0.7rem;
-  vertical-align: top;
-  color: #999;
-  margin: 0 1rem;
-}
-/* line 34, ../scss/theme/_misc.scss */
-.client-gender-age .fa {
-  margin: 0 0.2rem;
-}
-
-/* line 40, ../scss/theme/_misc.scss */
 .last-seen-critical, .last-seen-warning {
   cursor: pointer;
 }
-/* line 41, ../scss/theme/_misc.scss */
+/* line 31, ../scss/theme/_misc.scss */
 .last-seen-critical .fa, .last-seen-warning .fa {
   margin: 0.2rem;
 }
 
-/* line 46, ../scss/theme/_misc.scss */
+/* line 36, ../scss/theme/_misc.scss */
 .last-seen-critical {
   color: #c10031;
 }
 
-/* line 49, ../scss/theme/_misc.scss */
+/* line 39, ../scss/theme/_misc.scss */
 .last-seen-warning {
   color: #bd5900;
 }
 
-/* line 56, ../scss/theme/_misc.scss */
+/* line 46, ../scss/theme/_misc.scss */
 #dvr_response_action_response_theme_ids__row .ui-multiselect.ui-widget,
 #sub-defaultresponse_action .ui-multiselect.ui-widget {
   width: 28rem !important;
   max-width: 100%;
 }
 
-/* line 61, ../scss/theme/_misc.scss */
+/* line 51, ../scss/theme/_misc.scss */
 .ui-widget-content {
   max-width: 100%;
 }
 
-/* line 65, ../scss/theme/_misc.scss */
+/* line 55, ../scss/theme/_misc.scss */
 .dvr-response-action-theme {
   font-size: 0.8rem;
 }
-/* line 67, ../scss/theme/_misc.scss */
+/* line 57, ../scss/theme/_misc.scss */
 .dvr-response-action-theme h6 {
   font-size: 0.9rem;
   font-weight: bold;
   color: black;
   margin: 0;
 }
-/* line 73, ../scss/theme/_misc.scss */
+/* line 63, ../scss/theme/_misc.scss */
 .dvr-response-action-theme .text-body {
   margin: 0.125rem 0.25rem 0.5rem 0.25rem;
 }
 
-/* line 79, ../scss/theme/_misc.scss */
+/* line 69, ../scss/theme/_misc.scss */
 .file-repr i.fa {
   font-size: 1.1rem;
 }
-/* line 82, ../scss/theme/_misc.scss */
+/* line 72, ../scss/theme/_misc.scss */
 .file-repr .file-size {
   padding: 0 0.4rem;
   font-size: 0.7rem;
 }
 
-/* line 89, ../scss/theme/_misc.scss */
+/* line 79, ../scss/theme/_misc.scss */
 .shelter-overview-stats {
   font-size: 0.8rem;
   background-color: #eaeaea;
   padding: 0.2rem;
   border: 1px solid #e0e0e0;
 }
-/* line 94, ../scss/theme/_misc.scss */
+/* line 84, ../scss/theme/_misc.scss */
 .shelter-overview-stats .spacer {
   background-color: #eaeaea;
 }
-/* line 97, ../scss/theme/_misc.scss */
+/* line 87, ../scss/theme/_misc.scss */
 .shelter-overview-stats h5 {
   font-size: 0.9rem;
   font-weight: bold;
   text-align: center;
 }
-/* line 102, ../scss/theme/_misc.scss */
+/* line 92, ../scss/theme/_misc.scss */
 .shelter-overview-stats table {
   width: 100%;
   border: 0;
   border-collapse: collapse;
 }
-/* line 106, ../scss/theme/_misc.scss */
+/* line 96, ../scss/theme/_misc.scss */
 .shelter-overview-stats table th {
   font-weight: normal;
 }
-/* line 109, ../scss/theme/_misc.scss */
+/* line 99, ../scss/theme/_misc.scss */
 .shelter-overview-stats table td {
   font-weight: bold;
 }
-/* line 112, ../scss/theme/_misc.scss */
+/* line 102, ../scss/theme/_misc.scss */
 .shelter-overview-stats table .stats-excess {
   background-color: #ffced5;
 }
-/* line 115, ../scss/theme/_misc.scss */
+/* line 105, ../scss/theme/_misc.scss */
 .shelter-overview-stats table .stats-total {
   font-size: 1.0rem;
 }
-/* line 117, ../scss/theme/_misc.scss */
+/* line 107, ../scss/theme/_misc.scss */
 .shelter-overview-stats table .stats-total th {
   font-weight: bold;
 }
 
-/* line 124, ../scss/theme/_misc.scss */
+/* line 114, ../scss/theme/_misc.scss */
 .shelter-overview-residents h4 {
   border-top: 1px solid #ccc;
   padding: 0.5rem 0;
@@ -5328,26 +5328,26 @@ h4.profile-sub-header {
   font-size: 1.1rem;
   font-weight: bold;
 }
-/* line 133, ../scss/theme/_misc.scss */
+/* line 123, ../scss/theme/_misc.scss */
 .shelter-overview-residents .units-actions .units-search, .shelter-overview-residents .units-actions .units-expand {
   display: inline-block;
   margin-bottom: 0.6rem;
 }
-/* line 137, ../scss/theme/_misc.scss */
+/* line 127, ../scss/theme/_misc.scss */
 .shelter-overview-residents .units-actions .units-search {
   margin-right: 5%;
 }
-/* line 139, ../scss/theme/_misc.scss */
+/* line 129, ../scss/theme/_misc.scss */
 .shelter-overview-residents .units-actions .units-search input {
   margin-left: 0.6rem;
   margin-right: 0;
 }
-/* line 142, ../scss/theme/_misc.scss */
+/* line 132, ../scss/theme/_misc.scss */
 .shelter-overview-residents .units-actions .units-search input.filtered {
   border: 1px solid black;
   background-color: #e5ffe5;
 }
-/* line 147, ../scss/theme/_misc.scss */
+/* line 137, ../scss/theme/_misc.scss */
 .shelter-overview-residents .units-actions .units-search .clear-search {
   padding: 0 0.3rem;
   line-height: inherit;
@@ -5359,198 +5359,198 @@ h4.profile-sub-header {
   color: #666;
   background-color: #ccc;
 }
-/* line 160, ../scss/theme/_misc.scss */
+/* line 150, ../scss/theme/_misc.scss */
 .shelter-overview-residents .units-actions .units-expand .action-lnk {
   margin-right: 0.6rem;
 }
-/* line 165, ../scss/theme/_misc.scss */
+/* line 155, ../scss/theme/_misc.scss */
 .shelter-overview-residents .units-list {
   min-width: 71%;
 }
-/* line 171, ../scss/theme/_misc.scss */
+/* line 161, ../scss/theme/_misc.scss */
 .shelter-overview-residents .units-list .unit .unit-data {
   position: relative;
 }
-/* line 173, ../scss/theme/_misc.scss */
+/* line 163, ../scss/theme/_misc.scss */
 .shelter-overview-residents .units-list .unit .unit-data .capacity {
   position: absolute;
   top: 0.4rem;
   right: 6rem;
   padding: 0.2rem 0.5rem;
 }
-/* line 178, ../scss/theme/_misc.scss */
+/* line 168, ../scss/theme/_misc.scss */
 .shelter-overview-residents .units-list .unit .unit-data .capacity span {
   font-size: 0.9rem;
   margin-right: 0.3rem;
 }
-/* line 181, ../scss/theme/_misc.scss */
+/* line 171, ../scss/theme/_misc.scss */
 .shelter-overview-residents .units-list .unit .unit-data .capacity span.c-free, .shelter-overview-residents .units-list .unit .unit-data .capacity span.c-blocked, .shelter-overview-residents .units-list .unit .unit-data .capacity span.c-planned {
   margin-left: 0.7rem;
 }
-/* line 186, ../scss/theme/_misc.scss */
+/* line 176, ../scss/theme/_misc.scss */
 .shelter-overview-residents .units-list .unit .unit-data .capacity span.c-free {
   color: green;
 }
-/* line 189, ../scss/theme/_misc.scss */
+/* line 179, ../scss/theme/_misc.scss */
 .shelter-overview-residents .units-list .unit .unit-data .capacity span.c-blocked {
   color: red;
 }
-/* line 192, ../scss/theme/_misc.scss */
+/* line 182, ../scss/theme/_misc.scss */
 .shelter-overview-residents .units-list .unit .unit-data .capacity span.c-zero {
   color: #aaa;
 }
-/* line 195, ../scss/theme/_misc.scss */
+/* line 185, ../scss/theme/_misc.scss */
 .shelter-overview-residents .units-list .unit .unit-data .capacity span.c-total {
   font-size: 0.7rem;
 }
-/* line 198, ../scss/theme/_misc.scss */
+/* line 188, ../scss/theme/_misc.scss */
 .shelter-overview-residents .units-list .unit .unit-data .capacity span .fa {
   margin-right: 0.3rem;
 }
-/* line 203, ../scss/theme/_misc.scss */
+/* line 193, ../scss/theme/_misc.scss */
 .shelter-overview-residents .units-list .unit .unit-data .unit-expand {
   position: absolute;
   top: 0.8rem;
   right: 1.5rem;
 }
-/* line 207, ../scss/theme/_misc.scss */
+/* line 197, ../scss/theme/_misc.scss */
 .shelter-overview-residents .units-list .unit .unit-data .unit-expand .expand {
   display: none;
 }
-/* line 210, ../scss/theme/_misc.scss */
+/* line 200, ../scss/theme/_misc.scss */
 .shelter-overview-residents .units-list .unit .unit-data .unit-expand .collapse {
   display: block;
 }
-/* line 216, ../scss/theme/_misc.scss */
+/* line 206, ../scss/theme/_misc.scss */
 .shelter-overview-residents .units-list .unit tr {
   border-left: 2px solid #AAA;
   border-right: 2px solid #AAA;
 }
-/* line 222, ../scss/theme/_misc.scss */
+/* line 212, ../scss/theme/_misc.scss */
 .shelter-overview-residents .units-list .unit.collapsed .details {
   visibility: collapse;
 }
-/* line 226, ../scss/theme/_misc.scss */
+/* line 216, ../scss/theme/_misc.scss */
 .shelter-overview-residents .units-list .unit.collapsed .unit-expand .expand {
   display: block;
 }
-/* line 229, ../scss/theme/_misc.scss */
+/* line 219, ../scss/theme/_misc.scss */
 .shelter-overview-residents .units-list .unit.collapsed .unit-expand .collapse {
   display: none;
 }
-/* line 235, ../scss/theme/_misc.scss */
+/* line 225, ../scss/theme/_misc.scss */
 .shelter-overview-residents .units-list .unit .unit-header {
   padding: 0;
   background-color: #DDD;
   border-top: 3px solid #AAA;
   border-collapse: separate;
 }
-/* line 240, ../scss/theme/_misc.scss */
+/* line 230, ../scss/theme/_misc.scss */
 .shelter-overview-residents .units-list .unit .unit-header .unit-label {
   /* div */
   padding: 0.3rem 0.1rem;
   font-size: 1.1rem;
   font-weight: bold;
 }
-/* line 246, ../scss/theme/_misc.scss */
+/* line 236, ../scss/theme/_misc.scss */
 .shelter-overview-residents .units-list .unit .unit-header .unit-link i.fa {
   margin-right: 1.2rem;
 }
-/* line 248, ../scss/theme/_misc.scss */
+/* line 238, ../scss/theme/_misc.scss */
 .shelter-overview-residents .units-list .unit .unit-header .unit-link i.fa.fa-ban {
   color: #d71919;
 }
-/* line 251, ../scss/theme/_misc.scss */
+/* line 241, ../scss/theme/_misc.scss */
 .shelter-overview-residents .units-list .unit .unit-header .unit-link i.fa.fa-check {
   color: #070;
 }
-/* line 259, ../scss/theme/_misc.scss */
+/* line 249, ../scss/theme/_misc.scss */
 .shelter-overview-residents .units-list .unit .resident-header th {
   font-size: 0.9rem;
   color: #777;
   padding: 0.2rem 0.5rem;
 }
-/* line 267, ../scss/theme/_misc.scss */
+/* line 257, ../scss/theme/_misc.scss */
 .shelter-overview-residents .units-list .unit .resident td {
   padding: 0.2rem 0.5rem;
   font-size: 0.9rem;
   color: #333;
 }
-/* line 271, ../scss/theme/_misc.scss */
+/* line 261, ../scss/theme/_misc.scss */
 .shelter-overview-residents .units-list .unit .resident td.resident-name {
   font-weight: bold;
 }
-/* line 274, ../scss/theme/_misc.scss */
+/* line 264, ../scss/theme/_misc.scss */
 .shelter-overview-residents .units-list .unit .resident td.resident-presence {
   text-align: center;
 }
-/* line 282, ../scss/theme/_misc.scss */
+/* line 272, ../scss/theme/_misc.scss */
 .shelter-overview-residents .units-list .unit .resident.planned td {
   font-style: italic;
   color: #888;
 }
-/* line 285, ../scss/theme/_misc.scss */
+/* line 275, ../scss/theme/_misc.scss */
 .shelter-overview-residents .units-list .unit .resident.planned td a {
   color: #888;
 }
-/* line 290, ../scss/theme/_misc.scss */
+/* line 280, ../scss/theme/_misc.scss */
 .shelter-overview-residents .units-list .unit .resident.group-even {
   background-color: #fdfdfd;
 }
-/* line 293, ../scss/theme/_misc.scss */
+/* line 283, ../scss/theme/_misc.scss */
 .shelter-overview-residents .units-list .unit .resident.group-odd {
   background-color: #f9f9f9;
 }
-/* line 298, ../scss/theme/_misc.scss */
+/* line 288, ../scss/theme/_misc.scss */
 .shelter-overview-residents .units-list .unit .capacity-free {
   background-color: #b9ffb9;
 }
-/* line 299, ../scss/theme/_misc.scss */
+/* line 289, ../scss/theme/_misc.scss */
 .shelter-overview-residents .units-list .unit .capacity-free td {
   padding: 0.2rem 0.5rem;
   font-size: 0.9rem;
 }
-/* line 305, ../scss/theme/_misc.scss */
+/* line 295, ../scss/theme/_misc.scss */
 .shelter-overview-residents .units-list .unit .capacity-blocked {
   background-color: #ffced5;
 }
-/* line 306, ../scss/theme/_misc.scss */
+/* line 296, ../scss/theme/_misc.scss */
 .shelter-overview-residents .units-list .unit .capacity-blocked td {
   padding: 0.2rem 0.5rem;
   font-size: 0.9rem;
 }
-/* line 313, ../scss/theme/_misc.scss */
+/* line 303, ../scss/theme/_misc.scss */
 .shelter-overview-residents .units-list .unit .unit-subheader {
   border-top: 2px solid #AAA;
 }
-/* line 315, ../scss/theme/_misc.scss */
+/* line 305, ../scss/theme/_misc.scss */
 .shelter-overview-residents .units-list .unit .unit-subheader .residents-planned {
   font-size: 0.7rem;
   padding: 0.2rem;
   color: #666;
 }
-/* line 322, ../scss/theme/_misc.scss */
+/* line 312, ../scss/theme/_misc.scss */
 .shelter-overview-residents .units-list .unit .unit-spacer {
   border: none;
   border-top: 3px solid #AAA;
 }
-/* line 325, ../scss/theme/_misc.scss */
+/* line 315, ../scss/theme/_misc.scss */
 .shelter-overview-residents .units-list .unit .unit-spacer td {
   border: none;
   min-height: 0.5rem;
 }
 
-/* line 335, ../scss/theme/_misc.scss */
+/* line 325, ../scss/theme/_misc.scss */
 .id-card-data {
   border: 1px solid #ccc;
   padding: 1rem;
 }
-/* line 338, ../scss/theme/_misc.scss */
+/* line 328, ../scss/theme/_misc.scss */
 .id-card-data .button i.fa {
   margin-right: 0.5rem;
 }
 
-/* line 342, ../scss/theme/_misc.scss */
+/* line 332, ../scss/theme/_misc.scss */
 .id-card-warning {
   border: 1px solid red;
   padding: 0.5rem;
@@ -5559,31 +5559,31 @@ h4.profile-sub-header {
   font-size: 1rem;
 }
 
-/* line 351, ../scss/theme/_misc.scss */
+/* line 341, ../scss/theme/_misc.scss */
 .rhist {
   border: 1px solid #ccc;
   margin-bottom: 0.7rem;
   padding: 0.5rem;
   background-color: #fafafa;
 }
-/* line 356, ../scss/theme/_misc.scss */
+/* line 346, ../scss/theme/_misc.scss */
 .rhist .action-btn .fa {
   margin-left: 0.3rem;
   font-size: 10px;
 }
-/* line 360, ../scss/theme/_misc.scss */
+/* line 350, ../scss/theme/_misc.scss */
 .rhist table {
   border: 1px solid #ccc;
   border-collapse: collapse;
   margin: 1rem 3rem;
 }
-/* line 364, ../scss/theme/_misc.scss */
+/* line 354, ../scss/theme/_misc.scss */
 .rhist table th, .rhist table td {
   padding: 0.2rem 0.7rem;
   border: 0;
   cursor: default;
 }
-/* line 369, ../scss/theme/_misc.scss */
+/* line 359, ../scss/theme/_misc.scss */
 .rhist table th {
   font-size: 0.8rem;
   font-weight: normal;
@@ -5591,38 +5591,38 @@ h4.profile-sub-header {
   color: grey;
   border-bottom: 1px solid #ccc;
 }
-/* line 376, ../scss/theme/_misc.scss */
+/* line 366, ../scss/theme/_misc.scss */
 .rhist table td {
   font-size: 0.9rem;
   font-weight: bold;
 }
-/* line 380, ../scss/theme/_misc.scss */
+/* line 370, ../scss/theme/_misc.scss */
 .rhist table td.rhist-planned {
   font-size: 0.7rem;
   font-weight: normal;
   color: grey;
 }
-/* line 385, ../scss/theme/_misc.scss */
+/* line 375, ../scss/theme/_misc.scss */
 .rhist table .rhist-headers {
   background-color: #eee;
 }
-/* line 388, ../scss/theme/_misc.scss */
+/* line 378, ../scss/theme/_misc.scss */
 .rhist table .rhist-current {
   background-color: #dff4bf;
 }
-/* line 392, ../scss/theme/_misc.scss */
+/* line 382, ../scss/theme/_misc.scss */
 .rhist .empty {
   margin: 0.7rem 1.4rem;
 }
 
-/* line 398, ../scss/theme/_misc.scss */
+/* line 388, ../scss/theme/_misc.scss */
 .table-report-form {
   width: auto;
   border: 1px solid #eee;
   padding: 0.5rem;
 }
 
-/* line 403, ../scss/theme/_misc.scss */
+/* line 393, ../scss/theme/_misc.scss */
 .table-report-data {
   font-size: 0.875rem;
   max-height: 80vh;
@@ -5630,20 +5630,20 @@ h4.profile-sub-header {
   padding: 0.3rem;
   margin-top: 0.7rem;
 }
-/* line 409, ../scss/theme/_misc.scss */
+/* line 399, ../scss/theme/_misc.scss */
 .table-report-data table, .table-report-data th, .table-report-data td {
   border: 1px solid #ccc;
 }
-/* line 412, ../scss/theme/_misc.scss */
+/* line 402, ../scss/theme/_misc.scss */
 .table-report-data thead th {
   text-align: center;
 }
-/* line 416, ../scss/theme/_misc.scss */
+/* line 406, ../scss/theme/_misc.scss */
 .table-report-data tbody tr:nth-child(even) {
   background: #fafafa;
 }
 
-/* line 423, ../scss/theme/_misc.scss */
+/* line 413, ../scss/theme/_misc.scss */
 .case-file-perspectives {
   font-size: 0.7rem;
   vertical-align: top;
@@ -5653,52 +5653,52 @@ h4.profile-sub-header {
   margin-bottom: 0.5rem;
   background-color: #eeeeee;
 }
-/* line 431, ../scss/theme/_misc.scss */
+/* line 421, ../scss/theme/_misc.scss */
 .case-file-perspectives i.fa {
   font-size: 0.8rem;
   margin-right: 0.2rem;
   vertical-align: middle;
 }
-/* line 436, ../scss/theme/_misc.scss */
+/* line 426, ../scss/theme/_misc.scss */
 .case-file-perspectives a, .case-file-perspectives span {
   margin: 0 0.4rem;
 }
-/* line 439, ../scss/theme/_misc.scss */
+/* line 429, ../scss/theme/_misc.scss */
 .case-file-perspectives .current-perspective {
   color: #970000;
 }
 
-/* line 445, ../scss/theme/_misc.scss */
+/* line 435, ../scss/theme/_misc.scss */
 .bulk-checkout-form {
   padding: 1rem;
 }
-/* line 448, ../scss/theme/_misc.scss */
+/* line 438, ../scss/theme/_misc.scss */
 .bulk-checkout-form .checkout-info {
   font-size: 0.8rem;
   font-weight: bold;
 }
-/* line 452, ../scss/theme/_misc.scss */
+/* line 442, ../scss/theme/_misc.scss */
 .bulk-checkout-form .checkout-question {
   font-size: 0.8rem;
   font-weight: bold;
   border-top: 1px solid #eee;
   padding-top: 0.5rem;
 }
-/* line 458, ../scss/theme/_misc.scss */
+/* line 448, ../scss/theme/_misc.scss */
 .bulk-checkout-form label {
   font-size: 0.825rem;
 }
-/* line 461, ../scss/theme/_misc.scss */
+/* line 451, ../scss/theme/_misc.scss */
 .bulk-checkout-form .label-above {
   font-weight: bold;
 }
-/* line 463, ../scss/theme/_misc.scss */
+/* line 453, ../scss/theme/_misc.scss */
 .bulk-checkout-form .label-above select {
   display: block;
   margin-bottom: 1rem;
   min-width: 12rem;
 }
-/* line 470, ../scss/theme/_misc.scss */
+/* line 460, ../scss/theme/_misc.scss */
 .bulk-checkout-form .checkout-buttons button, .bulk-checkout-form .checkout-buttons a.cancel-form-btn {
   margin-bottom: 0;
 }

@@ -402,7 +402,9 @@ class MedPatientModel(DataModel):
                      # The patient
                      self.pr_person_id(
                          label = T("Person"),
-                         represent = self.pr_PersonRepresent(show_link=True),
+                         represent = self.pr_PersonRepresent(show_link=True,
+                                                             none = T("Unregistered"),
+                                                             ),
                          comment = None,
                          ),
                      Field("unregistered", "boolean",
@@ -2716,6 +2718,79 @@ def med_configure_unit_id(table, patient=None):
             jquery_ready.append(script)
 
 # =============================================================================
+def med_patient_header(record):
+    """
+        Represents a patient record as name, gender and age of the person;
+        for patient file rheader
+
+        Args:
+            record: the patient record
+
+        Returns:
+            HTML
+    """
+
+    T = current.T
+    s3db = current.s3db
+
+    # Look up person record
+    try:
+        person_id = record.person_id
+    except AttributeError:
+        person_id = None
+
+    # Handle unregistered persons
+    if not person_id:
+        try:
+            person = record.person
+        except AttributeError:
+            person = None
+        return person if person else T("Unregistered Person")
+
+    # Look up the person record
+    ptable = s3db.pr_person
+    person = current.db(ptable.id==person_id).select(ptable.id,
+                                                     ptable.first_name,
+                                                     ptable.middle_name,
+                                                     ptable.last_name,
+                                                     ptable.gender,
+                                                     ptable.date_of_birth,
+                                                     limitby = (0, 1),
+                                                     ).first()
+    if not person:
+        return "?"
+
+    # Age representation
+    pr_age = current.s3db.pr_age
+    age = pr_age(person)
+    if age is None:
+        age = "?"
+        unit = T("years")
+    elif age == 0:
+        age = pr_age(record, months=True)
+        unit = T("months") if age != 1 else T("month")
+    else:
+        unit = T("years") if age != 1 else T("year")
+
+    # Gender icon
+    icons = {2: "fa fa-venus",
+             3: "fa fa-mars",
+             4: "fa fa-transgender-alt",
+             }
+    icon = I(_class=icons.get(person.gender, "fa fa-genderless"))
+
+    # Name
+    fullname = A(s3_fullname(person, truncate=False),
+                 _href = URL(c="med", f="person", args=[person.id]),
+                 )
+
+    # Combined representation
+    patient = TAG[""](fullname,
+                      SPAN(icon, "%s %s" % (age, unit), _class="client-gender-age"),
+                      )
+    return patient
+
+# -----------------------------------------------------------------------------
 def med_rheader(r, tabs=None):
     """ MED resource headers """
 
@@ -2781,7 +2856,7 @@ def med_rheader(r, tabs=None):
                               ["date", "hazards_advice"],
                               ["status"],
                               ]
-            rheader_title = "person_id"
+            rheader_title = med_patient_header
 
         elif tablename == "med_unit":
             if not tabs:
