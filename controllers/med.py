@@ -109,7 +109,7 @@ def patient():
 
             is_delete = r.http == "DELETE" or r.method == "delete"
 
-            if r.component_id:
+            if r.component_id or not r.component.multiple:
                 rows = component.load()
                 record = rows[0] if rows else None
             elif r.http in ("POST", "DELETE") and r.representation == "dl" and "delete" in get_vars:
@@ -124,16 +124,21 @@ def patient():
                 # Finalized records must not be deleted
                 r.error(403, current.ERROR.NOT_PERMITTED)
 
-            if record and (record.is_final or record.created_by != user_id):
-                # Records are only editable/deletable while not yet marked
-                # as final and only for original author
-                r.component.configure(editable = False,
-                                      deletable = False,
-                                      )
-            else:
-                # Expose is_final flag when not yet marked as final
-                field = ctable.is_final
-                field.readable = field.writable = not record or not record.is_final
+            # Components which records can only be edited by their original author
+            author_locked = r.component_name == "status"
+
+            # Enforce author-locking and is-final status
+            if record:
+                if record.is_final:
+                    editable = deletable = False
+                else:
+                    editable = not author_locked or record.created_by == user_id
+                    deletable = True
+                r.component.configure(editable=editable, deletable=deletable)
+
+            # Expose is_final flag when not yet marked as final
+            field = ctable.is_final
+            field.readable = field.writable = not record or not record.is_final
 
         return True
     s3.prep = prep
@@ -142,25 +147,9 @@ def patient():
 
         if r.component_name in ("status", "epicrisis"):
             if r.interactive and r.record and not r.component_id:
-                # No delete-action by default
+                # No delete-action by default (must open record to delete)
                 s3_action_buttons(r, deletable=False)
 
-                # Add delete-action only for records that are not
-                # yet final and have been created by the current user
-                ctable = r.component.table
-                query = (ctable.is_final == False) & \
-                        (ctable.created_by == user_id) & \
-                        (ctable.deleted == False)
-                rows = db(query).select(ctable.id)
-                restrict = [str(row.id) for row in rows]
-                s3.actions.append(
-                    {"label": s3_str(s3.crud_labels.DELETE),
-                     "url": URL(c="med", f="person",
-                                args = [r.record.id, "status", "[id]", "delete"],
-                                ),
-                     "_class": "delete-btn",
-                     "restrict": restrict,
-                     })
         return output
     s3.postp = postp
 
@@ -223,6 +212,37 @@ def person():
                 msg_list_empty = T("No Treatment Occasions currently registered"),
                 )
 
+        elif r.component_name == "epicrisis":
+            # Read-only in this perspective
+            r.component.configure(insertable = False,
+                                  editable = False,
+                                  deletable = False,
+                                  )
+            ctable = r.component.table
+
+            # Adapt patient_id visibility+label to perspective
+            from core import S3Represent
+            field = ctable.patient_id
+            field.label = T("Treatment Occasion")
+            field.readable = True
+            field.represent = S3Represent(lookup = "med_patient",
+                                          fields = ["date", "reason"],
+                                          show_link = True,
+                                          )
+            # Include is-final flag
+            field = ctable.is_final
+            field.readable = True
+
+            # Adapt list fields to perspective
+            list_fields = ["date",
+                           "patient_id",
+                           "patient_id$status",
+                           "situation",
+                           "diagnoses",
+                           "is_final",
+                           ]
+            r.component.configure(list_fields=list_fields)
+
         resource = r.resource
         table = resource.table
 
@@ -231,7 +251,6 @@ def person():
         for fn in fields:
             field = table[fn]
             field.readable = field.writable = True
-
 
         # CRUD Form
         from core import CustomForm

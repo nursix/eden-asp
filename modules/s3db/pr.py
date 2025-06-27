@@ -1166,6 +1166,7 @@ class PRPersonModel(DataModel):
                        med_anamnesis = {"joinby": "person_id",
                                         "multiple": False,
                                         },
+                       med_epicrisis = "person_id",
 
                        # Seized Items (owner)
                        security_seized_item = "person_id",

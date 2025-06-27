@@ -798,7 +798,10 @@ class MedStatusModel(DataModel):
                                    ),
                      Field("is_final", "boolean",
                            default = False,
-                           label = T("Mark report as final"),
+                           label = T("Report is final"),
+                           represent = BooleanRepresent(icons = True,
+                                                        colors = True,
+                                                        ),
                            readable = False,
                            writable = False,
                            ),
@@ -1319,10 +1322,12 @@ class MedEpicrisisModel(DataModel):
                      CommentsField("situation",
                                    label = T("Initial Situation Details"),
                                    comment = None,
+                                   requires = IS_NOT_EMPTY(),
                                    ),
                      CommentsField("diagnoses",
-                                   label = T("Diagnoses"),
+                                   label = T("Relevant Diagnoses"),
                                    comment = None,
+                                   requires = IS_NOT_EMPTY(),
                                    ),
                      CommentsField("progress",
                                    label = T("Treatment / Progress"),
@@ -1338,7 +1343,10 @@ class MedEpicrisisModel(DataModel):
                                    ),
                      Field("is_final", "boolean",
                            default = False,
-                           label = T("Mark report as final"),
+                           label = T("Report is final"),
+                           represent = BooleanRepresent(icons = True,
+                                                        colors = True,
+                                                        ),
                            readable = False,
                            writable = False,
                            ),
@@ -1351,6 +1359,7 @@ class MedEpicrisisModel(DataModel):
         # Table configuration
         self.configure(tablename,
                        onaccept = self.epicrisis_onaccept,
+                       orderby = "%s.date desc" % tablename,
                        )
 
         # CRUD Strings
@@ -1397,6 +1406,7 @@ class MedEpicrisisModel(DataModel):
         record = db(query).select(table.id,
                                   table.person_id,
                                   table.patient_id,
+                                  table.is_final,
                                   limitby = (0, 1),
                                   ).first()
 
@@ -2815,13 +2825,11 @@ def med_rheader(r, tabs=None):
         if tablename == "pr_person":
             if not tabs:
                 tabs = [(T("Basic Details"), None),
-                        # TODO contacts tab
                         (T("Background"), "anamnesis"),
                         (T("Vaccinations"), "vaccination"),
                         (T("Medication"), "medication"),
                         (T("Treatment Occasions"), "patient"),
-                        # TODO lab results
-                        # TODO examinations / interventions
+                        (T("Epicrisis"), "epicrisis"),
                         (T("Documents"), "document/"),
                         ]
             rheader_fields = [["date_of_birth"],
@@ -2832,15 +2840,12 @@ def med_rheader(r, tabs=None):
             if not tabs:
                 tabs = [(T("Overview"), None),
                         # Person details [viewing]
-                        # TODO contacts tab     [viewing, if we have a person_id]
                         # Background [viewing]
                         # Vaccinations [viewing]
                         # Medication [viewing]
                         (T("Vital Signs"), "vitals", {"_class": "emphasis"}),
                         (T("Status Reports"), "status", {"_class": "emphasis"}),
                         (T("Treatment"), "treatment"),
-                        # TODO lab results
-                        # TODO examinations / interventions
                         (T("Epicrisis"), "epicrisis"),
                         (T("Documents"), "document"),
                         ]

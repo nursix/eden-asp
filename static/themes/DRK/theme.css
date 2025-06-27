@@ -2430,32 +2430,34 @@ body.rtl .sub-nav.about-menu {
 /* line 187, ../../default/scss/theme/_rheader.scss */
 #rheader div.tabs span.tab_here:hover {
   background-color: #f1edec;
+  border-bottom-style: solid;
+  border-bottom-color: #fefefe;
 }
-/* line 190, ../../default/scss/theme/_rheader.scss */
+/* line 194, ../../default/scss/theme/_rheader.scss */
 #rheader div.tabs span.tab_here a {
   color: #666666 !important;
 }
-/* line 192, ../../default/scss/theme/_rheader.scss */
+/* line 196, ../../default/scss/theme/_rheader.scss */
 #rheader div.tabs span.tab_here a:hover {
   color: #666666 !important;
 }
-/* line 200, ../../default/scss/theme/_rheader.scss */
+/* line 204, ../../default/scss/theme/_rheader.scss */
 [dir=rtl] #rheader div.tabs {
   padding-left: 4px;
   padding-right: 0;
   text-align: right;
 }
-/* line 204, ../../default/scss/theme/_rheader.scss */
+/* line 208, ../../default/scss/theme/_rheader.scss */
 [dir=rtl] #rheader div.tabs span {
   float: right;
   margin-right: 0;
   margin-left: 0.2rem;
 }
-/* line 208, ../../default/scss/theme/_rheader.scss */
+/* line 212, ../../default/scss/theme/_rheader.scss */
 [dir=rtl] #rheader div.tabs span.tab_here {
   margin-left: 0.4rem;
 }
-/* line 210, ../../default/scss/theme/_rheader.scss */
+/* line 214, ../../default/scss/theme/_rheader.scss */
 [dir=rtl] #rheader div.tabs span.tab_here:not(:first-child) {
   margin-right: 0.2rem;
 }

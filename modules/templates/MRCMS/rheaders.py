@@ -123,6 +123,7 @@ def dvr_rheader(r, tabs=None):
                                      (T("Medication"), "medication"),
                                      (T("Appointments"), "case_appointment"),
                                      (T("Treatment Occasions"), "patient"),
+                                     (T("Epicrises"), "epicrisis"),
                                      (T("Documents"), "document/"),
                                      ])
 

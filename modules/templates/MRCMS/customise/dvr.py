@@ -1396,6 +1396,44 @@ def dvr_person_prep(r):
                 msg_list_empty = T("No Treatment Occasions currently registered"),
                 )
 
+            list_fields = ["date",
+                           "reason",
+                           "status",
+                           ]
+            r.component.configure(list_fields = list_fields)
+
+        elif r.component_name == "epicrisis":
+            # Read-only in this perspective
+            r.component.configure(insertable = False,
+                                  editable = False,
+                                  deletable = False,
+                                  )
+
+            ctable = r.component.table
+
+            # Adapt patient_id visibility+label to perspective
+            from core import S3Represent
+            field = ctable.patient_id
+            field.label = T("Treatment Occasion")
+            field.readable = True
+            field.represent = S3Represent(lookup = "med_patient",
+                                          fields = ["date", "reason"],
+                                          show_link = True,
+                                          )
+            # Include is-final flag
+            field = ctable.is_final
+            field.readable = True
+
+            # Adapt list fields to perspective
+            list_fields = ["date",
+                           "patient_id",
+                           "patient_id$status",
+                           "situation",
+                           "diagnoses",
+                           "is_final",
+                           ]
+            r.component.configure(list_fields=list_fields)
+
     return True
 
 # =============================================================================
