@@ -405,6 +405,7 @@ class MedPatientModel(DataModel):
                          represent = self.pr_PersonRepresent(show_link=True,
                                                              none = T("Unregistered"),
                                                              ),
+                         widget = S3PersonAutocompleteWidget(controller="med"),
                          comment = None,
                          ),
                      Field("unregistered", "boolean",

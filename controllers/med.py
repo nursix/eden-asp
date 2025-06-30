@@ -156,6 +156,50 @@ def patient():
     return crud_controller(rheader=s3db.med_rheader)
 
 # -----------------------------------------------------------------------------
+def person_search():
+    """
+        Controller for autocomplete-searches
+    """
+
+    from core import StringTemplateParser
+
+    # Search fields
+    NAMES = ("first_name", "middle_name", "last_name")
+    keys = StringTemplateParser.keys(settings.get_pr_name_format())
+    search_fields = [fn for fn in keys if fn in NAMES]
+    if settings.get_med_use_pe_label():
+        search_fields.append("pe_label")
+
+    # Autocomplete using alternative search method
+    s3db.set_method("pr_person",
+                    method = "search_ac",
+                    action = s3db.pr_PersonSearchAutocomplete(search_fields),
+                    )
+
+    def prep(r):
+
+        if r.method != "search_ac":
+            return False
+
+        resource = r.resource
+
+        # Restrict search to persons associated with modules
+        filters = []
+        modules = settings.get_med_restrict_person_search_to()
+        if "dvr" in modules:
+            filters.append(FS("dvr_case.id") != None)
+        if "hrm" in modules:
+            filters.append(FS("hrm_human_resource.id") != None)
+        if filters:
+            query = reduce(lambda x, y: x | y, filters)
+            resource.add_filter(query)
+        return True
+
+    s3.prep = prep
+
+    return crud_controller("pr", "person")
+
+# -----------------------------------------------------------------------------
 def person():
     """ Persons (MED Perspective) - CRUD controller """
 

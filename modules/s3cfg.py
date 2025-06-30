@@ -4529,9 +4529,23 @@ class S3Config(Storage):
 
     def get_med_risk_class_calculation(self):
         """
-            Which EWS class to use (True to use default EWS)
+            Which vital sign risk stratifier to use
+            - True to use default stratifier class (s3db.med.RiskClass)
         """
         return self.__lazy("med", "risk_class_calculation", default=True)
+
+    def get_med_use_pe_label(self):
+        """
+            Use the PE label to identify persons in MED module
+        """
+        return self.med.get("use_pe_label", True)
+
+    def get_med_restrict_person_search_to(self):
+        """
+            Modules which persons must be linked to when registering
+            new treatment occasions for them
+        """
+        return self.med.get("restrict_patients_to", ("dvr",))
 
     # -------------------------------------------------------------------------
     # Members
