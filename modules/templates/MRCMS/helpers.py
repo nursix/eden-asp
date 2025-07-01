@@ -894,6 +894,9 @@ def client_name_age(record):
     else:
         unit = T("years") if age != 1 else T("year")
 
+    if record.deceased:
+        unit = "%s (%s)" % (unit, T("deceased"))
+
     icons = {2: "fa fa-venus",
              3: "fa fa-mars",
              4: "fa fa-transgender-alt",

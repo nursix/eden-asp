@@ -164,9 +164,7 @@ def person_search():
     from core import StringTemplateParser
 
     # Search fields
-    NAMES = ("first_name", "middle_name", "last_name")
-    keys = StringTemplateParser.keys(settings.get_pr_name_format())
-    search_fields = [fn for fn in keys if fn in NAMES]
+    search_fields = settings.get_pr_name_fields()
     if settings.get_med_use_pe_label():
         search_fields.append("pe_label")
 
@@ -205,14 +203,16 @@ def person():
 
     def prep(r):
 
+        resource = r.resource
+        table = resource.table
+
         viewing = r.viewing
         if viewing:
-
+            # On person-tab of patient record
             person_id = None
 
             vtablename, record_id = viewing
             if vtablename == "med_patient" and record_id:
-
                 # Load person_id from patient
                 ptable = s3db.med_patient
                 query = (ptable.id == record_id) & (ptable.deleted == False)
@@ -237,7 +237,29 @@ def person():
                 else:
                     r.error(404, current.ERROR.BAD_RECORD)
 
+            # Expose deceased-flag and date_of_death, and
+            # make those the only writable fields in this
+            # perspective
+            writable = ("deceased", "date_of_death")
+            for fn in table.fields:
+                field = table[fn]
+                is_writable = fn in writable
+                field.writable = is_writable
+                if is_writable:
+                    # Must set to readable as well
+                    field.readable = True
+                else:
+                    field.comment = None
+
+            # Make details fields read-only too
+            dtable = resource.components.get("person_details").table
+            for fn in dtable.fields:
+                field = dtable[fn]
+                field.writable = False
+                field.comment = None
+
         elif r.component_name == "patient":
+            # On patient-tab of person record
 
             r.component.configure(insertable = False,
                                   editable = False,
@@ -287,33 +309,22 @@ def person():
                            ]
             r.component.configure(list_fields=list_fields)
 
-        resource = r.resource
-        table = resource.table
-
-        # Expose deceased-flag and date_of_death
-        fields = ["deceased", "date_of_death"]
-        for fn in fields:
-            field = table[fn]
-            field.readable = field.writable = True
-
         # CRUD Form
         from core import CustomForm
-        crud_form = CustomForm("first_name",
-                               "middle_name",
-                               "last_name",
-                               "person_details.year_of_birth",
-                               "date_of_birth",
-                               "gender",
-                               # "person_details.marital_status",
-                               # "person_details.nationality",
-                               # "person_details.religion",
-                               # "person_details.occupation",
-                               "deceased",
-                               "date_of_death",
-                               "comments",
-                               )
+        crud_fields = settings.get_pr_name_fields()
+        crud_fields.extend(["date_of_birth",
+                            "gender",
+                            "person_details.nationality",
+                            # "person_details.marital_status",
+                            # "person_details.nationality",
+                            # "person_details.religion",
+                            # "person_details.occupation",
+                            "deceased",
+                            "date_of_death",
+                            "comments",
+                            ])
 
-        r.resource.configure(crud_form = crud_form,
+        r.resource.configure(crud_form = CustomForm(*crud_fields),
                              insertable = False,
                              deletable = False,
                              )

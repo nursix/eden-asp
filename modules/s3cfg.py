@@ -5063,6 +5063,16 @@ class S3Config(Storage):
         """
         return self.__lazy("pr", "name_format", default="%(first_name)s %(middle_name)s %(last_name)s")
 
+    def get_pr_name_fields(self):
+        """
+            Returns the relevant name fields, in order of the name format
+        """
+        from core import StringTemplateParser
+
+        NAMES = ("first_name", "middle_name", "last_name")
+        keys = StringTemplateParser.keys(self.get_pr_name_format())
+        return [fn for fn in keys if fn in NAMES]
+
     def get_pr_search_shows_hr_details(self):
         """
             Whether S3PersonAutocompleteWidget results show the details of their HR record

@@ -773,7 +773,7 @@ class MedStatusModel(DataModel):
                      DateTimeField(
                         default = "now",
                         future = 0,
-                        past = 24, # hours
+                        # past = 24, # hours
                         ),
                      # TODO role (physician, nurse, paramedic, assistant, consultant, other)
                      CommentsField("situation",
@@ -1318,6 +1318,7 @@ class MedEpicrisisModel(DataModel):
                          ),
                      DateTimeField(
                         default = "now",
+                        future = 0,
                         writable = False,
                         ),
                      CommentsField("situation",
@@ -2766,6 +2767,8 @@ def med_patient_header(record):
                                                      ptable.last_name,
                                                      ptable.gender,
                                                      ptable.date_of_birth,
+                                                     ptable.deceased,
+                                                     ptable.date_of_death,
                                                      limitby = (0, 1),
                                                      ).first()
     if not person:
@@ -2782,6 +2785,8 @@ def med_patient_header(record):
         unit = T("months") if age != 1 else T("month")
     else:
         unit = T("years") if age != 1 else T("year")
+    if person.deceased:
+        unit = "%s (%s)" % (unit, T("deceased"))
 
     # Gender icon
     icons = {2: "fa fa-venus",

@@ -1284,15 +1284,23 @@ class PRPersonModel(DataModel):
         elif hasattr(row, "id"):
             # date_of_birth not in row: reload the record
             table = current.s3db.pr_person
-            person = current.db(table.id == row.id).select(
-                                                     table.date_of_birth,
-                                                     limitby=(0, 1)).first()
+            person = current.db(table.id == row.id).select(table.date_of_birth,
+                                                           table.deceased,
+                                                           table.date_of_death,
+                                                           limitby=(0, 1),
+                                                           ).first()
             dob = person.date_of_birth if person else None
         else:
             dob = None
-        if dob:
+
+        if hasattr(row, "deceased") and row.deceased:
+            reference = row.date_of_death if hasattr(row, "date_of_death") else None
+        else:
+            reference = current.request.utcnow.date()
+
+        if dob and reference:
             from dateutil.relativedelta import relativedelta
-            delta = relativedelta(current.request.utcnow.date(), dob)
+            delta = relativedelta(reference, dob)
             return delta.months if months else delta.years
         else:
             return None

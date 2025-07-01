@@ -7053,7 +7053,7 @@
 'database': 'Datenbank',
 'date of birth': 'Geburtsdatum',
 'days': 'Tage',
-'deceased': 'Verstorbene',
+'deceased': 'verstorben',
 'delete all checked': 'Alle Ausgewählten löschen',
 'deleted': 'gelöscht',
 'departed': 'abgereist',
