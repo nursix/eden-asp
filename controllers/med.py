@@ -185,7 +185,8 @@ def person_search():
         filters = []
         modules = settings.get_med_restrict_person_search_to()
         if "dvr" in modules:
-            filters.append(FS("dvr_case.id") != None)
+            filters.append((FS("dvr_case.id") != None) & \
+                           (FS("dvr_case.archived") == False))
         if "hrm" in modules:
             filters.append(FS("hrm_human_resource.id") != None)
         if filters:
