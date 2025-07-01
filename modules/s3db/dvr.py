@@ -539,6 +539,13 @@ class DVRCaseModel(DataModel):
         # ---------------------------------------------------------------------
         # Case Details: extended attributes for DVR cases
         #
+        # Terms and Conditions document signed or not?
+        tc_options = WorkflowOptions(("Y", "Signed", "green"),
+                                     ("N", "Not Signed", "red"),
+                                     ("N/A", "not applicable", "grey"),
+                                     none = "N",
+                                     )
+
         tablename = "dvr_case_details"
         define_table(tablename,
                      case_id(empty = False,
@@ -556,6 +563,14 @@ class DVRCaseModel(DataModel):
                            default = False,
                            label = T("Enrolled in Public School"),
                            represent = s3_yes_no_represent,
+                           ),
+                     Field("tc_signed",
+                           label = T("Terms and Conditions accepted?"),
+                           default = None,
+                           requires = IS_IN_SET(tc_options.selectable(True),
+                                                sort = False,
+                                                ),
+                           represent = tc_options.represent,
                            ),
                      DateField("arrival_date",
                                label = T("Arrival Date"),

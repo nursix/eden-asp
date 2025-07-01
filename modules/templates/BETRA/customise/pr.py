@@ -117,7 +117,8 @@ def pr_person_controller(**attr):
                         multiple = False,
                         ),
 
-                # Comments --------------------------------
+                # Administrative --------------------------
+                "case_details.tc_signed",
                 "comments",
 
                 # Archived-flag ---------------------------
@@ -128,7 +129,8 @@ def pr_person_controller(**attr):
                            "last_name": T("Person Details"),
                            "emailemail": T("Contact Information"),
                            "address": T("Address"),
-                           "comments": T("Comments"),
+                           "case_details_tc_signed": T("Administrative"),
+                           # "comments": T("Comments"),
                            }
             resource.configure(crud_form = crud_form,
                                subheadings = subheadings,
