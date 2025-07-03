@@ -3949,6 +3949,7 @@
 'Measure deleted': 'Maßnahme gelöscht',
 'Measure updated': 'Maßnahme aktualisiert',
 'Measures': 'Maßnahmen',
+'Med-Point': 'Med-Punkt',
 'Medical Background added': 'Medizinischen Hintergrund angelegt',
 'Medical Background deleted': 'Medizinischen Hintergrund gelöscht',
 'Medical Background updated': 'Medizinischen Hintergrund aktualisiert',

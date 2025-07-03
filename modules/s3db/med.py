@@ -501,8 +501,8 @@ class MedPatientModel(DataModel):
                                "unregistered",
                                "person",
                                # ------- Current Visit --------------
-                               "date",
                                "refno",
+                               "date",
                                "reason",
                                "priority",
                                "status",
@@ -515,7 +515,7 @@ class MedPatientModel(DataModel):
                                )
         subheadings = {"unit_id": T("Unit"),
                        "person_id": T("Patient"),
-                       "date": T("Current Visit"),
+                       "refno": T("Current Visit"),
                        "hazards": T("Hazards Advice"),
                        "comments": T("Administrative"),
                        }
@@ -2888,18 +2888,28 @@ def med_patient_header(record):
     # Room/Area
     if record.area_id:
         table = s3db.med_patient
-        area = SPAN(table.area_id.represent(record.area_id), _class="med-area")
+        area = SPAN(table.area_id.represent(record.area_id),
+                    _title = T("Place##placement"),
+                    _class = "med-area",
+                    )
     else:
         area = ""
 
+    # Patient Number
+    if record.refno:
+        refno = SPAN(record.refno,
+                     _title = T("Patient No."),
+                     _class = "med-refno",
+                     )
+    else:
+        refno = ""
+
     # Handle unregistered persons
     if not person_id:
-        try:
-            person = record.person
-        except AttributeError:
-            person = None
+        person = record.person
         label = T("Unregistered Person")
         return TAG[""](area,
+                       refno,
                        SPAN(person if person else label,
                             _class = "med-unregistered",
                             _title = label,
@@ -2950,6 +2960,7 @@ def med_patient_header(record):
 
     # Combined representation
     patient = TAG[""](area,
+                      refno,
                       fullname,
                       SPAN(icon, "%s %s" % (age, unit), _class="client-gender-age"),
                       )
