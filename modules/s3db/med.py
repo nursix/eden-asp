@@ -111,7 +111,7 @@ class MedUnitModel(DataModel):
 
         # CRUD strings
         crud_strings[tablename] = Storage(
-            label_create = T("Add Medical Unit"),
+            label_create = T("Create Medical Unit"),
             title_display = T("Medical Unit"),
             title_list = T("Medical Units"),
             title_update = T("Edit Medical Unit"),
@@ -171,6 +171,7 @@ class MedUnitModel(DataModel):
                            represent = lambda v, row=None: v if v else "-",
                            ),
                      Field("area_type",
+                           label = T("Area Type"),
                            default = "T",
                            requires = IS_IN_SET(area_functions,
                                                 zero = None,
@@ -179,10 +180,12 @@ class MedUnitModel(DataModel):
                            represent = represent_option(dict(area_functions)),
                            ),
                      Field("capacity", "integer",
+                           label = T("Capacity"),
                            default = 1,
                            requires = IS_INT_IN_RANGE(minimum=1),
                            ),
                      Field("status",
+                           label = T("Status"),
                            default = "O",
                            requires = IS_IN_SET(area_status,
                                                 zero = None,
@@ -202,7 +205,7 @@ class MedUnitModel(DataModel):
         area_label = settings.get_med_area_label()
         if area_label == "area":
             crud_strings[tablename] = Storage(
-                label_create = T("Add Treatment Area"),
+                label_create = T("Create Treatment Area"),
                 title_display = T("Treatment Area"),
                 title_list = T("Treatment Areas"),
                 title_update = T("Edit Treatment Area"),
@@ -230,7 +233,7 @@ class MedUnitModel(DataModel):
         # Foreign key template
         represent = S3Represent(lookup=tablename)
         area_id = FieldTemplate("area_id", "reference %s" % tablename,
-                                label = T("Area") if area_label == "area" else T("Room"),
+                                label = T("Place##placement"),
                                 ondelete = "RESTRICT",
                                 represent = represent,
                                 requires = IS_EMPTY_OR(
@@ -358,17 +361,19 @@ class MedPatientModel(DataModel):
         # ---------------------------------------------------------------------
         # Triage Priorities
         #
-        triage_priorities = (("A", T("Immediate")),
-                             ("B", T("Delayed")),
-                             ("C", T("Minor")),
-                             ("D", T("Deceased/Expectant")),
+        triage_priorities = (("A", T("Immediate##triage")),
+                             ("B", T("Urgent##triage")),
+                             ("C", T("Not Urgent##triage")),
+                             ("D", T("Planned##triage")),
+                             ("E", T("Deceased/Expectant##triage")),
                              )
 
         triage_represent = S3PriorityRepresent(triage_priorities,
                                                {"A": "red",
                                                 "B": "amber",
                                                 "C": "green",
-                                                "D": "black",
+                                                "D": "blue",
+                                                "E": "black",
                                                 }).represent
 
         # ---------------------------------------------------------------------
@@ -420,6 +425,7 @@ class MedPatientModel(DataModel):
 
                      # Start and end date of the care occasion
                      DateTimeField(
+                        label = T("Arrival Time"),
                         default = "now",
                         writable = False,
                         ),
@@ -556,7 +562,7 @@ class MedPatientModel(DataModel):
 
         # CRUD Strings
         crud_strings[tablename] = Storage(
-            label_create = T("Add Patient"),
+            label_create = T("Create Patient"),
             title_display = T("Patient"),
             title_list = T("Patients"),
             title_update = T("Edit Patient"),
@@ -775,7 +781,6 @@ class MedStatusModel(DataModel):
                         future = 0,
                         # past = 24, # hours
                         ),
-                     # TODO role (physician, nurse, paramedic, assistant, consultant, other)
                      CommentsField("situation",
                                    label = T("Situation"),
                                    represent = s3_text_represent,
@@ -943,7 +948,7 @@ class MedVitalsModel(DataModel):
                          ("C", T("Compromised##airways")),
                          )
 
-        risk_class = (("C", T("Critical")),
+        risk_class = (("C", T("Critical##risk")),
                       ("H", T("High")),
                       ("M", T("Medium")),
                       ("L", T("Low")),
@@ -983,7 +988,7 @@ class MedVitalsModel(DataModel):
                            writable = False,
                            ),
                      Field("airways",
-                           label = T("Airways"),
+                           label = T("Airways##medical"),
                            default = "N",
                            requires = IS_IN_SET(airway_status, zero=None, sort=False),
                            represent = self.represent_discrete(dict(airway_status), normal={"N"}),
@@ -1053,7 +1058,7 @@ class MedVitalsModel(DataModel):
 
         # CRUD Strings
         crud_strings[tablename] = Storage(
-            label_create = T("Add Vital Signs"),
+            label_create = T("Register Vital Signs"),
             title_display = T("Vital Signs"),
             title_list = T("Vital Signs"),
             title_update = T("Edit Vital Signs"),
@@ -1164,6 +1169,7 @@ class MedTreatmentModel(DataModel):
     """ Data Model for treatment documentation """
 
     names = ("med_treatment",
+             "med_treatment_status"
              )
 
     def model(self):
@@ -1179,8 +1185,6 @@ class MedTreatmentModel(DataModel):
 
         # ---------------------------------------------------------------------
         # Treatment
-        # TODO make person component and add to tabs in med/person
-        # TODO make r/o except for the original author
         #
         treatment_status = (("P", T("Pending")),
                             ("S", T("Started / Ongoing")),
@@ -1188,6 +1192,13 @@ class MedTreatmentModel(DataModel):
                             ("R", T("Canceled")),
                             ("O", T("Obsolete")),
                             )
+        status_represent = S3PriorityRepresent(treatment_status,
+                                               {"P": "lightblue",
+                                                "S": "blue",
+                                                "C": "green",
+                                                "R": "grey",
+                                                "O": "grey",
+                                                }).represent
 
         tablename = "med_treatment"
         define_table(tablename,
@@ -1196,59 +1207,99 @@ class MedTreatmentModel(DataModel):
                          empty = False,
                          comment = None,
                          readable = False,
-                         writable = False, # TODO set onaccept
+                         writable = False,
                          ),
                      self.med_patient_id(
-                         readable = False, # TODO make readable in person perspective
-                         writable = False, # TODO set onaacept
+                         readable = False,
+                         writable = False,
                          ),
                      DateTimeField(
                         default = "now",
                         future = 0,
-                        past = 6, # hours
+                        writable = False,
                         ),
-                     # TODO physician / person responsible for order
-                     Field("details", "text",
-                           label = T("Order Details##med"),
-                           requires = IS_NOT_EMPTY(),
-                           ),
-                     # TODO hash to detect changes in order
-                     # TODO order can only be changed by original author
-                     # TODO staff responsible for status change
+                     # TODO r/o if no longer pending
+                     CommentsField("details",
+                                   label = T("Treatment Measure"),
+                                   requires = IS_NOT_EMPTY(),
+                                   comment = None,
+                                   ),
+                     # TODO cannot set back to pending
+                     # TODO r/o once C|R|O
                      Field("status",
                            default = "P",
                            label = T("Status"),
                            requires = IS_IN_SET(treatment_status, zero=None, sort=False),
-                           represent = represent_option(dict(treatment_status)),
+                           represent = status_represent,
                            ),
-                     # TODO previous status
-                     # TODO status date
+                     DateTimeField("start_date",
+                                   label = T("Start"),
+                                   writable = False,
+                                   ),
+                     DateTimeField("end_date",
+                                   label = T("End"),
+                                   writable = False,
+                                   ),
+                     Field("vhash",
+                           readable = False,
+                           writable = False,
+                           ),
                      CommentsField(),
                      )
 
-        # TODO List fields
-        # list_fields = []
+        # List fields
+        list_fields = ["patient_id",
+                       "date",
+                       "details",
+                       "status",
+                       "start_date",
+                       "end_date",
+                       "comments",
+                       ]
 
         # Table configuration
         self.configure(tablename,
-                       # list_fields = list_fields,
+                       list_fields = list_fields,
                        onaccept = self.treatment_onaccept,
-                       # TODO orderby: newest first
+                       orderby = "%s.date desc" % tablename,
                        )
 
         # CRUD Strings
         crud_strings[tablename] = Storage(
-            label_create = T("Add Order##med"),
-            title_display = T("Order Details##med"),
+            label_create = T("Add Treatment Measure"),
+            title_display = T("Treatment Measure"),
             title_list = T("Treatment"),
-            title_update = T("Edit Order##med"),
-            label_list_button = T("List Orders##med"),
-            label_delete_button = T("Delete Order##med"),
-            msg_record_created = T("Order added##med"),
-            msg_record_modified = T("Order updated##med"),
-            msg_record_deleted = T("Order deleted##med"),
-            msg_list_empty = T("No Treatments currently registered"),
+            title_update = T("Edit Treatment Measure"),
+            label_list_button = T("List Treatment Measures"),
+            label_delete_button = T("Delete Treatment"),
+            msg_record_created = T("Treatment Measure added"),
+            msg_record_modified = T("Treatment Measures updated"),
+            msg_record_deleted = T("Treatment Measure deleted"),
+            msg_list_empty = T("No Treatment Measures currently registered"),
             )
+
+        # ---------------------------------------------------------------------
+        # Treatment Status History
+        #
+        tablename = "med_treatment_status"
+        define_table(tablename,
+                     Field("treatment_id", "reference med_treatment",
+                           ondelete = "CASCADE",
+                           readable = False,
+                           writable = False,
+                           ),
+                     DateTimeField(),
+                     Field("details", "text",
+                           label = T("Treatment Measure"),
+                           readable = False,
+                           writable = False,
+                           ),
+                     Field("status",
+                           label = T("Status"),
+                           readable = False,
+                           writable = False,
+                           ),
+                     )
 
         # ---------------------------------------------------------------------
         # Pass names back to global scope (s3.*)
@@ -1263,8 +1314,44 @@ class MedTreatmentModel(DataModel):
 
     # -------------------------------------------------------------------------
     @staticmethod
-    def treatment_onaccept(form):
-        # TODO docstring
+    def treatment_update_history(record):
+        """
+            Tracks changes to a treatment record
+
+            Args:
+                record: the treatment record (containing id, details and status)
+        """
+
+        s3db = current.s3db
+        auth = current.auth
+
+        htable = s3db.med_treatment_status
+
+        # Write new history entry
+        entry = {"treatment_id": record.id,
+                 "date": current.request.utcnow,
+                 "details": record.details,
+                 "status": record.status
+                 }
+        entry["id"] = entry_id = htable.insert(**entry)
+        if entry_id:
+            s3db.update_super(htable, entry)
+            auth.s3_set_record_owner(htable, entry_id)
+            auth.s3_make_session_owner(htable, entry_id)
+            s3db.onaccept(htable, entry, method="create")
+
+    # -------------------------------------------------------------------------
+    @classmethod
+    def treatment_onaccept(cls, form):
+        """
+            Onaccept-routine for treatment measures
+            - set person_id/patient_id as required
+            - set start/end dates as required
+            - create history entry if status has changed
+
+            Args:
+                form: the FORM
+        """
 
         db = current.db
         s3db = current.s3db
@@ -1276,11 +1363,58 @@ class MedTreatmentModel(DataModel):
         record = db(query).select(table.id,
                                   table.person_id,
                                   table.patient_id,
+                                  table.date,
+                                  table.details,
+                                  table.status,
+                                  table.vhash,
+                                  table.start_date,
+                                  table.end_date,
                                   limitby = (0, 1),
                                   ).first()
 
-        if record:
-            MedPatientModel.set_patient(record)
+        if not record:
+            return
+
+        MedPatientModel.set_patient(record)
+
+        update = {}
+
+        status = record.status
+        date, start, end = record.date, record.start_date, record.end_date
+        now = current.request.utcnow
+
+        if status == "S" and not start:
+            start = update["start_date"] = now
+        elif status == "P" and start:
+            start = update["start_date"] = None
+        if status in ("C", "R", "O"):
+            if not start:
+                start = update["start_date"] = now
+            if not end:
+                end = update["end_date"] = now
+        elif end:
+            end = update["end_date"] = None
+
+        # Compute vhash
+        values = [record.person_id,
+                  record.patient_id,
+                  date.replace(microsecond=0).isoformat() if date else "-",
+                  ]
+        for fn in ("details", "status"):
+            value = record[fn]
+            if not value:
+                value = "-"
+            values.append(value)
+        vhash = datahash(values)
+
+        # Update history if hash has changed
+        if vhash != record.vhash:
+            cls.treatment_update_history(record)
+            update["vhash"] = vhash
+
+        # Update record if required
+        if update:
+            record.update_record(**update)
 
 # =============================================================================
 class MedEpicrisisModel(DataModel):
@@ -1366,16 +1500,16 @@ class MedEpicrisisModel(DataModel):
 
         # CRUD Strings
         crud_strings[tablename] = Storage(
-            label_create = T("Add Epicrisis##med"),
-            title_display = T("Epicrisis Details##med"),
-            title_list = T("Epicrisis"),
-            title_update = T("Edit Epicrisis##med"),
-            label_list_button = T("List Epicrisiss##med"),
-            label_delete_button = T("Delete Epicrisis##med"),
-            msg_record_created = T("Epicrisis added##med"),
-            msg_record_modified = T("Epicrisis updated##med"),
-            msg_record_deleted = T("Epicrisis deleted##med"),
-            msg_list_empty = T("No Epicrisis currently registered"),
+            label_create = T("Create Epicrisis"),
+            title_display = T("Epicrisis"),
+            title_list = T("Epicrises"),
+            title_update = T("Edit Epicrisis"),
+            label_list_button = T("List Epicrises"),
+            label_delete_button = T("Delete Epicrisis"),
+            msg_record_created = T("Epicrisis added"),
+            msg_record_modified = T("Epicrisis updated"),
+            msg_record_deleted = T("Epicrisis deleted"),
+            msg_list_empty = T("No Epicrises currently registered"),
             )
 
         # ---------------------------------------------------------------------
@@ -1530,7 +1664,7 @@ class MedAnamnesisModel(DataModel):
 
         # CRUD strings
         crud_strings[tablename] = Storage(
-            label_create = T("Add Medical Background"),
+            label_create = T("Create Medical Background"),
             title_display = T("Medical Background"),
             title_update = T("Edit Medical Background"),
             label_delete_button = T("Delete Medical Background"),
@@ -1602,8 +1736,8 @@ class MedMedicationModel(DataModel):
         # ---------------------------------------------------------------------
         # Priorities
         #
-        priorities = (("A", T("Critical")),
-                      ("B", T("Regular")),
+        priorities = (("A", T("Vital##medication")),
+                      ("B", T("Required")),
                       ("C", T("Optional")),
                       )
         priority_represent = S3PriorityRepresent(priorities,
@@ -1802,7 +1936,7 @@ class MedVaccinationModel(DataModel):
 
         # CRUD Strings
         crud_strings[tablename] = Storage(
-            label_create = T("Add Vaccination Type"),
+            label_create = T("Create Vaccination Type"),
             title_display = T("Vaccination Type"),
             title_list = T("Vaccination Types"),
             title_update = T("Edit Vaccination Type"),
@@ -2751,13 +2885,26 @@ def med_patient_header(record):
     except AttributeError:
         person_id = None
 
+    # Room/Area
+    if record.area_id:
+        table = s3db.med_patient
+        area = SPAN(table.area_id.represent(record.area_id), _class="med-area")
+    else:
+        area = ""
+
     # Handle unregistered persons
     if not person_id:
         try:
             person = record.person
         except AttributeError:
             person = None
-        return person if person else T("Unregistered Person")
+        label = T("Unregistered Person")
+        return TAG[""](area,
+                       SPAN(person if person else label,
+                            _class = "med-unregistered",
+                            _title = label,
+                            ),
+                       )
 
     # Look up the person record
     ptable = s3db.pr_person
@@ -2798,10 +2945,12 @@ def med_patient_header(record):
     # Name
     fullname = A(s3_fullname(person, truncate=False),
                  _href = URL(c="med", f="person", args=[person.id]),
+                 _class = "med-patient",
                  )
 
     # Combined representation
-    patient = TAG[""](fullname,
+    patient = TAG[""](area,
+                      fullname,
                       SPAN(icon, "%s %s" % (age, unit), _class="client-gender-age"),
                       )
     return patient
@@ -2814,9 +2963,13 @@ def med_rheader(r, tabs=None):
         # Resource headers only used in interactive views
         return None
 
+    db = current.db
+    s3db = current.s3db
+    settings = current.deployment_settings
+
     tablename, record = s3_rheader_resource(r)
     if tablename != r.tablename:
-        resource = current.s3db.resource(tablename, id=record.id)
+        resource = s3db.resource(tablename, id=record.id)
     else:
         resource = r.resource
 
@@ -2843,6 +2996,9 @@ def med_rheader(r, tabs=None):
             rheader_title = s3_fullname
 
         elif tablename == "med_patient":
+
+            person_id = record.person_id
+
             if not tabs:
                 tabs = [(T("Overview"), None),
                         # Person details [viewing]
@@ -2855,17 +3011,53 @@ def med_rheader(r, tabs=None):
                         (T("Epicrisis"), "epicrisis"),
                         (T("Documents"), "document"),
                         ]
-                if record.person_id:
-                    tabs[1:1] = [(T("Person Details"), "person/"),
+                if person_id:
+                    tabs[1:1] = [#(T("Person Details"), "person/"),
                                  (T("Background"), "anamnesis/"),
                                  (T("Medication"), "medication/"),
                                  (T("Vaccinations"), "vaccination/"),
                                  ]
 
-            rheader_fields = [[(T("Reason for visit"), "reason", 3)],
-                              ["priority", "hazards"],
-                              ["date", "hazards_advice"],
-                              ["status"],
+            # Load the person record
+            ptable = s3db.pr_person
+            dtable = s3db.pr_person_details
+            if person_id:
+                left = dtable.on((dtable.person_id == ptable.id) & \
+                                 (dtable.deleted == False))
+                row = db(ptable.id == person_id).select(ptable.pe_label,
+                                                        ptable.date_of_birth,
+                                                        dtable.nationality,
+                                                        left = left,
+                                                        limitby = (0, 1),
+                                                        ).first()
+            else:
+                row = None
+
+            if row:
+                person, details = row.pr_person, row.pr_person_details
+                label = lambda i: person.pe_label
+                dob = lambda i: ptable.date_of_birth.represent(person.date_of_birth)
+                nationality = lambda i: dtable.nationality.represent(details.nationality)
+            else:
+                label = dob = nationality = lambda i: "-"
+
+            if settings.get_med_use_pe_label():
+                pdata = ((T("ID"), label),
+                         (T("Date of Birth"), dob),
+                         (T("Nationality"), nationality),
+                         )
+            else:
+                pdata = ((T("Date of Birth"), dob),
+                         (T("Nationality"), nationality),
+                         ("", None),
+                         )
+
+            reason = lambda i: SPAN(i.reason if i.reason else "-", _class="med-reason")
+
+            rheader_fields = [[(T("Reason for visit"), reason, 3)],
+                              ["date", pdata[0], "hazards"],
+                              ["priority", pdata[1], "hazards_advice"],
+                              ["status", pdata[2]],
                               ]
             rheader_title = med_patient_header
 

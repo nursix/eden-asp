@@ -560,7 +560,7 @@ class IS_FLOAT_AMOUNT(IS_FLOAT_IN_RANGE):
             Args:
                 number: the number
                 precision: the number of decimal places to show
-                fixed: show decimal places even if the decimal part is 0
+                fixed: show (trailing) decimal places even if they are 0
 
             Returns:
                 string representation of the number
@@ -583,9 +583,12 @@ class IS_FLOAT_AMOUNT(IS_FLOAT_IN_RANGE):
         else:
             int_part, dec_part = str_number, ""
 
-        if dec_part and int(dec_part) == 0 and not fixed:
+        if dec_part and not fixed:
             # Omit decimal part if zero
-            dec_part = ""
+            if int(dec_part) == 0:
+                dec_part = ""
+            # Remove trailing zeros
+            dec_part = dec_part.rstrip("0")
 
         if dec_part:
             dec_part = DECIMAL_SEPARATOR + dec_part

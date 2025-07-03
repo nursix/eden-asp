@@ -374,8 +374,9 @@
 }
 
 // ----------------------------------------------------------------------------
-// MED Hazards
+// MED
 //
+// Contamination Hazards
 .hazard-neg, .hazard-pos {
     display: inline-block;
     width: 20px;
@@ -395,6 +396,28 @@
 }
 .hazard-rad.hazard-pos {
     background-image: url(../../img/hazard/rad.png)
+}
+
+// Patient rheader
+.med-reason {
+    font-size: 0.9rem;
+    color: #840088;
+}
+.med-area {
+    font-size: 0.8rem;
+    padding: 0.2rem 0.4rem;
+    background: #eee;
+    margin-right: 1rem;
+    font-weight: normal;
+    vertical-align: top;
+}
+.med-patient, .med-unregistered {
+    font-size: 0.9rem;
+    vertical-align: top;
+}
+.med-unregistered {
+    font-style: italic;
+    color: grey;
 }
 
 // ----------------------------------------------------------------------------

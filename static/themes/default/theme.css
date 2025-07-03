@@ -565,7 +565,7 @@ button.toggle-text {
   font-style: italic;
 }
 
-/* line 379, ../scss/theme/_represent.scss */
+/* line 380, ../scss/theme/_represent.scss */
 .hazard-neg, .hazard-pos {
   display: inline-block;
   width: 20px;
@@ -577,29 +577,57 @@ button.toggle-text {
   background-position: center;
 }
 
-/* line 390, ../scss/theme/_represent.scss */
+/* line 391, ../scss/theme/_represent.scss */
 .hazard-bio.hazard-pos {
   background-image: url(../../img/hazard/bio.png);
 }
 
-/* line 393, ../scss/theme/_represent.scss */
+/* line 394, ../scss/theme/_represent.scss */
 .hazard-tox.hazard-pos {
   background-image: url(../../img/hazard/tox.png);
 }
 
-/* line 396, ../scss/theme/_represent.scss */
+/* line 397, ../scss/theme/_represent.scss */
 .hazard-rad.hazard-pos {
   background-image: url(../../img/hazard/rad.png);
 }
 
-/* line 403, ../scss/theme/_represent.scss */
+/* line 402, ../scss/theme/_represent.scss */
+.med-reason {
+  font-size: 0.9rem;
+  color: #840088;
+}
+
+/* line 406, ../scss/theme/_represent.scss */
+.med-area {
+  font-size: 0.8rem;
+  padding: 0.2rem 0.4rem;
+  background: #eee;
+  margin-right: 1rem;
+  font-weight: normal;
+  vertical-align: top;
+}
+
+/* line 414, ../scss/theme/_represent.scss */
+.med-patient, .med-unregistered {
+  font-size: 0.9rem;
+  vertical-align: top;
+}
+
+/* line 418, ../scss/theme/_represent.scss */
+.med-unregistered {
+  font-style: italic;
+  color: grey;
+}
+
+/* line 426, ../scss/theme/_represent.scss */
 .client-gender-age {
   font-size: 0.7rem;
   vertical-align: top;
   color: #999;
   margin: 0 1rem;
 }
-/* line 407, ../scss/theme/_represent.scss */
+/* line 430, ../scss/theme/_represent.scss */
 .client-gender-age .fa {
   margin: 0 0.2rem;
 }
@@ -2282,66 +2310,67 @@ body.rtl .sub-nav.about-menu {
   font-weight: bold;
   font-size: 1.1rem;
   line-height: 1.0;
+  margin-bottom: 0.5rem;
 }
-/* line 41, ../scss/theme/_rheader.scss */
+/* line 42, ../scss/theme/_rheader.scss */
 #rheader .rheader-content {
   display: inline-block;
   max-width: 90%;
   padding: 0.5rem;
 }
-/* line 46, ../scss/theme/_rheader.scss */
+/* line 47, ../scss/theme/_rheader.scss */
 #rheader table {
   display: inline;
   margin-bottom: 10px;
   border: none;
   background: none;
 }
-/* line 51, ../scss/theme/_rheader.scss */
+/* line 52, ../scss/theme/_rheader.scss */
 #rheader table tbody, #rheader table tr {
   border: none;
   background: none;
 }
-/* line 55, ../scss/theme/_rheader.scss */
+/* line 56, ../scss/theme/_rheader.scss */
 #rheader table th, #rheader table td {
   font-size: 0.85rem;
   text-align: left;
   padding: 0.1rem 0.5rem 0.05rem 0;
   white-space: pre-line;
 }
-/* line 59, ../scss/theme/_rheader.scss */
+/* line 60, ../scss/theme/_rheader.scss */
 [dir=rtl] #rheader table th, [dir=rtl] #rheader table td {
   text-align: right;
   padding: 0.1rem 0 0.05rem 0.5rem;
 }
-/* line 65, ../scss/theme/_rheader.scss */
+/* line 66, ../scss/theme/_rheader.scss */
 #rheader table th {
   color: #7F7F7F;
   line-height: 1.1rem;
   font-weight: normal;
 }
-/* line 70, ../scss/theme/_rheader.scss */
+/* line 71, ../scss/theme/_rheader.scss */
 #rheader table td {
   padding-right: 1.25rem;
   line-height: 1.1rem;
   font-weight: bold;
 }
-/* line 74, ../scss/theme/_rheader.scss */
+/* line 75, ../scss/theme/_rheader.scss */
 #rheader table td a {
   font-weight: normal;
 }
-/* line 77, ../scss/theme/_rheader.scss */
+/* line 78, ../scss/theme/_rheader.scss */
 [dir=rtl] #rheader table td {
   padding-right: 0;
   padding-left: 1.25rem;
 }
-/* line 85, ../scss/theme/_rheader.scss */
+/* line 86, ../scss/theme/_rheader.scss */
 #rheader .rheader-qrcode {
   display: inline-block;
   border: 1px solid #eee;
   margin-right: 0.5rem;
   vertical-align: top;
 }
-/* line 93, ../scss/theme/_rheader.scss */
+/* line 94, ../scss/theme/_rheader.scss */
 #rheader .rheader-avatar {
   clear: none;
   display: inline-block;
@@ -2350,12 +2379,12 @@ body.rtl .sub-nav.about-menu {
   vertical-align: top;
   margin-right: 0.8rem;
 }
-/* line 100, ../scss/theme/_rheader.scss */
+/* line 101, ../scss/theme/_rheader.scss */
 [dir=rtl] #rheader .rheader-avatar {
   margin-right: 0;
   margin-left: 0.8rem;
 }
-/* line 107, ../scss/theme/_rheader.scss */
+/* line 108, ../scss/theme/_rheader.scss */
 #rheader div.tabs {
   display: block;
   clear: none;
@@ -2366,7 +2395,7 @@ body.rtl .sub-nav.about-menu {
   text-align: left;
   border-bottom: 1px solid #0a5b29;
 }
-/* line 122, ../scss/theme/_rheader.scss */
+/* line 123, ../scss/theme/_rheader.scss */
 #rheader div.tabs span {
   float: left;
   position: relative;
@@ -2380,34 +2409,34 @@ body.rtl .sub-nav.about-menu {
   border-radius: 3px 3px 0 0;
   background-color: #0a5b29;
 }
-/* line 140, ../scss/theme/_rheader.scss */
+/* line 141, ../scss/theme/_rheader.scss */
 #rheader div.tabs span:hover {
   background-color: #094d23;
   border-color: #094d23;
 }
-/* line 144, ../scss/theme/_rheader.scss */
+/* line 145, ../scss/theme/_rheader.scss */
 #rheader div.tabs span.emphasis {
   border-color: #0a5b29;
   background-color: #0a5b29;
 }
-/* line 147, ../scss/theme/_rheader.scss */
+/* line 148, ../scss/theme/_rheader.scss */
 #rheader div.tabs span.emphasis:hover {
   border-color: #094d23;
   background-color: #094d23;
 }
-/* line 153, ../scss/theme/_rheader.scss */
+/* line 154, ../scss/theme/_rheader.scss */
 #rheader div.tabs span a {
   line-height: 16px;
   color: #ffffff;
   text-decoration: none;
   background: transparent;
 }
-/* line 158, ../scss/theme/_rheader.scss */
+/* line 159, ../scss/theme/_rheader.scss */
 #rheader div.tabs span a:hover {
   color: #ffffff;
   background: transparent;
 }
-/* line 165, ../scss/theme/_rheader.scss */
+/* line 166, ../scss/theme/_rheader.scss */
 #rheader div.tabs span.tab_here {
   font-size: 14px;
   font-weight: bold;
@@ -2421,41 +2450,41 @@ body.rtl .sub-nav.about-menu {
   border-bottom-style: solid;
   border-bottom-color: #fefefe;
 }
-/* line 171, ../scss/theme/_rheader.scss */
+/* line 172, ../scss/theme/_rheader.scss */
 #rheader div.tabs span.tab_here:not(:first-child) {
   margin-left: 0.2rem;
 }
-/* line 187, ../scss/theme/_rheader.scss */
+/* line 188, ../scss/theme/_rheader.scss */
 #rheader div.tabs span.tab_here:hover {
   background-color: #f1edec;
   border-bottom-style: solid;
   border-bottom-color: #fefefe;
 }
-/* line 194, ../scss/theme/_rheader.scss */
+/* line 195, ../scss/theme/_rheader.scss */
 #rheader div.tabs span.tab_here a {
   color: #666666 !important;
 }
-/* line 196, ../scss/theme/_rheader.scss */
+/* line 197, ../scss/theme/_rheader.scss */
 #rheader div.tabs span.tab_here a:hover {
   color: #666666 !important;
 }
-/* line 204, ../scss/theme/_rheader.scss */
+/* line 205, ../scss/theme/_rheader.scss */
 [dir=rtl] #rheader div.tabs {
   padding-left: 4px;
   padding-right: 0;
   text-align: right;
 }
-/* line 208, ../scss/theme/_rheader.scss */
+/* line 209, ../scss/theme/_rheader.scss */
 [dir=rtl] #rheader div.tabs span {
   float: right;
   margin-right: 0;
   margin-left: 0.2rem;
 }
-/* line 212, ../scss/theme/_rheader.scss */
+/* line 213, ../scss/theme/_rheader.scss */
 [dir=rtl] #rheader div.tabs span.tab_here {
   margin-left: 0.4rem;
 }
-/* line 214, ../scss/theme/_rheader.scss */
+/* line 215, ../scss/theme/_rheader.scss */
 [dir=rtl] #rheader div.tabs span.tab_here:not(:first-child) {
   margin-right: 0.2rem;
 }
