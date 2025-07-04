@@ -1218,14 +1218,11 @@ class MedTreatmentModel(DataModel):
                         future = 0,
                         writable = False,
                         ),
-                     # TODO r/o if no longer pending
                      CommentsField("details",
                                    label = T("Treatment Measure"),
                                    requires = IS_NOT_EMPTY(),
                                    comment = None,
                                    ),
-                     # TODO cannot set back to pending
-                     # TODO r/o once C|R|O
                      Field("status",
                            default = "P",
                            label = T("Status"),
@@ -1234,11 +1231,11 @@ class MedTreatmentModel(DataModel):
                            ),
                      DateTimeField("start_date",
                                    label = T("Start"),
-                                   writable = False,
+                                   future = 0,
                                    ),
                      DateTimeField("end_date",
                                    label = T("End"),
-                                   writable = False,
+                                   future = 0,
                                    ),
                      Field("vhash",
                            readable = False,
@@ -1260,6 +1257,7 @@ class MedTreatmentModel(DataModel):
         # Table configuration
         self.configure(tablename,
                        list_fields = list_fields,
+                       onvalidation = self.treatment_onvalidation,
                        onaccept = self.treatment_onaccept,
                        orderby = "%s.date desc" % tablename,
                        )
@@ -1341,6 +1339,24 @@ class MedTreatmentModel(DataModel):
             s3db.onaccept(htable, entry, method="create")
 
     # -------------------------------------------------------------------------
+    @staticmethod
+    def treatment_onvalidation(form):
+        """
+            Treatment form validation
+            - end date must be after start date
+        """
+
+        # Get form record data
+        table = current.s3db.med_treatment
+        data = get_form_record_data(form, table, ["start_date", "end_date"])
+
+        start = data.get("start_date")
+        end = data.get("end_date")
+
+        if start and end and end < start:
+            form.errors.end_date = current.T("End must be at or after start")
+
+    # -------------------------------------------------------------------------
     @classmethod
     def treatment_onaccept(cls, form):
         """
@@ -1383,17 +1399,30 @@ class MedTreatmentModel(DataModel):
         date, start, end = record.date, record.start_date, record.end_date
         now = current.request.utcnow
 
-        if status == "S" and not start:
-            start = update["start_date"] = now
-        elif status == "P" and start:
-            start = update["start_date"] = None
-        if status in ("C", "R", "O"):
+        if status == "P":
+            # This status can have neither start nor end date
+            if start:
+                start = update["start_date"] = None
+            if end:
+                end = update["end_date"] = None
+        if status == "S":
+            # This status should have a start date, but no end date
             if not start:
                 start = update["start_date"] = now
+            if end:
+                end = update["end_date"] = None
+        if status == "C":
+            # This status should have both start and end date
             if not end:
                 end = update["end_date"] = now
-        elif end:
-            end = update["end_date"] = None
+            if not start:
+                start = update["start_date"] = end
+        if status in ("R", "O"):
+            # These statuses should have an end date if, and only if, they have a start date
+            if end and not start:
+                end = update["end_date"] = None
+            if start and not end:
+                end = update["end_date"] = now
 
         # Compute vhash
         values = [record.person_id,

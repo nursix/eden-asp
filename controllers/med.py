@@ -92,7 +92,9 @@ def patient():
 
             resource.add_filter(query)
 
-        if not r.component:
+        component_name = r.component_name
+        component = r.component
+        if not component:
             # Configure unit/area choices
             s3db.med_configure_unit_id(table, record)
 
@@ -102,43 +104,73 @@ def patient():
             if path not in s3.scripts:
                 s3.scripts.append(path)
 
-        elif r.component_name in ("status", "epicrisis"):
+        elif component_name == "treatment":
 
-            component = r.component
+            ctable = component.table
+
+            if r.component_id:
+                rows = component.load()
+                crecord = rows[0] if rows else None
+            else:
+                crecord = None
+
+            if crecord:
+                status = crecord.status
+                if status in ("R", "O"):
+                    # Cannot edit once marked canceled or obsolete
+                    component.configure(editable=False)
+                if status != "P":
+                    # Cannot change details once started
+                    ctable.details.writable = False
+                    # Cannot change back to status "pending"
+                    field = ctable.status
+                    options = field.requires.options(zero=False)
+                    field.requires = IS_IN_SET([o for o in options if o[0] != "P"],
+                                               zero = None,
+                                               sort = False,
+                                               )
+                # Restrict change of start/end dates if already set
+                if crecord.start_date:
+                    ctable.start_date.writable = status in ("P", "S")
+                    if crecord.end_date:
+                        ctable.end_date.writable = status in ("P", "S")
+
+        elif component_name in ("status", "epicrisis"):
+
             ctable = component.table
 
             is_delete = r.http == "DELETE" or r.method == "delete"
 
             if r.component_id or not r.component.multiple:
                 rows = component.load()
-                record = rows[0] if rows else None
+                crecord = rows[0] if rows else None
             elif r.http in ("POST", "DELETE") and r.representation == "dl" and "delete" in get_vars:
                 # Datalist delete-request
                 is_delete = True
-                record_id = get_vars.get("delete")
-                record = db(ctable.id == record_id).select(limitby=(0, 1)).first()
+                crecord_id = get_vars.get("delete")
+                crecord = db(ctable.id == record_id).select(limitby=(0, 1)).first()
             else:
-                record = None
+                crecord = None
 
-            if is_delete and (not record or record.is_final):
+            if is_delete and (not crecord or crecord.is_final):
                 # Finalized records must not be deleted
                 r.error(403, current.ERROR.NOT_PERMITTED)
 
             # Components which records can only be edited by their original author
-            author_locked = r.component_name == "status"
+            author_locked = component_name == "status"
 
             # Enforce author-locking and is-final status
-            if record:
-                if record.is_final:
+            if crecord:
+                if crecord.is_final:
                     editable = deletable = False
                 else:
-                    editable = not author_locked or record.created_by == user_id
+                    editable = not author_locked or crecord.created_by == user_id
                     deletable = True
-                r.component.configure(editable=editable, deletable=deletable)
+                component.configure(editable=editable, deletable=deletable)
 
             # Expose is_final flag when not yet marked as final
             field = ctable.is_final
-            field.readable = field.writable = not record or not record.is_final
+            field.readable = field.writable = not crecord or not crecord.is_final
 
         return True
     s3.prep = prep
