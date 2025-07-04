@@ -87,10 +87,17 @@ def patient():
                 open_status = ("ARRIVED", "TREATMENT")
                 if closed == "only":
                     query &= ~(FS("status").belongs(open_status))
+                    list_title = T("Former Patients")
                 elif closed not in ("1", "include"):
                     query &= FS("status").belongs(open_status)
+                    list_title = T("Current Patients")
+                else:
+                    list_title = T("Patients")
+            else:
+                list_title = T("Invalid Patient Records")
 
             resource.add_filter(query)
+            s3.crud_strings["med_patient"]["title_list"] = list_title
 
         component_name = r.component_name
         component = r.component

@@ -98,7 +98,6 @@ def person():
                          (FS("dvr_case.status_id$is_closed") == None)
                 status_opts = lambda: get_status_opts(closed=False)
 
-
             resource.add_filter(query)
         else:
             archived = False

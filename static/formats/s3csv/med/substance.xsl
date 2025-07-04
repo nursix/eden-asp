@@ -3,12 +3,11 @@
     xmlns:xsl="http://www.w3.org/1999/XSL/Transform" version="1.0">
 
     <!-- **********************************************************************
-         Vaccination Types - CSV Import Stylesheet
+         Active Substances (medication) - CSV Import Stylesheet
 
          CSV fields:
-         Designation............string........med_vaccination_type.name
-         Vaccine Type...........string........med_vaccination_type.vaccine_type
-         Comments...............string........med_vaccination_type.comments
+         Designation............string........med_substance.name
+         Comments...............string........med_substance.comments
 
     *********************************************************************** -->
     <xsl:output method="xml"/>
@@ -24,15 +23,10 @@
     <!-- ****************************************************************** -->
     <xsl:template match="row">
 
-        <xsl:variable name="Type" select="col[@field='Vaccine Type']/text()"/>
-
-        <resource name="med_vaccination_type">
+        <resource name="med_substance">
             <data field="name">
                 <xsl:value-of select="col[@field='Designation']"/>
             </data>
-            <xsl:if test="$Type!=''">
-                <data field="vaccine_type"><xsl:value-of select="$Type"/></data>
-            </xsl:if>
             <data field="comments">
                 <xsl:value-of select="col[@field='Comments']/text()"/>
             </data>

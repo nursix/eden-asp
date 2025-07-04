@@ -170,8 +170,8 @@ class MedUnitModel(DataModel):
                            requires = IS_NOT_EMPTY(),
                            represent = lambda v, row=None: v if v else "-",
                            ),
-                     Field("area_type",
-                           label = T("Area Type"),
+                     Field("purpose",
+                           label = T("Purpose"),
                            default = "T",
                            requires = IS_IN_SET(area_functions,
                                                 zero = None,
@@ -203,20 +203,7 @@ class MedUnitModel(DataModel):
 
         # CRUD strings
         area_label = settings.get_med_area_label()
-        if area_label == "area":
-            crud_strings[tablename] = Storage(
-                label_create = T("Create Treatment Area"),
-                title_display = T("Treatment Area"),
-                title_list = T("Treatment Areas"),
-                title_update = T("Edit Treatment Area"),
-                label_list_button = T("List Treatment Areas"),
-                label_delete_button = T("Delete Treatment Area"),
-                msg_record_created = T("Treatment Area added"),
-                msg_record_modified = T("Treatment Area updated"),
-                msg_record_deleted = T("Treatment Area deleted"),
-                msg_list_empty = T("No Treatment Areas currently registered"),
-                )
-        else:
+        if area_label == "room":
             crud_strings[tablename] = Storage(
                 label_create = T("Add Room"),
                 title_display = T("Room"),
@@ -228,6 +215,19 @@ class MedUnitModel(DataModel):
                 msg_record_modified = T("Room updated"),
                 msg_record_deleted = T("Room deleted"),
                 msg_list_empty = T("No Rooms currently registered"),
+                )
+        else:
+            crud_strings[tablename] = Storage(
+                label_create = T("Create Treatment Area"),
+                title_display = T("Treatment Area"),
+                title_list = T("Treatment Areas"),
+                title_update = T("Edit Treatment Area"),
+                label_list_button = T("List Treatment Areas"),
+                label_delete_button = T("Delete Treatment Area"),
+                msg_record_created = T("Treatment Area added"),
+                msg_record_modified = T("Treatment Area updated"),
+                msg_record_deleted = T("Treatment Area deleted"),
+                msg_list_empty = T("No Treatment Areas currently registered"),
                 )
 
         # Foreign key template
@@ -401,7 +401,7 @@ class MedPatientModel(DataModel):
                      self.med_area_id(),
 
                      Field("refno",
-                           label = T("No."),
+                           label = T("Pt.#"),
                            writable = False,
                            ),
                      # The patient
@@ -523,8 +523,7 @@ class MedPatientModel(DataModel):
         # List fields
         # TODO make using areas a deployment setting
         # TODO show unit if user can see multiple
-        area_label = T("Area") if settings.get_med_area_label() == "area" else T("Room")
-        list_fields = [(area_label, "area_id$name"),
+        list_fields = [(T("Place##placement"), "area_id$name"),
                        "refno",
                        "person_id",
                        "priority",
@@ -538,6 +537,7 @@ class MedPatientModel(DataModel):
 
         # Table configuration
         self.configure(tablename,
+                       deletable = False,
                        crud_form = crud_form,
                        subheadings = subheadings,
                        list_fields = list_fields,
@@ -1726,32 +1726,39 @@ class MedMedicationModel(DataModel):
         T = current.T
         db = current.db
 
-        # s3 = current.response.s3
-        # crud_strings = s3.crud_strings
+        s3 = current.response.s3
+        crud_strings = s3.crud_strings
 
         define_table = self.define_table
-        # configure = self.configure
+        configure = self.configure
 
         # ---------------------------------------------------------------------
         # Medicine (generic substance)
-        # TODO import XSLT
         #
         tablename = "med_substance"
         define_table(tablename,
-                     Field("name",
-                           label = T("Substance"),
-                           requires = IS_NOT_EMPTY(),
+                     Field("name", length=128, notnull=True, unique=True,
+                           label = T("Active Substance(s)"),
+                           requires = [IS_NOT_EMPTY(),
+                                       IS_LENGTH(128, minsize=1),
+                                       IS_NOT_ONE_OF(db,
+                                                     "%s.name" % tablename,
+                                                     ),
+                                       ],
                            represent = lambda v, row=None: v if v else "-",
                            ),
                      CommentsField(),
                      )
 
-        # TODO onvalidation to exclude duplicates
+        # Table Configuration
+        configure(tablename,
+                  deduplicate = S3Duplicate(),
+                  )
 
         # Field template
         represent = S3Represent(lookup = tablename)
         substance_id = FieldTemplate("substance_id", "reference %s" % tablename,
-                                     label = T("Substance"),
+                                     label = T("Active Substance(s)"),
                                      ondelete = "RESTRICT",
                                      represent = represent,
                                      requires = IS_EMPTY_OR(
@@ -1760,7 +1767,19 @@ class MedMedicationModel(DataModel):
                                                               )),
                                                     )
 
-        # TODO CRUD Strings
+        # CRUD Strings
+        crud_strings[tablename] = Storage(
+            label_create = T("Create Active Substance"),
+            title_display = T("Active Substance"),
+            title_list = T("Active Substances"),
+            title_update = T("Edit Active Substance"),
+            label_list_button = T("List Active Substances"),
+            label_delete_button = T("Delete Active Substance"),
+            msg_record_created = T("Active Substance added"),
+            msg_record_modified = T("Active Substance updated"),
+            msg_record_deleted = T("Active Substance deleted"),
+            msg_list_empty = T("No Active Substances currently registered"),
+            )
 
         # ---------------------------------------------------------------------
         # Priorities
@@ -1887,11 +1906,23 @@ class MedMedicationModel(DataModel):
                        (T("Updated"), "modified_on"),
                        ]
 
-        self.configure(tablename,
-                       list_fields = list_fields,
-                       )
+        configure(tablename,
+                  list_fields = list_fields,
+                  )
 
-        # TODO CRUD Strings
+        # CRUD Strings
+        crud_strings[tablename] = Storage(
+            label_create = T("Add Medication"),
+            title_display = T("Medication"),
+            title_list = T("Medications"),
+            title_update = T("Edit Medication"),
+            label_list_button = T("List Medications"),
+            label_delete_button = T("Delete Medication"),
+            msg_record_created = T("Medication added"),
+            msg_record_modified = T("Medication updated"),
+            msg_record_deleted = T("Medication deleted"),
+            msg_list_empty = T("No Medications currently registered"),
+            )
 
         # ---------------------------------------------------------------------
         # Pass names back to global scope (s3.*)
@@ -2927,7 +2958,7 @@ def med_patient_header(record):
     # Patient Number
     if record.refno:
         refno = SPAN(record.refno,
-                     _title = T("Patient No."),
+                     _title = T("Pt.#"),
                      _class = "med-refno",
                      )
     else:

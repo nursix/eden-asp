@@ -4525,7 +4525,7 @@ class S3Config(Storage):
         """
             Terminology to use for treatment areas (room|area)
         """
-        return self.med.get("area_label", "room")
+        return self.med.get("area_label", "area")
 
     def get_med_risk_class_calculation(self):
         """

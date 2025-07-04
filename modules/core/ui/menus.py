@@ -1146,15 +1146,16 @@ class OptionsMenu:
         ADMIN = current.session.s3.system_roles.ADMIN
 
         return M(c="med")(
-                    M("Patients", f="patient")(
+                    M("Current Patients", f="patient")(
                         M("Create", m="create"),
+                        M("Former Patients", f="patient", vars={"closed": "only"}),
                         ),
                     # M("Persons", f="person"),
                     M("Units", f="unit")(
                         M("Create", m="create"),
                         ),
                     M("Administration", link=False, restrict=[ADMIN])(
-                        M("Medicines", f="substance"),
+                        M("Active Substances", f="substance"),
                         M("Vaccination Types", f="vaccination_type"),
                         ),
                     )
