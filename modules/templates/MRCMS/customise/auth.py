@@ -81,7 +81,7 @@ def realm_entity(table, row):
         if group and group.group_type == 7:
             realm_entity = None
 
-    elif tablename == "pr_filter":
+    elif tablename == "usr_filter":
         realm_entity = None
 
     # DVR ===========================================================

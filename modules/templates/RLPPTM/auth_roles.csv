@@ -31,7 +31,6 @@ AUTHENTICATED,Authenticated,,,,,org_group,READ,,
 AUTHENTICATED,Authenticated,,,,,pr_address,CREATE,READ|UPDATE|DELETE,
 AUTHENTICATED,Authenticated,,,,,pr_contact,CREATE,READ|UPDATE|DELETE,
 AUTHENTICATED,Authenticated,,,,,pr_contact_emergency,CREATE,READ|UPDATE|DELETE,
-AUTHENTICATED,Authenticated,,,,,pr_filter,CREATE,READ|UPDATE|DELETE,
 AUTHENTICATED,Authenticated,,,,,pr_group,READ,,
 AUTHENTICATED,Authenticated,,,,,pr_group_membership,READ,,
 AUTHENTICATED,Authenticated,,,,,pr_occupation_type,READ,,
@@ -39,6 +38,7 @@ AUTHENTICATED,Authenticated,,,,,pr_occupation_type_person,CREATE|READ,UPDATE|DEL
 AUTHENTICATED,Authenticated,,,,,pr_person,NONE,READ|UPDATE|DELETE,
 AUTHENTICATED,Authenticated,,,,,pr_person_details,CREATE,READ|UPDATE,
 AUTHENTICATED,Authenticated,,,,,pr_person_tag,CREATE,READ|UPDATE|DELETE,
+AUTHENTICATED,Authenticated,,,,,usr_filter,CREATE,READ|UPDATE|DELETE,
 DISEASE_TEST_READER,Disease Test Reader,,,disease,case_diagnostics,,READ,,any
 DISEASE_TEST_READER,Disease Test Reader,,,disease,testing_demographic,,READ,,any
 DISEASE_TEST_READER,Disease Test Reader,,,disease,testing_report,,READ,,any
@@ -55,7 +55,7 @@ NEWSLETTER_AUTHOR,Newsletter Author,,,,,cms_newsletter,CREATE|READ|UPDATE|DELETE
 NEWSLETTER_AUTHOR,Newsletter Author,,,,,cms_newsletter,NONE,,any
 NEWSLETTER_AUTHOR,Newsletter Author,,,,,cms_newsletter_recipient,CREATE|READ|DELETE,,any
 NEWSLETTER_AUTHOR,Newsletter Author,,,,,doc_document,CREATE|READ,UPDATE|DELETE,
-NEWSLETTER_AUTHOR,Newsletter Author,,,,,pr_filter,,READ,
+NEWSLETTER_AUTHOR,Newsletter Author,,,,,usr_filter,,READ,
 ORG_ADMIN,Organisation Admin,,,admin,user,,CREATE|READ|UPDATE|DELETE,,
 ORG_ADMIN,Organisation Admin,,,cms,newsletter_recipient,,UPDATE,,
 ORG_ADMIN,Organisation Admin,,,cms,read_newsletter,,READ,,any

@@ -146,7 +146,7 @@ class FilterWidget:
                 variable: the URL query variable
         """
 
-        if type(variable) is list:
+        if isinstance(variable, list):
             variable = "&".join(variable)
 
         return INPUT(_type = "hidden",
@@ -180,7 +180,7 @@ class FilterWidget:
             selector = self._prefix(k)
             defaults[selector] = v
 
-        if type(variable) is list:
+        if isinstance(variable, list):
             values = Storage()
             for k in variable:
                 if k in defaults:
@@ -203,7 +203,7 @@ class FilterWidget:
         # Construct the hidden data element
         data = self.data_element(variable)
 
-        if type(data) is list:
+        if isinstance(data, list):
             data.append(widget)
         else:
             data = [data, widget]
@@ -607,6 +607,8 @@ class FilterForm:
                 fields = TABLE(TBODY(rows))
             else:
                 fields = DIV(rows)
+        else:
+            fields = ""
 
         return fields
 
@@ -761,7 +763,7 @@ class FilterForm:
         if not pe_id:
             return None
 
-        table = current.s3db.pr_filter
+        table = current.s3db.usr_filter
         query = (table.deleted == False) & \
                 (table.pe_id == pe_id)
 
@@ -904,7 +906,7 @@ class FilterForm:
 
             # Get all widget variables
             variables = filter_widget.variable(resource, get_vars)
-            if type(variables) is not list:
+            if not isinstance(variables, list):
                 variables = [variables]
 
             for variable in variables:
@@ -992,7 +994,7 @@ def set_default_filter(selector, value, tablename=None):
     table_defaults[selector] = value
 
 # =============================================================================
-def get_filter_options(tablename,
+def get_filter_options(tablename, *,
                        fieldname = "name",
                        location_filter = False,
                        org_filter = False,

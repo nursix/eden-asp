@@ -44,16 +44,16 @@ AUTHENTICATED,Authenticated,,,,,org_site_facility_type,READ,,
 AUTHENTICATED,Authenticated,,,,,pr_address,CREATE,READ|UPDATE|DELETE,
 AUTHENTICATED,Authenticated,,,,,pr_contact,CREATE,READ|UPDATE|DELETE,
 AUTHENTICATED,Authenticated,,,,,pr_contact_emergency,CREATE,READ|UPDATE|DELETE,
-AUTHENTICATED,Authenticated,,,,,pr_filter,,READ,
 AUTHENTICATED,Authenticated,,,,,pr_person,NONE,READ|UPDATE|DELETE,
 AUTHENTICATED,Authenticated,,,,,pr_person_details,CREATE,READ|UPDATE|DELETE,
+AUTHENTICATED,Authenticated,,,,,usr_filter,,READ,
 NEWSLETTER_AUTHOR,Newsletter Author,,,cms,newsletter,,CREATE|READ|UPDATE|DELETE,,
 NEWSLETTER_AUTHOR,Newsletter Author,,,cms,newsletter,,READ|DELETE,,any
 NEWSLETTER_AUTHOR,Newsletter Author,,,cms,,,READ,,
 NEWSLETTER_AUTHOR,Newsletter Author,,,,,cms_newsletter,CREATE|READ|UPDATE|DELETE,,
 NEWSLETTER_AUTHOR,Newsletter Author,,,,,cms_newsletter,NONE,,any
 NEWSLETTER_AUTHOR,Newsletter Author,,,,,cms_newsletter_recipient,CREATE|READ|DELETE,,any
-NEWSLETTER_AUTHOR,Newsletter Author,,,,,pr_filter,,READ,
+NEWSLETTER_AUTHOR,Newsletter Author,,,,,usr_filter,,READ,
 ORG_ADMIN,Organisation Admin,,,admin,user,,CREATE|READ|UPDATE|DELETE,,
 ORG_ADMIN,Organisation Admin,,,cms,newsletter_recipient,,UPDATE,,
 ORG_ADMIN,Organisation Admin,,,cms,read_newsletter,,READ,,any

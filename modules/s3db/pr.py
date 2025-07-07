@@ -106,7 +106,6 @@ __all__ = (# PR Base Entities
            # Data List Default Layouts
            #"pr_address_list_layout",
            #"pr_contact_list_layout",
-           #"pr_filter_list_layout",
            )
 
 import json
@@ -115,7 +114,7 @@ import os
 from urllib.parse import urlencode
 
 from gluon import current, redirect, URL, \
-                  A, DIV, H2, H3, H5, IMG, LABEL, P, SPAN, TABLE, TAG, TH, TR, \
+                  A, DIV, H2, H3, IMG, LABEL, P, SPAN, TABLE, TAG, TH, TR, \
                   IS_LENGTH, IS_EMPTY_OR, IS_IN_SET, IS_NOT_EMPTY, IS_EMAIL, \
                   IS_INT_IN_RANGE
 from gluon.storage import Storage
@@ -5746,7 +5745,8 @@ class PRImageLibraryModel(DataModel):
 class PRSavedFilterModel(DataModel):
     """ Saved Filters """
 
-    # TODO replace by usr_filter
+    # DEPRECATED
+    # TODO Remove after transition to usr_filter
 
     names = ("pr_filter",
              "pr_filter_id",
@@ -5799,7 +5799,7 @@ class PRSavedFilterModel(DataModel):
                                       "url",
                                       "query",
                                       ],
-                       list_layout = pr_filter_list_layout,
+                       # list_layout = pr_filter_list_layout,
                        onvalidation = self.pr_filter_onvalidation,
                        orderby = "pr_filter.resource",
                        )
@@ -9761,144 +9761,6 @@ class pr_PersonSearchAutocomplete(CRUDMethod):
 
         response.headers["Content-Type"] = "application/json"
         return json.dumps(output, separators=JSONSEPARATORS)
-
-# =============================================================================
-def pr_filter_list_layout(list_id, item_id, resource, rfields, record):
-    """
-        Default dataList item renderer for Saved Filters
-
-        Args:
-            list_id: the HTML ID of the list
-            item_id: the HTML ID of the item
-            resource: the CRUDResource to render
-            rfields: the S3ResourceFields to render
-            record: the record as dict
-    """
-
-    record_id = record["pr_filter.id"]
-    item_class = "thumbnail"
-
-    raw = record._row
-
-    T = current.T
-    resource_name = raw["pr_filter.resource"]
-    resource = current.s3db.resource(resource_name)
-
-    # Resource title
-    crud_strings = current.response.s3.crud_strings.get(resource.tablename)
-    if crud_strings:
-        resource_name = crud_strings.title_list
-    else:
-        resource_name = " ".join(s.capitalize() for s in resource.name.split("_"))
-
-    # Filter title
-    title = record["pr_filter.title"]
-
-    # Filter Query
-    fstring = URLQueryJSON(resource, raw["pr_filter.query"])
-    query = fstring.represent()
-
-    # Actions
-    actions = filter_actions(resource,
-                             raw["pr_filter.url"],
-                             fstring.get_vars)
-
-    # Render the item
-    item = DIV(DIV(DIV(actions,
-                       _class = "action-bar fleft",
-                       ),
-                   SPAN(T("%(resource)s Filter") % \
-                        {"resource": resource_name},
-                        _class = "card-title",
-                        ),
-                    DIV(A(ICON("delete"),
-                          _title = T("Delete this Filter"),
-                          _class = "dl-item-delete",
-                          ),
-                        _class = "edit-bar fright",
-                        ),
-                   _class = "card-header",
-                   ),
-               DIV(DIV(H5(title,
-                          _id = "filter-title-%s" % record_id,
-                          _class = "media-heading jeditable",
-                          ),
-                       DIV(query),
-                       _class = "media-body",
-                       ),
-                   _class = "media",
-                   ),
-               _class = item_class,
-               _id = item_id,
-               )
-
-    return item
-
-# -----------------------------------------------------------------------------
-def filter_actions(resource, url, filters):
-    """
-        Helper to construct the actions for a saved filter.
-
-        Args:
-            resource: the CRUDResource
-            url: the filter page URL
-            filters: the filter GET vars
-    """
-
-    if not url:
-        return ""
-
-    T = current.T
-    actions = []
-    append = actions.append
-    tablename = resource.tablename
-    filter_actions = current.s3db.get_config(tablename, "filter_actions")
-    if filter_actions:
-        controller, fn = tablename.split("_", 1)
-        for action in filter_actions:
-            c = action.get("controller", controller)
-            f = action.get("function", fn)
-            m = action.get("method", None)
-            if m:
-                args = [m]
-            else:
-                args = []
-            e = action.get("format", None)
-            link = URL(c=c, f=f,
-                       args = args,
-                       extension = e,
-                       vars = filters,
-                       )
-            append(A(ICON(action.get("icon", "other")),
-                     _title = T(action.get("label", "Open")),
-                     _href = link,
-                     ))
-    else:
-        # Default to using Summary Tabs
-        links = summary_urls(resource, url, filters)
-        if links:
-            if "map" in links:
-                append(A(ICON("globe"),
-                         _title = T("Open Map"),
-                         _href = links["map"],
-                         ))
-            if "table" in links:
-                append(A(ICON("table"),
-                         _title = T("Open Table"),
-                         _href = links["table"],
-                         ))
-            if "chart" in links:
-                append(A(ICON("bar-chart"),
-                         _title = T("Open Chart"),
-                         _href = links["chart"],
-                         ))
-            if "report" in links:
-                append(A(ICON("bar-chart"),
-                         _title = T("Open Report"),
-                         _href = links["report"],
-                         ))
-
-    return actions
 
 # -----------------------------------------------------------------------------
 def summary_urls(resource, url, filters):

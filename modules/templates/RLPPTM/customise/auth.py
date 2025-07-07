@@ -45,7 +45,7 @@ def rlpptm_realm_entity(table, row):
         if org:
             realm_entity = org.pe_id
 
-    elif tablename == "pr_filter":
+    elif tablename == "usr_filter":
 
         realm_entity = None
 

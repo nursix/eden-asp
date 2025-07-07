@@ -25,7 +25,7 @@
     OTHER DEALINGS IN THE SOFTWARE.
 """
 
-__all__ = (#"SavedFilterModel",
+__all__ = ("SavedFilterModel",
            "ColumnConfigModel",
            #"UserPreferencesModel",
            )
@@ -38,8 +38,6 @@ from ..core import *
 # =============================================================================
 class SavedFilterModel(DataModel):
     """ Saved Filters """
-
-    # TODO Refactor to replace pr_filter
 
     names = ("usr_filter",
              "usr_filter_id",
@@ -92,7 +90,6 @@ class SavedFilterModel(DataModel):
                                       "url",
                                       "query",
                                       ],
-                       # list_layout = filter_list_layout,
                        onvalidation = self.filter_onvalidation,
                        orderby = "usr_filter.resource",
                        )
@@ -144,7 +141,7 @@ class ColumnConfigModel(DataModel):
         # ---------------------------------------------------------------------
         # Pass names back to global scope (s3.*)
         #
-        return None
+        # return {}
 
 # =============================================================================
 # TODO

@@ -161,7 +161,7 @@ def realm_entity(table, row):
                        "dvr_response_type",
                        "dvr_service_contact_type",
                        "dvr_vulnerability_type",
-                       "pr_filter",
+                       "usr_filter",
                        ):
         realm_entity = None
 

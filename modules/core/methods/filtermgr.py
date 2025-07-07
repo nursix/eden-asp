@@ -165,7 +165,7 @@ class FilterManager(CRUDMethod):
         db = current.db
         s3db = current.s3db
 
-        table = s3db.pr_filter
+        table = s3db.usr_filter
         record = None
         record_id = data.get("id")
         if record_id:
@@ -177,7 +177,7 @@ class FilterManager(CRUDMethod):
         if not record:
             r.error(404, current.ERROR.BAD_RECORD)
 
-        resource = s3db.resource("pr_filter", id = record_id)
+        resource = s3db.resource("usr_filter", id = record_id)
         success = resource.delete(format = r.representation)
 
         if not success:
@@ -218,7 +218,7 @@ class FilterManager(CRUDMethod):
         db = current.db
         s3db = current.s3db
 
-        table = s3db.pr_filter
+        table = s3db.usr_filter
         record_id = data.get("id")
         record = None
         if record_id:
@@ -265,12 +265,12 @@ class FilterManager(CRUDMethod):
         form = Storage(vars=filter_data)
         if record:
             record.update_record(**filter_data)
-            current.audit("update", "pr", "filter", form, record_id, "json")
+            current.audit("update", "usr", "filter", form, record_id, "json")
             s3db.onaccept(table, record, method="update")
             info = {"updated": record_id}
         else:
             filter_data["id"] = record_id = table.insert(**filter_data)
-            current.audit("create", "pr", "filter", form, record_id, "json")
+            current.audit("create", "usr", "filter", form, record_id, "json")
             auth.s3_set_record_owner(table, record_id)
             s3db.onaccept(table, record, method="create")
             info = {"created": record_id}
@@ -291,7 +291,7 @@ class FilterManager(CRUDMethod):
         """
 
         db = current.db
-        table = current.s3db.pr_filter
+        table = current.s3db.usr_filter
 
         # Authorization, get pe_id
         auth = current.auth

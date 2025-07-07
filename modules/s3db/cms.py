@@ -1362,12 +1362,12 @@ class CMSNewsletterModel(DataModel):
         # Components
         self.add_components(tablename,
                             cms_newsletter_recipient = "newsletter_id",
-                            pr_filter = {"name": "distribution",
-                                         "link": "cms_newsletter_distribution",
-                                         "joinby": "newsletter_id",
-                                         "key": "filter_id",
-                                         # TODO filter by resource?
-                                         },
+                            usr_filter = {"name": "distribution",
+                                          "link": "cms_newsletter_distribution",
+                                          "joinby": "newsletter_id",
+                                          "key": "saved_filter_id",
+                                          # TODO filter by resource?
+                                          },
                             )
 
         # CRUD Form
@@ -1519,12 +1519,17 @@ class CMSNewsletterModel(DataModel):
 
         # ---------------------------------------------------------------------
         # Saved filters as distribution list
-        # - link table pr_filter <> cms_newsletter
+        # - link table usr_filter <> cms_newsletter
         #
         tablename = "cms_newsletter_distribution"
         define_table(tablename,
                      Field("newsletter_id", "reference cms_newsletter"),
-                     self.pr_filter_id(),
+                     self.usr_filter_id("saved_filter_id"),
+                     # TODO deprecate:
+                     self.pr_filter_id(
+                         readable = False,
+                         writable = False,
+                         ),
                      )
 
         # ---------------------------------------------------------------------
@@ -1921,9 +1926,9 @@ class cms_UpdateNewsletter(CRUDMethod):
         recipients = set()
 
         ltable = s3db.cms_newsletter_distribution
-        ftable = s3db.pr_filter
+        ftable = s3db.usr_filter
 
-        join = ftable.on(ftable.id == ltable.filter_id)
+        join = ftable.on(ftable.id == ltable.saved_filter_id)
         query = (ltable.newsletter_id == newsletter_id) & \
                 (ltable.deleted == False)
         filters = db(query).select(ftable.controller,
