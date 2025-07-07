@@ -300,14 +300,12 @@ class OptionsMenu:
         # NB: Do not specify a controller for the main menu to allow
         #     re-use of this menu by other controllers
         return M()(
-                    M("User Management", c="admin", f="user")(
-                        M("Create User", m="create"),
-                        M("List All Users"),
-                        M("Import Users", m="import"),
-                        M("List All Roles", f="role"),
-                        M("List All Organization Approvers & Whitelists", f="organisation"),
-                        #M("Roles", f="group"),
-                        #M("Membership", f="membership"),
+                    M("Users and Roles", c="admin", link=False)(
+                        M("Manage Users", f="user"),
+                        M("Manage Roles", f="role"),
+                        # M("List All Organization Approvers & Whitelists", f="organisation"),
+                        # M("Roles", f="group"),
+                        # M("Membership", f="membership"),
                     ),
                     M("CMS", c="cms", f="post")(
                     ),
