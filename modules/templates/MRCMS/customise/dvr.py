@@ -1378,8 +1378,18 @@ def dvr_person_prep(r):
             field.default = current.auth.s3_logged_in_human_resource()
 
         elif r.component_name == "patient":
-
-            r.component.configure(insertable = False,
+            # On patient-tab of person record
+            list_fields = ["date",
+                           "unit_id",
+                           "refno",
+                           "reason",
+                           "status",
+                           ]
+            r.component.configure(crud_form = CustomForm(*list_fields),
+                                  subheadings = None,
+                                  list_fields = list_fields,
+                                  orderby = "%s.date desc" % r.component.tablename,
+                                  insertable = False,
                                   editable = False,
                                   deletable = False,
                                   )
@@ -1396,11 +1406,6 @@ def dvr_person_prep(r):
                 msg_list_empty = T("No Treatment Occasions currently registered"),
                 )
 
-            list_fields = ["date",
-                           "reason",
-                           "status",
-                           ]
-            r.component.configure(list_fields = list_fields)
 
         elif r.component_name == "epicrisis":
             # Read-only in this perspective

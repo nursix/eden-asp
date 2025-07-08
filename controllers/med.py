@@ -300,8 +300,17 @@ def person():
 
         elif r.component_name == "patient":
             # On patient-tab of person record
-
-            r.component.configure(insertable = False,
+            list_fields = ["date",
+                           "unit_id",
+                           "refno",
+                           "reason",
+                           "status",
+                           ]
+            r.component.configure(crud_form = CustomForm(*list_fields),
+                                  subheadings = None,
+                                  list_fields = list_fields,
+                                  orderby = "%s.date desc" % r.component.tablename,
+                                  insertable = False,
                                   editable = False,
                                   deletable = False,
                                   )
@@ -374,8 +383,11 @@ def person():
     def postp(r, output):
 
         if r.component_name == "patient":
-            if isinstance(output, dict):
+            if isinstance(output, dict) and \
+               auth.permission.has_permission("read", c="med", f="patient"):
+                # Open in med/patient controller rather than on component tab
                 output["native"] = True
+
         return output
     s3.postp = postp
 
