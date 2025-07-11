@@ -75,6 +75,12 @@ class MainMenu(default.MainMenu):
         else:
             shelter_menu = MM("Shelters", c="cr", f="shelter")
 
+        # Med-menu
+        if has_permission("read", "med_patient", c="med", f="patient"):
+            med_menu = MM("Med-Point", c="med", f=("patient", "*"))
+        else:
+            med_menu = MM("Med-Point", c="med", f=("unit", "*"))
+
         menu = [
             MM("Clients", c=("dvr", "pr"), f=("person", "*")),
             MM("Food Distribution", c="dvr", f="case_event", m="register_food", p="create",
@@ -83,10 +89,7 @@ class MainMenu(default.MainMenu):
                ),
             MM("Counseling", c=("counsel", "pr"), f=("person", "*")),
             MM("Supply", c=("supply", "pr"), f=("person", "*")),
-            MM("Med-Point", c="med", f=("patient", "person", "*")),
-            MM("Med-Point", c="med", f=("unit", "person", "*"),
-               check = lambda this: not this.preceding()[-1].check_permission(),
-               ),
+            med_menu,
             shelter_menu,
             org_menu,
             MM("Security", c="security", f="seized_item"),
