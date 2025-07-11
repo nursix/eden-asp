@@ -910,7 +910,11 @@ def configure_id_cards(r, resource, administration=False):
 # -------------------------------------------------------------------------
 def configure_dvr_person_controller(r, privileged=False, administration=False):
     """
-        Case File (Full)
+        Case File (Full), used in
+            - dvr/person
+            - counsel/person
+            - supply/person
+            - med/person (without viewing)
 
         Args:
             r: the CRUDRequest
@@ -923,6 +927,16 @@ def configure_dvr_person_controller(r, privileged=False, administration=False):
     settings = current.deployment_settings
 
     resource = r.resource
+
+    # Components that can be written to without permission
+    # to update the master record
+    s3db.configure("pr_person",
+                   ignore_master_access = ("anamnesis",
+                                           "medication",
+                                           "vaccination",
+                                           "case_appointment",
+                                           ),
+                   )
 
     # Autocomplete using alternative search method
     search_fields = ("first_name", "last_name", "pe_label")

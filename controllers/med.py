@@ -373,10 +373,10 @@ def person():
                             "comments",
                             ])
 
-        r.resource.configure(crud_form = CustomForm(*crud_fields),
-                             insertable = False,
-                             deletable = False,
-                             )
+        resource.configure(crud_form = CustomForm(*crud_fields),
+                           insertable = False,
+                           deletable = False,
+                           )
         return True
     s3.prep = prep
 
