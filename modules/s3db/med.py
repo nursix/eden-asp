@@ -100,6 +100,9 @@ class MedUnitModel(DataModel):
         # Components
         self.add_components(tablename,
                             med_area = "unit_id",
+                            med_patient = {"joinby": "unit_id",
+                                           "filterby": {"status": ("ARRIVED", "TREATMENT")},
+                                           },
                             )
 
         # Table configuration
@@ -241,6 +244,8 @@ class MedUnitModel(DataModel):
                                 requires = IS_EMPTY_OR(
                                                 IS_ONE_OF(db, "%s.id" % tablename,
                                                           represent,
+                                                          not_filterby = "status",
+                                                          not_filter_opts = ("M", "X"),
                                                           )),
                                 )
 
@@ -3179,10 +3184,11 @@ def med_rheader(r, tabs=None):
                     areas_label = T("Rooms")
                 tabs = [(T("Basic Details"), None),
                         (areas_label, "area"),
+                        (T("Current Patients"), "patient"),
                         ]
 
-            rheader_fields = ["organisation_id",
-                              "site_id",
+            rheader_fields = [["organisation_id"],
+                              ["site_id"],
                               ]
             rheader_title = "name"
 

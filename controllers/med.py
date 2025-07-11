@@ -29,14 +29,66 @@ def unit():
 
     def prep(r):
 
-        if r.record:
-            # Organisation cannot be changed
-            table = r.resource.table
-            field = table.organisation_id
-            field.writable = False
+        resource = r.resource
+        table = resource.table
 
+        record = r.record
+        if not r.component:
+            if record:
+                # Organisation cannot be changed
+                field = table.organisation_id
+                field.writable = False
+
+                ptable = s3db.med_patient
+
+                # Unit cannot be deleted while there are patients assigned to it
+                query = (ptable.unit_id == record.id)
+                row = db(query).select(ptable.id, limitby=(0, 1)).first()
+                if row:
+                    r.resource.configure(deletable=False)
+
+                # Unit cannot be marked obsolete while it has current patients
+                query &= (ptable.status.belongs(("ARRIVED", "TREATMENT"))) & \
+                         (ptable.invalid == False) & \
+                         (ptable.deleted == False)
+                row = db(query).select(ptable.id, limitby=(0, 1)).first()
+                if row:
+                    field = table.obsolete
+                    field.readable = field.writable = record.obsolete
+
+        elif r.component_name == "patient":
+            list_fields = ["date",
+                           "refno",
+                           "person_id",
+                           "reason",
+                           "status",
+                           ]
+            r.component.configure(crud_form = s3base.CustomForm(*list_fields),
+                                  subheadings = None,
+                                  list_fields = list_fields,
+                                  orderby = "%s.date desc" % r.component.tablename,
+                                  insertable = False,
+                                  editable = False,
+                                  deletable = False,
+                                  )
         return True
     s3.prep = prep
+
+    def postp(r, output):
+
+        if not r.component:
+            if r.interactive and not r.record:
+                # No delete-action by default (must open record to delete)
+                s3_action_buttons(r, deletable=False)
+
+        elif r.component_name == "patient":
+            if isinstance(output, dict) and \
+               auth.permission.has_permission("read", c="med", f="patient"):
+                # Open in med/patient controller rather than on component tab
+                output["native"] = True
+
+        return output
+    s3.postp = postp
 
     return crud_controller(rheader=s3db.med_rheader)
 
@@ -44,7 +96,13 @@ def area():
     """ Treatment Areas (Rooms) - CRUD Controller """
 
     # Only used for options lookups (in patient form)
-    s3.prep = lambda r: r.http == "GET" and r.representation == "json"
+    def prep(r):
+        if r.http == "GET" and r.representation == "json":
+            r.resource.add_filter(~FS("status").belongs(("M", "X")))
+            return True
+        else:
+            return False
+    s3.prep = prep
 
     return crud_controller()
 
@@ -146,14 +204,13 @@ def patient():
 
             ctable = component.table
 
-            is_delete = r.http == "DELETE" or r.method == "delete"
+            is_delete = r.is_delete()
 
             if r.component_id or not r.component.multiple:
                 rows = component.load()
                 crecord = rows[0] if rows else None
-            elif r.http in ("POST", "DELETE") and r.representation == "dl" and "delete" in get_vars:
+            elif is_delete and r.representation == "dl" and "delete" in get_vars:
                 # Datalist delete-request
-                is_delete = True
                 crecord_id = get_vars.get("delete")
                 crecord = db(ctable.id == record_id).select(limitby=(0, 1)).first()
             else:
@@ -306,7 +363,7 @@ def person():
                            "reason",
                            "status",
                            ]
-            r.component.configure(crud_form = CustomForm(*list_fields),
+            r.component.configure(crud_form = s3base.CustomForm(*list_fields),
                                   subheadings = None,
                                   list_fields = list_fields,
                                   orderby = "%s.date desc" % r.component.tablename,
@@ -359,7 +416,6 @@ def person():
             r.component.configure(list_fields=list_fields)
 
         # CRUD Form
-        from core import CustomForm
         crud_fields = settings.get_pr_name_fields()
         crud_fields.extend(["date_of_birth",
                             "gender",
@@ -373,7 +429,7 @@ def person():
                             "comments",
                             ])
 
-        resource.configure(crud_form = CustomForm(*crud_fields),
+        resource.configure(crud_form = s3base.CustomForm(*crud_fields),
                            insertable = False,
                            deletable = False,
                            )

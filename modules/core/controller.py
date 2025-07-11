@@ -1017,6 +1017,21 @@ class CRUDRequest:
                bool(current.response.s3.form_error)
 
     # -------------------------------------------------------------------------
+    def is_delete(self):
+        """
+            Checks whether this request is a deletion request
+
+            Returns:
+                boolean
+        """
+
+        http = self.http
+
+        return self.method == "delete" or \
+               http == "DELETE" or \
+               http in ("POST", "DELETE") and self.representation == "dl" and "delete" in self.get_vars
+
+    # -------------------------------------------------------------------------
     def stylesheet(self, method=None, skip_error=False):
         """
             Find the XSLT stylesheet for this request
