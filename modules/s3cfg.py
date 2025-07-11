@@ -4527,6 +4527,16 @@ class S3Config(Storage):
         """
         return self.med.get("area_label", "area")
 
+    def get_med_area_over_capacity(self):
+        """
+            How to handle area assignments of patients when the
+            area is occupied over capacity:
+                "accept" - accept assignment
+                "warn" - accept assignment with a warning
+                "refuse" - refuse assignment
+        """
+        return self.med.get("area_over_capacity", "warn")
+
     def get_med_risk_class_calculation(self):
         """
             Which vital sign risk stratifier to use

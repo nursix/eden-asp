@@ -132,6 +132,8 @@ class MedUnitModel(DataModel):
                                 requires = IS_EMPTY_OR(
                                                 IS_ONE_OF(db, "%s.id" % tablename,
                                                           represent,
+                                                          filterby = "obsolete",
+                                                          filter_opts = (False,),
                                                           )),
                                 )
 
@@ -234,7 +236,7 @@ class MedUnitModel(DataModel):
         represent = S3Represent(lookup=tablename)
         area_id = FieldTemplate("area_id", "reference %s" % tablename,
                                 label = T("Place##placement"),
-                                ondelete = "RESTRICT",
+                                ondelete = "SET NULL",
                                 represent = represent,
                                 requires = IS_EMPTY_OR(
                                                 IS_ONE_OF(db, "%s.id" % tablename,
@@ -334,7 +336,6 @@ class MedPatientModel(DataModel):
 
         T = current.T
         db = current.db
-        settings = current.deployment_settings
 
         s3 = current.response.s3
         crud_strings = s3.crud_strings
@@ -595,12 +596,21 @@ class MedPatientModel(DataModel):
             - there must be only one open patient record per person
         """
 
+        T = current.T
+        db = current.db
+        s3db = current.s3db
+
+        settings = current.deployment_settings
+
         # Get form record id
         record_id = get_form_record_id(form)
 
         # Get form record data
-        table = current.s3db.med_patient
-        data = get_form_record_data(form, table, ["person_id", "status"])
+        table = s3db.med_patient
+        data = get_form_record_data(form, table, ["person_id",
+                                                  "area_id",
+                                                  "status",
+                                                  ])
 
         # Verify that there are no (other) open patient records for the same person
         status = data.get("status")
@@ -612,10 +622,39 @@ class MedPatientModel(DataModel):
             if record_id:
                 query &= (table.id != record_id)
             query &= (table.deleted == False)
-            row = current.db(query).select(table.id, limitby=(0, 1)).first()
+            row = db(query).select(table.id, limitby=(0, 1)).first()
             if row:
-                error = current.T("Person already has an ongoing patient registration")
+                error = T("Person already has an ongoing patient registration")
                 form.errors.person_id = error
+
+        # Area capacity handling
+        area_id = data.get("area_id")
+        capacity_handling = settings.get_med_area_over_capacity()
+        if area_id and capacity_handling in ("warn", "refuse"):
+            atable = s3db.med_area
+            area = db(atable.id == area_id).select(atable.name,
+                                                   atable.capacity,
+                                                   limitby = (0, 1),
+                                                   ).first()
+
+            if area:
+                occupancy = table.id.count(distinct=True)
+                query = (table.area_id == area_id) & \
+                        (table.id != record_id) & \
+                        (table.status.belongs(("ARRIVED", "TREATMENT"))) & \
+                        (table.invalid == False) & \
+                        (table.deleted == False)
+                row = db(query).select(occupancy).first()
+                occupancy = row[occupancy]
+            else:
+                occupancy = None
+
+            if area and occupancy and area.capacity and area.capacity <= occupancy:
+                name = {"name": area.name}
+                if capacity_handling == "warn":
+                    current.response.warning = T("%(name)s is occupied over capacity") % name
+                else:
+                    form.errors.area_id = T("%(name)s is already fully occupied") % name
 
     # -------------------------------------------------------------------------
     @staticmethod
