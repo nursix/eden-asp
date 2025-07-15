@@ -118,12 +118,15 @@ def dvr_rheader(r, tabs=None):
 
                     elif c == "med":
                         # Medical Perspective
+                        if has_permission("read", "med_epicrisis", c="med", f="patient"):
+                            history = "epicrisis"
+                        else:
+                            history = "patient"
                         tabs.extend([(T("Background"), "anamnesis"),
                                      (T("Vaccinations"), "vaccination"),
                                      (T("Medication"), "medication"),
                                      (T("Appointments"), "case_appointment"),
-                                     (T("Treatment Occasions"), "patient"),
-                                     (T("Epicrises"), "epicrisis"),
+                                     (T("Treatment Occasions"), history),
                                      (T("Documents"), "document/"),
                                      ])
 

@@ -673,6 +673,7 @@ class MedPatientModel(DataModel):
 
         db = current.db
         s3db = current.s3db
+        auth = current.auth
 
         record_id = get_form_record_id(form)
         if not record_id:
@@ -683,6 +684,7 @@ class MedPatientModel(DataModel):
                 (table.deleted == False)
         record = db(query).select(table.id,
                                   table.refno,
+                                  table.date,
                                   table.person_id,
                                   limitby = (0, 1),
                                   ).first()
@@ -717,6 +719,21 @@ class MedPatientModel(DataModel):
                              modified_by = ctable.modified_by,
                              modified_on = ctable.modified_on,
                              )
+
+        # Auto-generate epicrisis
+        etable = s3db.med_epicrisis
+        row = db(etable.patient_id==record_id).select(etable.id, limitby=(0, 1)).first()
+        if not row:
+            epicrisis = {"person_id": person_id,
+                         "patient_id": record_id,
+                         "date": record.date,
+                         }
+            epicrisis_id = epicrisis["id"] = etable.insert(**epicrisis)
+            if epicrisis_id:
+                s3db.update_super(etable, epicrisis)
+                auth.s3_set_record_owner(etable, epicrisis_id)
+                auth.s3_make_session_owner(etable, epicrisis_id)
+                s3db.onaccept(etable, epicrisis, method="create")
 
     # -------------------------------------------------------------------------
     @staticmethod
@@ -3098,12 +3115,15 @@ def med_rheader(r, tabs=None):
 
         if tablename == "pr_person":
             if not tabs:
+                if current.auth.s3_has_permission("read", "med_epicrisis", c="med", f="patient"):
+                    history = "epicrisis"
+                else:
+                    history = "patient"
                 tabs = [(T("Basic Details"), None),
                         (T("Background"), "anamnesis"),
                         (T("Vaccinations"), "vaccination"),
                         (T("Medication"), "medication"),
-                        (T("Treatment Occasions"), "patient"),
-                        (T("Epicrisis"), "epicrisis"),
+                        (T("Treatment Occasions"), history),
                         (T("Documents"), "document/"),
                         ]
             rheader_fields = [["date_of_birth"],
