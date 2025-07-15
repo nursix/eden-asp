@@ -44,6 +44,7 @@ __all__ = ("JSONSEPARATORS",
            "s3_dev_toolbar",
            "s3_flatlist",
            "datahash",
+           "luminance",
            "s3_get_extension",
            "s3_get_extension_from_url",
            "s3_get_foreign_key",
@@ -832,6 +833,28 @@ def datahash(*values):
     dstr = "|%s|" % "|".join([str(v) for v in values])
 
     return hashlib.sha512(dstr.encode("utf-8")).hexdigest().lower()
+
+# =============================================================================
+def luminance(hex_color):
+    """
+        Computes a luminance-index for a hex color; useful to choose
+        suitable contrasting foreground/background colors
+
+        Returns:
+            luminance index
+
+        Inspired by
+        https://nemecek.be/blog/172/how-to-calculate-contrast-color-in-python
+    """
+
+    try:
+        r = int(hex_color[0:2], base=16)
+        g = int(hex_color[2:4], base=16)
+        b = int(hex_color[4:6], base=16)
+    except (ValueError, TypeError):
+        return None
+
+    return r * 0.2126 + g * 0.7152 + b * 0.0722
 
 # =============================================================================
 def s3_set_match_strings(matchDict, value):

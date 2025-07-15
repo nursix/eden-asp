@@ -63,7 +63,7 @@ from gluon.storage import Storage
 from gluon.languages import lazyT
 
 from .convert import s3_str
-from .utils import MarkupStripper
+from .utils import MarkupStripper, luminance
 
 URLSCHEMA = re.compile(r"((?:(())(www\.([^/?#\s]*))|((http(s)?|ftp):)"
                        r"(//([^/?#\s]*)))([^?#\s]*)(\?([^#\s]*))?(#([^\s]*))?)")
@@ -256,10 +256,12 @@ class S3Represent:
         # Color-coded representation
         color = self.color
         if color and color in row and row[color] is not None:
-            output = DIV(output,
-                         _class = "prio",
-                         _style = "background-color:#%s" % row[color],
-                         )
+            bg = row[color]
+            # Choose contrasting text color
+            fg = "fefefe" if luminance(bg) < 140 else "444"
+            style = "background-color:#%s;color:#%s" % (bg, fg)
+            output = DIV(output, _class="prio", _style=style)
+
         return output
 
     # -------------------------------------------------------------------------
