@@ -27,6 +27,14 @@ def dvr_note_resource(r, tablename):
 #    table.name.label = T("Name of Note Type")
 
 # -----------------------------------------------------------------------------
+def dvr_case_activity_status_resource(r, tablename):
+
+    table = current.s3db.dvr_case_activity_status
+
+    field = table.color
+    field.readable = field.writable = True
+
+# -----------------------------------------------------------------------------
 # def dvr_case_activity_resource(r, tablename):
 
     # T = current.T

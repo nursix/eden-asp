@@ -3021,6 +3021,13 @@ class DVRCaseActivityModel(DataModel):
                            label = T("Workflow Position"),
                            requires = IS_INT_IN_RANGE(0, None),
                            ),
+                     Field("color",
+                           requires = IS_EMPTY_OR(IS_HTML_COLOUR()),
+                           represent = IS_HTML_COLOUR.represent,
+                           widget = S3ColorPickerWidget(),
+                           readable = False,
+                           writable = False,
+                           ),
                      Field("is_default", "boolean",
                            default = False,
                            label = T("Default Status"),
@@ -3053,7 +3060,7 @@ class DVRCaseActivityModel(DataModel):
         )
 
         # Foreign Key Template
-        represent = S3Represent(lookup=tablename, translate=True)
+        represent = S3Represent(lookup=tablename, translate=True, color="color")
         activity_status_id = FieldTemplate("status_id",
                                            "reference %s" % tablename,
                                            label = T("Status"),
@@ -3312,28 +3319,24 @@ class DVRCaseActivityModel(DataModel):
                                       ],
                                      label = T("Search"),
                                      ),
-                          # TODO make optional by setting
-                          OptionsFilter("emergency",
-                                        options = {True: T("Yes"),
-                                                   False: T("No"),
-                                                   },
-                                        cols = 2,
-                                        ),
-                          # TODO make optional by setting
-                          OptionsFilter("need_id",
-                                        options = lambda: get_filter_options("dvr_need",
-                                                                             translate = True,
-                                                                             ),
-                                        ),
-                          # TODO replace by status filter
-                          #OptionsFilter("completed",
-                          #              default = False,
-                          #              options = {True: T("Yes"),
-                          #                         False: T("No"),
-                          #                         },
-                          #              cols = 2,
-                          #              ),
                           ]
+        if use_status:
+            filter_widgets.append(OptionsFilter("status_id", cols=3))
+        if use_emergency:
+            filter_widgets.append(OptionsFilter("emergency",
+                                                options = {True: T("Yes"),
+                                                           False: T("No"),
+                                                           },
+                                                cols = 2,
+                                                ))
+        if use_need:
+            filter_widgets.append(OptionsFilter("need_id",
+                                                options = lambda: get_filter_options("dvr_need",
+                                                                                     translate = True,
+                                                                                     ),
+                                                ))
+        if service_type:
+            filter_widgets.append(OptionsFilter("service_id"))
         if follow_up:
             filter_widgets.extend([OptionsFilter("followup",
                                                  label = T("Follow-up required"),
@@ -3348,9 +3351,6 @@ class DVRCaseActivityModel(DataModel):
                                               hidden = True,
                                               ),
                                    ])
-
-        if service_type:
-            filter_widgets.insert(3, OptionsFilter("service_id"))
 
         # Report options
         # TODO adjust after settings

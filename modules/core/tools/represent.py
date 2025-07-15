@@ -88,7 +88,7 @@ class S3Represent:
     """
 
     def __init__(self,
-                 lookup = None,
+                 lookup = None, *,
                  key = None,
                  fields = None,
                  labels = None,
@@ -100,6 +100,7 @@ class S3Represent:
                  hierarchy = False,
                  default = None,
                  none = None,
+                 color = None,
                  field_sep = " "
                  ):
         """
@@ -122,6 +123,8 @@ class S3Represent:
                 show_link: whether to add a URL to representations
                 default: default representation for unknown options
                 none: representation for empty fields (None or empty list)
+                color: field for color-code in lookup table, activates
+                       color-coded representation
                 field_sep: separator to use to join fields
         """
 
@@ -138,6 +141,7 @@ class S3Represent:
         self.show_link = show_link
         self.default = default
         self.none = none
+        self.color = color
         self.field_sep = field_sep
         self.setup = False
         self.theset = None
@@ -173,6 +177,11 @@ class S3Represent:
         if fields is None:
             fields = []
         fields.append(key)
+
+        table = self.table
+        color = self.color
+        if table and color and color in table.fields:
+            fields.append(table[color])
 
         if len(values) == 1:
             query = (key == values[0])
@@ -244,6 +253,13 @@ class S3Represent:
         else:
             output = v
 
+        # Color-coded representation
+        color = self.color
+        if color and color in row and row[color] is not None:
+            output = DIV(output,
+                         _class = "prio",
+                         _style = "background-color:#%s" % row[color],
+                         )
         return output
 
     # -------------------------------------------------------------------------

@@ -13,6 +13,7 @@
                                               true|false
          Closed...............string..........cases with this status are closed
                                               true|false
+         Color................string..........color code (rrggbb)
          Comments.............string..........Comments
 
     *********************************************************************** -->
@@ -59,6 +60,9 @@
                         </xsl:otherwise>
                     </xsl:choose>
                 </xsl:attribute>
+            </data>
+            <data field="color">
+                <xsl:value-of select="col[@field='Color']/text()"/>
             </data>
             <data field="comments">
                 <xsl:value-of select="col[@field='Comments']"/>
