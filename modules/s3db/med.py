@@ -555,7 +555,7 @@ class MedPatientModel(DataModel):
                        )
 
         # Foreign key template
-        represent = S3Represent(lookup=tablename, fields=["date", "reason"])
+        represent = S3Represent(lookup=tablename, fields=["reason"], show_link=True)
         patient_id = FieldTemplate("patient_id", "reference %s" % tablename,
                                    label = T("Patient"),
                                    ondelete = "RESTRICT",

@@ -1421,10 +1421,7 @@ def dvr_person_prep(r):
             field = ctable.patient_id
             field.label = T("Treatment Occasion")
             field.readable = True
-            field.represent = S3Represent(lookup = "med_patient",
-                                          fields = ["date", "reason"],
-                                          show_link = True,
-                                          )
+
             # Include is-final flag
             field = ctable.is_final
             field.readable = True
