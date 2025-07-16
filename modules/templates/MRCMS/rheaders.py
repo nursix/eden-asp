@@ -127,8 +127,12 @@ def dvr_rheader(r, tabs=None):
                                      (T("Medication"), "medication"),
                                      (T("Appointments"), "case_appointment"),
                                      (T("Treatment Occasions"), history),
-                                     (T("Documents"), "document/"),
                                      ])
+                        # Add document-tab only if the user is permitted to
+                        # access documents through the med/patient controller
+                        # (otherwise, the tab would always be empty)
+                        if has_permission("read", "doc_document", c="med", f="patient"):
+                            tabs.append((T("Documents"), "document/"))
 
                     else:
                         # Management Perspective

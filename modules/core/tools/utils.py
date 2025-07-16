@@ -623,9 +623,7 @@ def s3_mark_required(fields,
                 # if we populate them onvalidation
                 labels[fname] = "%s:" % flabel
                 continue
-            else:
-                required = field.required or field.notnull or \
-                            field.name in mark_required
+            required = field.required or field.notnull or field.name in mark_required
             if not validators and not required:
                 labels[fname] = "%s:" % flabel
                 continue
@@ -640,8 +638,7 @@ def s3_mark_required(fields,
                         if v.mark_required:
                             required = True
                             break
-                        else:
-                            continue
+                        continue
                     try:
                         error = v("")[1]
                     except TypeError:
@@ -688,7 +685,6 @@ def s3_addrow(form, label, widget, comment, formstyle, row_id, position=-1):
     else:
         addrow(form, label, widget, comment, formstyle, row_id,
                position = position)
-    return
 
 # =============================================================================
 def s3_keep_messages():
@@ -812,8 +808,7 @@ def s3_flatlist(nested):
     for item in nested:
         if isinstance(item, collections.abc.Iterable) and \
            not isinstance(item, str):
-            for sub in s3_flatlist(item):
-                yield sub
+            yield from s3_flatlist(item)
         else:
             yield item
 
@@ -840,6 +835,8 @@ def luminance(hex_color):
         Computes a luminance-index for a hex color; useful to choose
         suitable contrasting foreground/background colors
 
+        Args:
+            hex_color: hexadecimal color code (RRGGBB), as str
         Returns:
             luminance index
 
@@ -857,38 +854,38 @@ def luminance(hex_color):
     return r * 0.2126 + g * 0.7152 + b * 0.0722
 
 # =============================================================================
-def s3_set_match_strings(matchDict, value):
+def s3_set_match_strings(match_dict, value):
     """
         Helper method for gis_search_ac and org_search_ac
         Find which field the search term matched & where
 
         Args:
-            matchDict: usually the record
+            match_dict: usually the record
             value: the search term
     """
 
-    for key in matchDict:
-        v = matchDict[key]
+    for key in match_dict:
+        v = match_dict[key]
         if not isinstance(v, str):
             continue
         l = len(value)
         if v[:l].lower() == value:
             # Match needs to start from beginning
-            matchDict["match_type"] = key
-            matchDict["match_string"] = v[:l] # Maintain original case
+            match_dict["match_type"] = key
+            match_dict["match_string"] = v[:l] # Maintain original case
             next_string = v[l:]
             if next_string:
-                matchDict["next_string"] = next_string
+                match_dict["next_string"] = next_string
             break
-        elif key == "addr" and value in v.lower():
+        if key == "addr" and value in v.lower():
             # Match can start after the beginning (to allow for house number)
-            matchDict["match_type"] = key
+            match_dict["match_type"] = key
             pre_string, next_string = v.lower().split(value, 1)
             if pre_string:
-                matchDict["pre_string"] = v[:len(pre_string)] # Maintain original case
+                match_dict["pre_string"] = v[:len(pre_string)] # Maintain original case
             if next_string:
-                matchDict["next_string"] = v[(len(pre_string) + l):] # Maintain original case
-            matchDict["match_string"] = v[len(pre_string):][:l] # Maintain original case
+                match_dict["next_string"] = v[(len(pre_string) + l):] # Maintain original case
+            match_dict["match_string"] = v[len(pre_string):][:l] # Maintain original case
             break
 
 # =============================================================================
@@ -948,9 +945,8 @@ def s3_orderby_fields(table, orderby, expr=False):
             else:
                 if current.response.s3.debug:
                     raise SyntaxError('Tablename prefix required for orderby="%s"' % item)
-                else:
-                    # Ignore
-                    continue
+                # Ignore
+                continue
             if expr and direction[:3] == "des":
                 f = ~f
         else:
@@ -1081,25 +1077,25 @@ class Traceback:
     def make_link(self, path):
         """ Create a link from a path """
 
-        tryFile = path.replace("\\", "/")
+        filepath = path.replace("\\", "/")
 
-        if os.path.isabs(tryFile) and os.path.isfile(tryFile):
-            folder, filename = os.path.split(tryFile)
+        if os.path.isabs(filepath) and os.path.isfile(filepath):
+            folder, filename = os.path.split(filepath)
             ext = os.path.splitext(filename)[1]
             app = current.request.args[0]
 
             editable = {"controllers": ".py", "models": ".py", "views": ".html"}
             l_ext = ext.lower()
             f_endswith = folder.endswith
-            for key in editable.keys():
+            for key, e_ext in editable.items():
                 check_extension = f_endswith("%s/%s" % (app, key))
-                if l_ext == editable[key] and check_extension:
+                if l_ext == e_ext and check_extension:
                     edit_url = URL(a = "admin",
                                    c = "default",
                                    f = "edit",
                                    args = [app, key, filename],
                                    )
-                    return A('"' + tryFile + '"',
+                    return A('"' + filepath + '"',
                              _href = edit_url,
                              _target = "_blank",
                              ).xml()
@@ -1372,7 +1368,7 @@ def system_info():
 
     # Application version
     try:
-        with open(os.path.join(request.folder, "VERSION"), "r") as version_file:
+        with open(os.path.join(request.folder, "VERSION"), "r", encoding="utf-8") as version_file:
             app_version = version_file.read().strip("\n")
     except IOError:
         app_version = UNKNOWN
@@ -1387,7 +1383,7 @@ def system_info():
     # Server Components
     base_version = ".".join(map(str, version_info()))
     try:
-        with open(os.path.join(request.env.web2py_path, "VERSION"), "r") as version_file:
+        with open(os.path.join(request.env.web2py_path, "VERSION"), "r", encoding="utf-8") as version_file:
             web2py_version = version_file.read()[8:].strip("\n")
     except IOError:
         web2py_version = UNKNOWN

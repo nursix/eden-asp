@@ -1942,6 +1942,12 @@ class MedMedicationModel(DataModel):
                            label = T("Scheme"),
                            requires = IS_NOT_EMPTY(),
                            ),
+                     DateTimeField("updated_on",
+                                   label = T("Updated"),
+                                   default = datetime.datetime.utcnow,
+                                   update = datetime.datetime.utcnow,
+                                   writable = False,
+                                   ),
                      Field("is_current", "boolean",
                            label = T("Current"),
                            default = True,
@@ -1963,8 +1969,7 @@ class MedMedicationModel(DataModel):
                        "aform",
                        "scheme",
                        "comments",
-                       # TODO use separate DateField and set onaccept
-                       (T("Updated"), "modified_on"),
+                       (T("Updated"), "updated_on"),
                        ]
 
         configure(tablename,
@@ -3115,7 +3120,8 @@ def med_rheader(r, tabs=None):
 
         if tablename == "pr_person":
             if not tabs:
-                if current.auth.s3_has_permission("read", "med_epicrisis", c="med", f="patient"):
+                has_permission = current.auth.s3_has_permission
+                if has_permission("read", "med_epicrisis", c="med", f="patient"):
                     history = "epicrisis"
                 else:
                     history = "patient"
@@ -3124,8 +3130,13 @@ def med_rheader(r, tabs=None):
                         (T("Vaccinations"), "vaccination"),
                         (T("Medication"), "medication"),
                         (T("Treatment Occasions"), history),
-                        (T("Documents"), "document/"),
                         ]
+                # Add document-tab only if the user is permitted to
+                # access documents through the med/patient controller
+                # (otherwise, the tab would always be empty)
+                if has_permission("read", "doc_document", c="med", f="patient"):
+                    tabs.append((T("Documents"), "document/"))
+
             rheader_fields = [["date_of_birth"],
                               ]
             rheader_title = s3_fullname

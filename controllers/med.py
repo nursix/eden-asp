@@ -466,20 +466,27 @@ def document():
         else:
             return False
 
-        ptable = s3db.med_patient
         auth = current.auth
         has_permission = auth.s3_has_permission
         accessible_query = auth.s3_accessible_query
 
+        ptable = s3db.med_patient
+
+        # Users can only access documents linked to those patient
+        # records which they can access through the med/patient
+        # controller
+        # => implying that, if they cannot access the med/patient
+        #    controller at all, they cannot access any patient
+        #    documents either
+        accessible = accessible_query("read", ptable, c="med", f="patient")
         if vtablename == "pr_person":
             if not has_permission("read", "pr_person", record_id):
                 r.unauthorised()
-            query = accessible_query("read", ptable) & \
+            query = accessible & \
                     (ptable.person_id == record_id) & \
                     (ptable.deleted == False)
-
         elif vtablename == "med_patient":
-            query = accessible_query("read", ptable) & \
+            query = accessible & \
                     (ptable.id == record_id) & \
                     (ptable.deleted == False)
         else:
@@ -516,7 +523,7 @@ def document():
             r.resource.add_filter(FS("doc_id") == doc_id)
         else:
             # Multiple doc_ids => default to case, make selectable
-            field.default = doc_ids[0]
+            field.default = doc_ids[0] if doc_ids else None
             field.readable = field.writable = True
             field.requires = IS_ONE_OF(db, "doc_entity.doc_id",
                                        field.represent,
