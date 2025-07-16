@@ -507,8 +507,8 @@ class MedPatientModel(DataModel):
                                "unregistered",
                                "person",
                                # ------- Current Visit --------------
-                               "refno",
                                "date",
+                               "refno",
                                "reason",
                                "priority",
                                "status",
@@ -521,7 +521,7 @@ class MedPatientModel(DataModel):
                                )
         subheadings = {"unit_id": T("Unit"),
                        "person_id": T("Patient"),
-                       "refno": T("Current Visit"),
+                       "date": T("Current Visit"),
                        "hazards": T("Hazards Advice"),
                        "comments": T("Administrative"),
                        }
