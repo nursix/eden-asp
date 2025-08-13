@@ -1470,8 +1470,10 @@ def act_rheader(r, tabs=None):
         elif tablename == "act_issue":
             if not tabs:
                 tabs = [(T("Basic Details"), None),
-                        (T("Work Orders"), "task"),
+                        # (T("Work Orders"), "task"),
                         ]
+                if current.auth.s3_has_permission("create", "act_task"):
+                    tabs.append((T("Work Orders"), "task"))
 
             rheader_fields = [["date", "organisation_id"],
                               ["status"],
