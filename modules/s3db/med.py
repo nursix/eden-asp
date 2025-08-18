@@ -329,6 +329,53 @@ class MedUnitModel(DataModel):
             if duplicate:
                 form.errors.name = current.T("An area with that name already exists")
 
+    # -------------------------------------------------------------------------
+    @staticmethod
+    def area_free_capacity(area_id, patient_id=None):
+        """
+            Returns the current free capacity for a treatment area
+
+            Args:
+                area_id: the area record ID
+                patient_id: record ID of a patient to be placed in the
+                            area (and hence to be ignored in the occupancy
+                            count)
+            Returns:
+                tuple (area_name, free_capacity)
+
+            Notes:
+                - free capacity can be negative if area is occupied over capacity
+                - free capacity will always be 1 if there is no capacity limit
+                  for the area
+        """
+
+        db = current.db
+        s3db = current.s3db
+
+        atable = s3db.med_area
+        ptable = s3db.med_patient
+
+        area = db(atable.id == area_id).select(atable.name,
+                                               atable.capacity,
+                                               limitby = (0, 1),
+                                               ).first()
+        area_name = area.name if area else None
+
+        if not area or not area.capacity:
+            # Always at least one more place
+            return area_name, 1
+
+        occupancy = ptable.id.count(distinct=True)
+        query = (ptable.area_id == area_id)
+        if patient_id:
+            query &= (ptable.id != patient_id)
+        query &= (ptable.status.belongs(("ARRIVED", "TREATMENT"))) & \
+                 (ptable.invalid == False) & \
+                 (ptable.deleted == False)
+        row = db(query).select(occupancy).first()
+
+        return area_name, area.capacity - row[occupancy]
+
 # =============================================================================
 class MedPatientModel(DataModel):
     """ Patient (Treatment Occasion) Data Model """
@@ -617,49 +664,33 @@ class MedPatientModel(DataModel):
                                                   "status",
                                                   ])
 
-        # Verify that there are no (other) open patient records for the same person
         status = data.get("status")
         open_status = ("ARRIVED", "TREATMENT")
         if status in open_status:
+            # Verify that there are no other open patient records for the same person
             person_id = data.get("person_id")
-            query = (table.person_id == person_id) & \
-                    (table.status.belongs(open_status))
-            if record_id:
-                query &= (table.id != record_id)
-            query &= (table.deleted == False)
-            row = db(query).select(table.id, limitby=(0, 1)).first()
-            if row:
-                error = T("Person already has an ongoing patient registration")
-                form.errors.person_id = error
+            if person_id:
+                query = (table.person_id == person_id) & \
+                        (table.status.belongs(open_status))
+                if record_id:
+                    query &= (table.id != record_id)
+                query &= (table.deleted == False)
+                row = db(query).select(table.id, limitby=(0, 1)).first()
+                if row:
+                    error = T("Person already has an ongoing patient registration")
+                    form.errors.person_id = error
 
-        # Area capacity handling
-        area_id = data.get("area_id")
-        capacity_handling = settings.get_med_area_over_capacity()
-        if area_id and capacity_handling in ("warn", "refuse"):
-            atable = s3db.med_area
-            area = db(atable.id == area_id).select(atable.name,
-                                                   atable.capacity,
-                                                   limitby = (0, 1),
-                                                   ).first()
-
-            if area:
-                occupancy = table.id.count(distinct=True)
-                query = (table.area_id == area_id) & \
-                        (table.id != record_id) & \
-                        (table.status.belongs(("ARRIVED", "TREATMENT"))) & \
-                        (table.invalid == False) & \
-                        (table.deleted == False)
-                row = db(query).select(occupancy).first()
-                occupancy = row[occupancy]
-            else:
-                occupancy = None
-
-            if area and occupancy and area.capacity and area.capacity <= occupancy:
-                name = {"name": area.name}
-                if capacity_handling == "warn":
-                    current.response.warning = T("%(name)s is occupied over capacity") % name
-                else:
-                    form.errors.area_id = T("%(name)s is already fully occupied") % name
+            # Area capacity handling
+            capacity_handling = settings.get_med_area_over_capacity()
+            area_id = data.get("area_id")
+            if capacity_handling == "refuse" and area_id:
+                area_name, free_capacity = MedUnitModel.area_free_capacity(
+                                                            area_id,
+                                                            patient_id = record_id,
+                                                            )
+                if free_capacity < 1:
+                    form.errors.area_id = T("%(name)s already fully occupied") % \
+                                            {"name": area_name}
 
     # -------------------------------------------------------------------------
     @staticmethod
@@ -674,6 +705,7 @@ class MedPatientModel(DataModel):
         db = current.db
         s3db = current.s3db
         auth = current.auth
+        settings = current.deployment_settings
 
         record_id = get_form_record_id(form)
         if not record_id:
@@ -686,6 +718,8 @@ class MedPatientModel(DataModel):
                                   table.refno,
                                   table.date,
                                   table.person_id,
+                                  table.area_id,
+                                  table.status,
                                   limitby = (0, 1),
                                   ).first()
         if not record:
@@ -734,6 +768,16 @@ class MedPatientModel(DataModel):
                 auth.s3_set_record_owner(etable, epicrisis_id)
                 auth.s3_make_session_owner(etable, epicrisis_id)
                 s3db.onaccept(etable, epicrisis, method="create")
+
+        # Area capacity warning
+        capacity_handling = settings.get_med_area_over_capacity()
+        area_id = record.area_id
+        open_status = ("ARRIVED", "TREATMENT")
+        if capacity_handling == "warn" and area_id and record.status in open_status:
+            area_name, free_capacity = MedUnitModel.area_free_capacity(area_id)
+            if free_capacity < 0:
+                current.response.warning = current.T("%(name)s occupied over capacity") % \
+                                           {"name": area_name}
 
     # -------------------------------------------------------------------------
     @staticmethod
