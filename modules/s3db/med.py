@@ -525,7 +525,6 @@ class MedPatientModel(DataModel):
                            represent = status_represent,
                            ),
                      # Flag to indicate that this is an invalid record
-                     # - TODO filter out invalid records from all operative contexts
                      # - TODO have an archive-link (separate controller?) to access invalid records
                      Field("invalid", "boolean",
                            label = T("Invalid"),
@@ -670,7 +669,8 @@ class MedPatientModel(DataModel):
             person_id = data.get("person_id")
             if person_id:
                 query = (table.person_id == person_id) & \
-                        (table.status.belongs(open_status))
+                        (table.status.belongs(open_status)) & \
+                        (table.invalid == False) & \
                 if record_id:
                     query &= (table.id != record_id)
                 query &= (table.deleted == False)
@@ -844,8 +844,9 @@ class MedPatientModel(DataModel):
                 record.update_record(person_id=patient.person_id)
 
         elif record.person_id:
+            open_status = ("ARRIVED", "TREATMENT")
             query = (table.person_id == record.person_id) & \
-                    (table.concluded == False) & \
+                    (table.status.belongs(open_status)) & \
                     (table.invalid == False) & \
                     (table.deleted == False)
             patient = db(query).select(table.id,
@@ -3261,6 +3262,7 @@ def med_rheader(r, tabs=None):
                               ["status", pdata[2]],
                               ]
             rheader_title = med_patient_header
+            # TODO invalid-hint
 
         elif tablename == "med_unit":
             if not tabs:
