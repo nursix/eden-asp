@@ -670,7 +670,7 @@ class MedPatientModel(DataModel):
             if person_id:
                 query = (table.person_id == person_id) & \
                         (table.status.belongs(open_status)) & \
-                        (table.invalid == False) & \
+                        (table.invalid == False)
                 if record_id:
                     query &= (table.id != record_id)
                 query &= (table.deleted == False)
