@@ -121,6 +121,7 @@ def patient():
         table = resource.table
 
         record = r.record
+        closed = None
         if record:
             if record.person_id:
                 # Person cannot be changed once set
@@ -161,13 +162,39 @@ def patient():
         component = r.component
         if not component:
             # Configure unit/area choices
-            s3db.med_configure_unit_id(table, record)
+            multiple_units = s3db.med_configure_unit_id(table, record)
 
             # Inject form control script
             script = "s3.med.js" if s3.debug else "s3.med.min.js"
             path = "/%s/static/scripts/S3/%s" % (current.request.application, script)
             if path not in s3.scripts:
                 s3.scripts.append(path)
+
+            # List fields
+            list_fields = [#unit_id,
+                           #area_id.name,
+                           "refno",
+                           "person_id",
+                           "priority",
+                           "reason",
+                           "date",
+                           "status",
+                           #end_date,
+                           (T("Hazards"), "hazards"),
+                           "comments",
+                           ]
+            if closed == "only":
+                list_fields.insert(-2, "end_date")
+                orderby = "med_patient.date desc"
+            else:
+                list_fields.insert(0, (T("Place##placement"), "area_id$name"))
+                orderby = "med_area.name"
+            if multiple_units:
+                list_fields.insert(0, "unit_id")
+                orderby = "med_patient.unit_id asc, %s" % orderby
+            resource.configure(list_fields = list_fields,
+                               orderby = orderby,
+                               )
 
         elif component_name == "treatment":
 
@@ -357,6 +384,7 @@ def person():
 
         elif r.component_name == "patient":
             # On patient-tab of person record
+            # Reconfigure data table and form
             list_fields = ["date",
                            "unit_id",
                            "refno",
@@ -371,6 +399,11 @@ def person():
                                   editable = False,
                                   deletable = False,
                                   )
+
+            # Filter out invalid patient records
+            r.component.add_filter(FS("invalid") == False)
+
+            # Adapt CRUD strings to perspective
             s3.crud_strings["med_patient"] = Storage(
                 # label_create = T("Add Treatment Occasion"),
                 title_display = T("Treatment Occasion"),
@@ -385,6 +418,9 @@ def person():
                 )
 
         elif r.component_name == "epicrisis":
+            # Filter out invalid patient records
+            r.component.add_filter(FS("patient_id$invalid") == False)
+
             # Read-only in this perspective
             r.component.configure(insertable = False,
                                   editable = False,

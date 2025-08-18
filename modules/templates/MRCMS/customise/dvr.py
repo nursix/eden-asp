@@ -1379,6 +1379,7 @@ def dvr_person_prep(r):
 
         elif r.component_name == "patient":
             # On patient-tab of person record
+            # Reconfigure data table and form
             list_fields = ["date",
                            "unit_id",
                            "refno",
@@ -1393,6 +1394,11 @@ def dvr_person_prep(r):
                                   editable = False,
                                   deletable = False,
                                   )
+
+            # Filter out invalid patient records
+            r.component.add_filter(FS("invalid") == False)
+
+            # Adapt CRUD strings to perspective
             s3.crud_strings["med_patient"] = Storage(
                 # label_create = T("Add Treatment Occasion"),
                 title_display = T("Treatment Occasion"),
@@ -1408,6 +1414,9 @@ def dvr_person_prep(r):
 
 
         elif r.component_name == "epicrisis":
+            # Filter out invalid patient records
+            r.component.add_filter(FS("patient_id$invalid") == False)
+
             # Read-only in this perspective
             r.component.configure(insertable = False,
                                   editable = False,
@@ -1417,7 +1426,6 @@ def dvr_person_prep(r):
             ctable = r.component.table
 
             # Adapt patient_id visibility+label to perspective
-            from core import S3Represent
             field = ctable.patient_id
             field.label = T("Treatment Occasion")
             field.readable = True

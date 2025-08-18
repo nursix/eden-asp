@@ -484,7 +484,6 @@ class MedPatientModel(DataModel):
                         ),
                      DateTimeField("end_date",
                         label = T("End Date"),
-                        # TODO to be set automatically when the patient is concluded
                         readable = False,
                         writable = False,
                         ),
@@ -720,11 +719,21 @@ class MedPatientModel(DataModel):
                                   table.person_id,
                                   table.area_id,
                                   table.status,
+                                  table.end_date,
                                   limitby = (0, 1),
                                   ).first()
         if not record:
             return
         update = {}
+
+        # Set end date
+        open_status = ("ARRIVED", "TREATMENT")
+        status = record.status
+        if status in open_status:
+            if record.end_date:
+                update["end_date"] = None
+        elif not record.end_date:
+            update["end_date"] = current.request.utcnow
 
         # Set reference number
         if not record.refno:
@@ -772,8 +781,7 @@ class MedPatientModel(DataModel):
         # Area capacity warning
         capacity_handling = settings.get_med_area_over_capacity()
         area_id = record.area_id
-        open_status = ("ARRIVED", "TREATMENT")
-        if capacity_handling == "warn" and area_id and record.status in open_status:
+        if capacity_handling == "warn" and area_id and status in open_status:
             area_name, free_capacity = MedUnitModel.area_free_capacity(area_id)
             if free_capacity < 0:
                 current.response.warning = current.T("%(name)s occupied over capacity") % \
@@ -3000,7 +3008,8 @@ def med_configure_unit_id(table, patient=None):
     units = dbset(utable.deleted == False).select(utable.id,
                                                   limitby = (0, 2),
                                                   )
-    if len(units) == 1:
+    single_unit = len(units) == 1
+    if single_unit:
         # Only one unit permitted
         unit_id = units.first().id
 
@@ -3032,6 +3041,8 @@ def med_configure_unit_id(table, patient=None):
         jquery_ready = current.response.s3.jquery_ready
         if script not in jquery_ready:
             jquery_ready.append(script)
+
+    return not single_unit
 
 # =============================================================================
 def med_patient_header(record):
