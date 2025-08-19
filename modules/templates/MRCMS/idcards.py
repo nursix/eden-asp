@@ -1362,7 +1362,7 @@ class IDCardLayoutP(IDCardLayoutL):
         else:
             # Document Title
             title = "Registrierungskarte"
-            self.draw_string(12, h-80, title, width=w-24, height=10, size=10, bold=True, halign="center")
+            self.draw_string(12, h-75, title, width=w-24, height=10, size=10, bold=True, halign="center")
 
         # Border
         self.draw_border()
@@ -1400,11 +1400,11 @@ class IDCardLayoutP(IDCardLayoutL):
 
         # Logo
         if logo:
-            self.draw_image(logo, w//2, h-30, width=40, height=40, halign="center", valign="middle")
+            self.draw_image(logo, w//2, h-26, width=40, height=40, halign="center", valign="middle")
 
         # Organisation Name
         if root_org_name:
-            self.draw_string(10, h-65, root_org_name, width=w-20, height=14, size=8, bold=True, halign="center")
+            self.draw_string(10, h-60, root_org_name, width=w-20, height=14, size=8, bold=True, halign="center")
 
     # -------------------------------------------------------------------------
     def draw_shelter_details(self, item, t_):
@@ -1474,7 +1474,7 @@ class IDCardLayoutP(IDCardLayoutL):
 
         draw_string = self.draw_string
 
-        x, y = 18, 82
+        x, y = 16, 90
         wt = w-2*x # text width
 
         # Name
@@ -1485,38 +1485,35 @@ class IDCardLayoutP(IDCardLayoutL):
         draw_string(x, y, name, width=wt, height=12, size=12, halign="center")
 
         # Date of birth
-        y = y - 15
-        cl, cr = w * 2/5 - 2, w * 2/5 + 2
+        y = y - 18
         dob = raw["pr_person.date_of_birth"]
         if dob:
             dob = item["pr_person.date_of_birth"]
-            # draw_string(x, y + 8, t_("Date of Birth"), size=5, halign="center")
-            # draw_string(x, y, dob, width=wt, height=9, size=8, halign="center")
-            draw_string(0, y, t_("Date of Birth"), width=cl, size=5, halign="right")
-            draw_string(cr, y, dob, width=wt/2, height=9, size=8, halign="left")
+            draw_string(x, y + 8, t_("Date of Birth"), size=5)
+            draw_string(x, y, dob, width=wt, height=9, size=8)
 
         # Reference Number (=tag)
-        y = y - 10
+        y = y - 16
         tag = extra_data.get("tag") if extra_data else None
         if tag:
-            draw_string(0, y, t_("Ref.No.##fileref"), width=cl, size=5, halign="right")
-            draw_string(cr, y, tag, width=wt/2, height=9, size=8, halign="left")
+            draw_string(x, y + 8, t_("Ref.No.##fileref"), size=5)
+            draw_string(x, y, tag, width=wt, height=9, size=8)
 
         # Shelter Unit
         # TODO do not draw if transitory unit?
-        y = y - 10
+        y = y - 16
         unit = raw["cr_shelter_registration.shelter_unit_id"]
         if unit:
             unit = item["cr_shelter_registration.shelter_unit_id"]
-            draw_string(0, y, t_("Housing Unit"), width=cl, size=5, halign="right")
-            draw_string(cr, y, unit, width=wt/2, height=9, size=8, halign="left")
+            draw_string(x, y + 8, t_("Housing Unit"), size=5)
+            draw_string(x, y, unit, width=wt, height=9, size=8)
 
         # Profile picture
         pictures = common.get("pictures")
         picture = pictures.get(raw["pr_person.pe_id"]) if pictures else None
         if picture:
             self.draw_image(picture,
-                            w * 1/2, h * 1/2 + 6, height=60, width=60,
+                            w * 1/2, h * 1/2 + 12, height=60, width=60,
                             halign = "center",
                             valign = "middle",
                             )
@@ -1570,9 +1567,9 @@ class IDCardLayoutP(IDCardLayoutL):
                                  )
         else:
             # ID Number and barcode
-            y = 24
+            y = 22
             self.draw_string(10, y, s3_str(code), width=w-20, size=12, bold=True, halign="center")
-            self.draw_barcode(s3_str(code), w / 2, y - 14, height=12, halign="center", maxwidth=w-40)
+            self.draw_barcode(s3_str(code), w / 2, y - 12, height=12, halign="center", maxwidth=w-40)
 
 # =============================================================================
 class IDCardLayoutA4(IDCardLayoutP):
@@ -2160,7 +2157,7 @@ class StaffIDCardLayoutP(StaffIDCardLayout, IDCardLayoutP):
 
         draw_string = self.draw_string
 
-        x, y = 18, 82
+        x, y = 16, 82
         wt = w-2*x # text width
 
         # Name
