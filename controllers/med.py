@@ -239,7 +239,7 @@ def patient():
             elif is_delete and r.representation == "dl" and "delete" in get_vars:
                 # Datalist delete-request
                 crecord_id = get_vars.get("delete")
-                crecord = db(ctable.id == record_id).select(limitby=(0, 1)).first()
+                crecord = db(ctable.id == crecord_id).select(limitby=(0, 1)).first()
             else:
                 crecord = None
 
