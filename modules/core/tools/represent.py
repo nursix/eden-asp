@@ -1255,9 +1255,9 @@ def represent_normal(minimum=None, maximum=None):
             output = "-"
         elif (minimum is None or minimum <= value) and \
              (maximum is None or value <= maximum):
-            output = SPAN(value)
+            output = SPAN(s3_str(value))
         else:
-            output = SPAN(value, _class="out-of-range")
+            output = SPAN(s3_str(value), _class="out-of-range")
         return output
 
     return represent

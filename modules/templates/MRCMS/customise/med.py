@@ -21,4 +21,10 @@ def med_patient_resource(r, tablename):
                                        ),
                    )
 
+    from ..patient import PatientReport
+    s3db.set_method("med_patient",
+                    method = "rreport",
+                    action = PatientReport,
+                    )
+
 # END =========================================================================
