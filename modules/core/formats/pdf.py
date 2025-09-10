@@ -2199,36 +2199,40 @@ class HTML2PDF:
         return color
 
 # =============================================================================
-class NumberedCanvas(canvas.Canvas):
-    """
-        Canvas type with page numbers
-        - based on http://code.activestate.com/recipes/576832
-    """
-    def __init__(self, *args, **kwargs):
+if reportLabImported:
+    class NumberedCanvas(canvas.Canvas):
+        """
+            Canvas type with page numbers
+            - based on http://code.activestate.com/recipes/576832
+        """
+        def __init__(self, *args, **kwargs):
 
-        canvas.Canvas.__init__(self, *args, **kwargs)
-        self._saved_page_states = []
+            canvas.Canvas.__init__(self, *args, **kwargs)
+            self._saved_page_states = []
 
-    def showPage(self):
+        def showPage(self):
 
-        self._saved_page_states.append(dict(self.__dict__))
-        self._startPage()
+            self._saved_page_states.append(dict(self.__dict__))
+            self._startPage()
 
-    def save(self):
+        def save(self):
 
-        num_pages = len(self._saved_page_states)
-        for state in self._saved_page_states:
-            self.__dict__.update(state)
-            self.draw_page_number(num_pages)
-            canvas.Canvas.showPage(self)
-        canvas.Canvas.save(self)
+            num_pages = len(self._saved_page_states)
+            for state in self._saved_page_states:
+                self.__dict__.update(state)
+                self.draw_page_number(num_pages)
+                canvas.Canvas.showPage(self)
+            canvas.Canvas.save(self)
 
-    def draw_page_number(self, page_count):
+        def draw_page_number(self, page_count):
 
-        self.setFont("Helvetica", 7)
-        self.drawRightString(self._pagesize[0] - 12,
-                             self._pagesize[1] - 12,
-                             "%d / %d" % (self._pageNumber, page_count),
-                             )
+            self.setFont("Helvetica", 7)
+            self.drawRightString(self._pagesize[0] - 12,
+                                 self._pagesize[1] - 12,
+                                 "%d / %d" % (self._pageNumber, page_count),
+                                 )
+else:
+    class NumberedCanvas:
+        pass
 
 # END =========================================================================
