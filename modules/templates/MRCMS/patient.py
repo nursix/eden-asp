@@ -54,9 +54,18 @@ EPICRISIS = ("situation", "diagnoses", "progress", "outcome", "recommendation")
 
 # =============================================================================
 class PatientReport(CRUDMethod):
-    # TODO docstring
+    """
+        Method to generate a case summary for a patient/visit
+    """
 
     def apply_method(self, r, **attr):
+        """
+            Entry point for CRUDController
+
+            Args:
+                r: the CRUDRequest
+                attr: controller-side parameters for the request
+        """
 
         output = None
 
@@ -72,7 +81,18 @@ class PatientReport(CRUDMethod):
 
     # -------------------------------------------------------------------------
     def export_pdf(self, r, **attr):
-        # TODO docstring
+        """
+            Generates the patient report and returns the PDF
+
+            Args:
+                r: the CRUDRequest
+                attr: controller-side parameters for the request
+
+            Notes:
+                - must be called on the med_patient resource and
+                  a particular patient record
+                - user must be permitted to read that record
+        """
 
         response = current.response
 
@@ -140,7 +160,12 @@ class Patient:
     # -------------------------------------------------------------------------
     @property
     def unit(self):
-        # TODO docstring
+        """
+            The details of the medical unit (lazy property)
+
+            Returns:
+                a dict with unit details {name, organisation, organisation_id}
+        """
 
         unit = self._unit
         if unit is None:
@@ -151,7 +176,7 @@ class Patient:
             query = (utable.id == self.record.unit_id)
             row = current.db(query).select(#utable.id,
                                            utable.name,
-                                           #otable.id,
+                                           otable.id,
                                            otable.name,
                                            otable.logo,
                                            join = join,
@@ -161,6 +186,7 @@ class Patient:
                 organisation = row.org_organisation
                 unit = {"name": row.med_unit.name,
                         "organisation": organisation.name,
+                        "organisation_id": organisation.id,
                         }
                 if organisation.logo:
                     logo = os.path.join(otable.logo.uploadfolder, organisation.logo)
@@ -177,7 +203,15 @@ class Patient:
     # -------------------------------------------------------------------------
     @property
     def person(self):
-        # TODO docstring
+        """
+            The person details for the patient (lazy property)
+
+            Returns:
+                a dict with person details {name, gender, dob, label}
+
+            Note:
+                The dict will be empty for unregistered patients.
+        """
 
         person_id = self.record.person_id
 
@@ -207,7 +241,19 @@ class Patient:
     # -------------------------------------------------------------------------
     @property
     def shelter(self):
-        # TODO docstring
+        """
+            The site (shelter) of the patient (lazy property)
+
+            Returns:
+                a dict with shelter details {name, address}
+
+            Note:
+                This uses a fallback cascade:
+                1) the shelter where the patient is registered as checked-in or planned
+                2) the only shelter of the medical unit's organisation (if single site)
+                3) the site where the current user is registered as present
+                If no site can be determined, the details dict will be empty
+        """
 
         shelter = self._shelter
         if shelter is None:
@@ -218,46 +264,83 @@ class Patient:
 
             rtable = s3db.cr_shelter_registration
             stable = s3db.cr_shelter
-            ltable = s3db.gis_location
 
-            join = stable.on(stable.id == rtable.shelter_id)
-            left = ltable.on(ltable.id == stable.location_id)
-            query = (rtable.person_id == self.record.person_id) & \
-                    (rtable.registration_status.belongs((1, 2))) & \
-                    (rtable.deleted == False)
-            row = db(query).select(stable.name,
-                                   ltable.id,
-                                   ltable.addr_street,
-                                   ltable.addr_postcode,
-                                   ltable.L3,
-                                   ltable.L4,
-                                   join = join,
-                                   left = left,
-                                   limitby = (0, 1),
-                                   ).first()
-            if row:
-                shelter["name"] = row.cr_shelter.name
+            shelter_id = None
 
-                location = row.gis_location
-                if location.id:
-                    address = location.L4 or location.L3 or ""
-                    if location.addr_postcode:
-                        address = "%s %s" % (location.addr_postcode, address)
-                    if location.addr_street:
-                        address = "%s, %s" % (location.addr_street, address)
-                    shelter["address"] = address
+            person_id = self.record.person_id
+            if person_id:
+                # Look up the shelter from the patient's shelter registration
+                query = (rtable.person_id == person_id) & \
+                        (rtable.registration_status.belongs((1, 2))) & \
+                        (rtable.deleted == False)
+                registration = db(query).select(rtable.shelter_id, limitby=(0, 1)).first()
+                if registration:
+                    shelter_id = registration.shelter_id
 
+            if not shelter_id:
+                # Fall back to the organisation's single shelter
+                unit = self.unit
+                if unit:
+                    organisation_id = self.unit.get("organisation_id")
+                    query = (stable.organisation_id == organisation_id) & \
+                            (stable.status == 2) & \
+                            (stable.deleted == False)
+                    rows = db(query).select(stable.id, limitby=(0, 2))
+                    if len(rows) == 1:
+                        shelter_id = rows.first().id
+
+            if not shelter_id:
+                # Fall back to the user's site of presence
+                user_person_id = current.auth.s3_logged_in_person()
+                if user_person_id:
+                    from core import SitePresence
+                    site_id = SitePresence.get_current_site(user_person_id, stable)
+                    if site_id:
+                        query = (stable.site_id == site_id)
+                        shelter = db(query).select(stable.id, limitby=(0, 1)).first()
+                        shelter_id = shelter.id if shelter else None
+
+            if shelter_id:
+                # Look up the shelter details
+                ltable = s3db.gis_location
+                left = ltable.on(ltable.id == stable.location_id)
+                query = (stable.id == shelter_id)
+                row = db(query).select(stable.name,
+                                       ltable.id,
+                                       ltable.addr_street,
+                                       ltable.addr_postcode,
+                                       ltable.L3,
+                                       ltable.L4,
+                                       left = left,
+                                       limitby = (0, 1),
+                                       ).first()
+                if row:
+                    shelter["name"] = row.cr_shelter.name
+                    location = row.gis_location
+                    if location.id:
+                        address = location.L4 or location.L3 or ""
+                        if location.addr_postcode:
+                            address = "%s %s" % (location.addr_postcode, address)
+                        if location.addr_street:
+                            address = "%s, %s" % (location.addr_street, address)
+                        shelter["address"] = address
             self._shelter = shelter
+
         return shelter
 
     # -------------------------------------------------------------------------
     @property
     def visit(self):
-        # TODO docstring
+        """
+            The details of the current visit (lazy property)
 
-        table = current.s3db.med_patient
+            Returns:
+                a dict with details {refno, date, reason}
+        """
 
         record = self.record
+
+        table = current.s3db.med_patient
 
         return {"refno": record.refno,
                 "date": table.date.represent(record.date),
@@ -267,7 +350,22 @@ class Patient:
     # -------------------------------------------------------------------------
     @property
     def vitals(self):
-        # TODO docstring
+        """
+            The last set of vital parameters (lazy property)
+
+            Returns:
+                a dict with vital parameters
+                {airways, rf, o2sat, o2sub, bp, hf, temp, consc}
+
+            Notes:
+                - only values from within the last 12 hours will be reported,
+                  if no assessment has happened within that time frame, the
+                  returned dict will be empty
+                - only values from the same assessment will be reported,
+                  except for temperature, which may be drawn from an
+                  earlier assessment within the time frame if not available
+                  in the latest set
+        """
 
         vitals = self._vitals
         if vitals is None:
@@ -317,14 +415,20 @@ class Patient:
     # -------------------------------------------------------------------------
     @property
     def anamnesis(self):
-        # TODO docstring
+        """
+            The patient's anamnesis (lazy property)
+
+            Returns:
+                the med_anamnesis Row
+        """
 
         anamnesis = self._anamnesis
         if anamnesis is None:
             person_id = self.record.person_id
             if person_id:
                 table = current.s3db.med_anamnesis
-                query = (table.person_id == person_id) & \
+                query = current.auth.s3_accessible_query("read", table) & \
+                        (table.person_id == person_id) & \
                         (table.deleted == False)
                 anamnesis = current.db(query).select(table.id,
                                                      *(table[fn] for fn in ANAMNESIS),
@@ -337,12 +441,18 @@ class Patient:
     # -------------------------------------------------------------------------
     @property
     def epicrisis(self):
-        # TODO docstring
+        """
+            The epicrisis report of the current visit (lazy property)
+
+            Returns:
+                the med_epicrisis Row, including is_final flag
+        """
 
         epicrisis = self._epicrisis
         if epicrisis is None:
             table = current.s3db.med_epicrisis
-            query = (table.patient_id == self.patient_id) & \
+            query = current.auth.s3_accessible_query("read", table) & \
+                    (table.patient_id == self.patient_id) & \
                     (table.deleted == False)
             epicrisis = current.db(query).select(table.id,
                                                  table.is_final,
@@ -355,7 +465,12 @@ class Patient:
 
     # -------------------------------------------------------------------------
     def contents_xml(self):
-        # TODO docstring
+        """
+            Produces the XML for the report contents (anamnesis and epicrisis)
+
+            Returns:
+                the contents XML as string
+        """
 
         s3db = current.s3db
 
@@ -391,7 +506,7 @@ class Patient:
             Renders the patient report as PDF
 
             Returns:
-                Byte stream (BytesIO) if successful, otherwise None
+                Byte stream (BytesIO)
         """
 
         doc = PatientReportTemplate(self)
@@ -474,6 +589,7 @@ class PatientReportTemplate(BaseDocTemplate):
         printable_width = pagewidth - margin_left - margin_right
         printable_height = pageheight - margin_top - margin_bottom
 
+        # First page, with space for vital parameters
         fframe = Frame(margin_left,
                        margin_bottom + footer_height,
                        printable_width,
@@ -484,6 +600,7 @@ class PatientReportTemplate(BaseDocTemplate):
                        leftPadding = 0,
                        )
 
+        # Later pages, without vital parameters
         lframe = Frame(margin_left,
                        margin_bottom + footer_height,
                        printable_width,
@@ -499,7 +616,10 @@ class PatientReportTemplate(BaseDocTemplate):
                 ]
     # -------------------------------------------------------------------------
     def handle_pageBegin(self):
-        # TODO docstring
+        """
+            Overrides default method to facilitate the template switch
+            after the first page
+        """
 
         self._handle_pageBegin()
         self._handle_nextPageTemplate('LaterPage')

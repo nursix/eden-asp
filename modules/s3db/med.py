@@ -1606,7 +1606,6 @@ class MedEpicrisisModel(DataModel):
                      CommentsField("diagnoses",
                                    label = T("Relevant Diagnoses"),
                                    comment = None,
-                                   requires = IS_NOT_EMPTY(),
                                    ),
                      CommentsField("progress",
                                    label = T("Treatment / Progress"),
