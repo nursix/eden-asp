@@ -744,7 +744,7 @@ class PatientSummaryTemplate(BaseDocTemplate):
         # Current visit
         x = self.leftMargin
         y -= bh
-        x = box(x, y, 100, label=T("Date"), text=visit.get("date"))
+        x = box(x, y, 100, label=T("Arrival Time"), text=visit.get("date"))
         x = box(x, y, rw(x), label=T("Reason for visit"), text=visit.get("reason"))
 
         # Vitals
