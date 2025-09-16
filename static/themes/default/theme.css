@@ -17,8 +17,17 @@
   cursor: pointer;
   vertical-align: middle;
 }
+/* line 52, ../scss/theme/_buttons.scss */
+#footer button.btn i.fa,
+.pr-contacts-editable button i.fa,
+.action-btn i.fa,
+.delete-btn-ajax i.fa,
+.delete-btn i.fa,
+.selected-action i.fa {
+  margin: 0 0.2rem;
+}
 
-/* line 59, ../scss/theme/_buttons.scss */
+/* line 62, ../scss/theme/_buttons.scss */
 .action-btn[disabled], .action-btn[disabled]:hover, .action-btn[disabled]:focus,
 .delete-btn-ajax[disabled],
 .delete-btn-ajax[disabled]:hover,
@@ -33,13 +42,13 @@
   background-color: rgba(192, 192, 192, 0.25);
 }
 
-/* line 67, ../scss/theme/_buttons.scss */
+/* line 70, ../scss/theme/_buttons.scss */
 .action-btn,
 .selected-action {
   background-color: #0a5b29;
   color: #fefefe !important;
 }
-/* line 71, ../scss/theme/_buttons.scss */
+/* line 74, ../scss/theme/_buttons.scss */
 .action-btn:hover, .action-btn:focus,
 .selected-action:hover,
 .selected-action:focus {
@@ -47,13 +56,13 @@
   color: #fefefe !important;
 }
 
-/* line 78, ../scss/theme/_buttons.scss */
+/* line 81, ../scss/theme/_buttons.scss */
 .delete-btn-ajax,
 .delete-btn {
   background-color: #b31c1f;
   color: #fefefe !important;
 }
-/* line 82, ../scss/theme/_buttons.scss */
+/* line 85, ../scss/theme/_buttons.scss */
 .delete-btn-ajax:hover, .delete-btn-ajax:focus,
 .delete-btn:hover,
 .delete-btn:focus {
@@ -61,42 +70,42 @@
   color: #fefefe !important;
 }
 
-/* line 93, ../scss/theme/_buttons.scss */
+/* line 96, ../scss/theme/_buttons.scss */
 .dataTable .action-btn,
 .dataTable .selected-action {
   color: #fefefe;
 }
-/* line 97, ../scss/theme/_buttons.scss */
+/* line 100, ../scss/theme/_buttons.scss */
 .dataTable .delete-btn,
 .dataTable .delete-btn-ajax {
   color: #fefefe;
 }
-/* line 101, ../scss/theme/_buttons.scss */
+/* line 104, ../scss/theme/_buttons.scss */
 .dataTable td.actions {
   white-space: nowrap;
 }
 
-/* line 109, ../scss/theme/_buttons.scss */
+/* line 112, ../scss/theme/_buttons.scss */
 .action-lnk {
   font-size: 85%;
   cursor: pointer;
   margin-left: 0.6rem;
 }
-/* line 113, ../scss/theme/_buttons.scss */
+/* line 116, ../scss/theme/_buttons.scss */
 .action-lnk:first-child {
   margin-left: 0;
 }
-/* line 116, ../scss/theme/_buttons.scss */
+/* line 119, ../scss/theme/_buttons.scss */
 [dir=rtl] .action-lnk {
   margin-left: 0;
   margin-right: 0.6rem;
 }
-/* line 119, ../scss/theme/_buttons.scss */
+/* line 122, ../scss/theme/_buttons.scss */
 [dir=rtl] .action-lnk:first-child {
   margin-right: 0;
 }
 
-/* line 128, ../scss/theme/_buttons.scss */
+/* line 131, ../scss/theme/_buttons.scss */
 .cancel-form-btn,
 .reset-form-btn {
   display: inline-block;
@@ -106,21 +115,21 @@
   margin-bottom: 0.3rem;
   border: 1px solid transparent;
 }
-/* line 137, ../scss/theme/_buttons.scss */
+/* line 140, ../scss/theme/_buttons.scss */
 .cancel-form-btn:hover,
 .reset-form-btn:hover {
   background-color: #fefefe;
   border-color: #0a5b29;
 }
 
-/* line 146, ../scss/theme/_buttons.scss */
+/* line 149, ../scss/theme/_buttons.scss */
 .map_home .gis_fullscreen_map-btn {
   font-weight: normal;
   font-size: 0.8rem;
   padding: 0.2rem;
 }
 
-/* line 155, ../scss/theme/_buttons.scss */
+/* line 158, ../scss/theme/_buttons.scss */
 button.toggle-text {
   color: #fefefe;
   background-color: #0a5b29;
@@ -129,30 +138,30 @@ button.toggle-text {
   line-height: 1.0;
   padding: 0.2rem 0.3rem;
 }
-/* line 160, ../scss/theme/_buttons.scss */
+/* line 163, ../scss/theme/_buttons.scss */
 [dir=rtl] button.toggle-text {
   margin: 0 0.7rem 0 0;
 }
 
-/* line 170, ../scss/theme/_buttons.scss */
+/* line 173, ../scss/theme/_buttons.scss */
 .pr-contacts-editable button {
   background-color: #0a5b29;
   color: #fefefe !important;
   margin: 2px;
 }
 
-/* line 180, ../scss/theme/_buttons.scss */
+/* line 183, ../scss/theme/_buttons.scss */
 #footer button.btn {
   color: #fefefe;
   background: #dddddd;
 }
-/* line 184, ../scss/theme/_buttons.scss */
+/* line 187, ../scss/theme/_buttons.scss */
 #footer button.btn:hover {
   color: #fefefe;
   background: #a0a0a0;
 }
 
-/* line 193, ../scss/theme/_buttons.scss */
+/* line 196, ../scss/theme/_buttons.scss */
 .caret {
   display: inline-block;
   width: 0;

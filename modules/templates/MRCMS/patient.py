@@ -44,7 +44,7 @@ from gluon.contenttype import contenttype
 
 from core import CRUDMethod, S3DateTime, s3_fullname, s3_str
 
-# Fonts used in PatientReportTemplate
+# Fonts used in PatientSummaryTemplate
 NORMAL = "Helvetica"
 BOLD = "Helvetica-Bold"
 
@@ -53,7 +53,7 @@ ANAMNESIS = ("allergies", "chronic", "disabilities", "history")
 EPICRISIS = ("situation", "diagnoses", "progress", "outcome", "recommendation")
 
 # =============================================================================
-class PatientReport(CRUDMethod):
+class PatientSummary(CRUDMethod):
     """
         Method to generate a case summary for a patient/visit
     """
@@ -82,7 +82,7 @@ class PatientReport(CRUDMethod):
     # -------------------------------------------------------------------------
     def export_pdf(self, r, **attr):
         """
-            Generates the patient report and returns the PDF
+            Generates the patient summary and returns the PDF
 
             Args:
                 r: the CRUDRequest
@@ -101,12 +101,18 @@ class PatientReport(CRUDMethod):
         if not self._permitted("read"):
             r.unauthorised()
 
-        # Generate PDF report
+        # Generate patient summary PDF
+        # TODO log this for audit
         patient = Patient(r.record.id)
         output = patient.pdf()
 
-        # TODO Generate individual filename
-        filename = "patient"
+        # Generate individual filename
+        filename = "patient-summary-%s-%s" % (
+                        r.record.id,
+                        current.calendar.format_datetime(current.request.utcnow,
+                                                         dtfmt = "%Y%m%d%H%M",
+                                                         ),
+                        )
         disposition = "attachment; filename=\"%s.pdf\"" % filename
 
         # Set content type
@@ -180,7 +186,7 @@ class Patient:
                                            otable.name,
                                            otable.logo,
                                            join = join,
-                                           limitby = (0, 1)
+                                           limitby = (0, 1),
                                            ).first()
             if row:
                 organisation = row.org_organisation
@@ -355,7 +361,7 @@ class Patient:
 
             Returns:
                 a dict with vital parameters
-                {airways, rf, o2sat, o2sub, bp, hf, temp, consc}
+                {airways, rr, o2sat, o2sub, bp, hr, temp, consc}
 
             Notes:
                 - only values from within the last 12 hours will be reported,
@@ -374,7 +380,7 @@ class Patient:
             db = current.db
             s3db = current.s3db
 
-            fields = ("airways", "rf", "o2sat", "o2sub", "bp", "hf", "temp", "consc")
+            fields = ("airways", "rr", "o2sat", "o2sub", "bp", "hr", "temp", "consc")
 
             # Must not be older than 12 hours
             earliest = current.request.utcnow - datetime.timedelta(hours=12)
@@ -490,6 +496,7 @@ class Patient:
         epicrisis = self.epicrisis
         if epicrisis and any(epicrisis[fn] for fn in EPICRISIS):
             etable = s3db.med_epicrisis
+            etable.situation.label = current.T("Current Situation")
             for fn in EPICRISIS:
                 value = epicrisis[fn]
                 if value:
@@ -503,13 +510,13 @@ class Patient:
     # -------------------------------------------------------------------------
     def pdf(self):
         """
-            Renders the patient report as PDF
+            Renders the patient summary as PDF
 
             Returns:
                 Byte stream (BytesIO)
         """
 
-        doc = PatientReportTemplate(self)
+        doc = PatientSummaryTemplate(self)
 
         contents = self.contents_xml()
         output_stream = BytesIO()
@@ -523,9 +530,9 @@ class Patient:
         return output_stream
 
 # =============================================================================
-class PatientReportTemplate(BaseDocTemplate):
+class PatientSummaryTemplate(BaseDocTemplate):
     """
-        Platypus document template for patient reports
+        Platypus document template for patient summary
     """
 
     def __init__(self, patient, pagesize=None):
@@ -548,6 +555,9 @@ class PatientReportTemplate(BaseDocTemplate):
 
         margins = (1.5*cm, 1.5*cm, 1.5*cm, 2.5*cm)
 
+        # Initialize margin properties
+        self.topMargin, self.rightMargin, self.bottomMargin, self.leftMargin = margins
+
         pages = self.page_layouts(pagesize, margins)
 
         unit = patient.unit
@@ -565,7 +575,7 @@ class PatientReportTemplate(BaseDocTemplate):
                          rightMargin = margins[1],
                          bottomMargin = margins[2],
                          leftMargin = margins[3],
-                         title = "Patient Report",
+                         title = "Patient Summary",
                          author = unit_name,
                          creator = system_name,
                          )
@@ -707,85 +717,79 @@ class PatientReportTemplate(BaseDocTemplate):
 
         # Box height
         bh = 24
-        box = self.draw_box_with_label
+        def box(x, y, w=100, h=bh, *, label=None, text=None):
+            self.draw_box_with_label(canvas, x, y,
+                                     width = w,
+                                     height = h,
+                                     label = label,
+                                     text = text,
+                                     )
+            return x + w
 
-        # Patient data
         visit = patient.visit
         person = patient.person
 
+        # Patient data
         x = self.leftMargin
         y = h - self.topMargin - 4*cm
-        box(canvas, x, y, width=100, height=bh, label="Pat.No.", text=visit.get("refno"))
-        x += 100
+        x = box(x, y, 100, label=T("Pt.#"), text=visit.get("refno"))
         if person:
-            box(canvas, x, y, width=rw(x)-180, height=bh, label="Patient", text=person.get("name"))
-            x += rw(x)-180
-            box(canvas, x, y, width=60, height=bh, label="Sex", text=person.get("gender"))
-            x += 60
-            box(canvas, x, y, width=60, height=bh, label="Date of Birth", text=person.get("dob"))
-            x += 60
-            box(canvas, x, y, width=60, height=bh, label="ID", text=person.get("label"))
+            x = box(x, y, rw(x)-180, label=T("Patient"), text=person.get("name"))
+            x = box(x, y, 60, label=T("Gender"), text=person.get("gender"))
+            x = box(x, y, 60, label=T("Date of Birth"), text=person.get("dob"))
+            x = box(x, y, 60, label=T("ID"), text=person.get("label"))
         else:
-            box(canvas, x, y, width=rw(x), height=bh, label="Patient", text=patient.record.person)
+            x = box(x, y, rw(x), label=T("Patient"), text=patient.record.person)
 
         # Current visit
         x = self.leftMargin
         y -= bh
-        box(canvas, x, y, width=100, height=bh, label="Date", text=visit.get("date"))
-        x += 100
-        box(canvas, x, y, width = rw(x), height=bh, label="Reason for Visit", text=visit.get("reason"))
+        x = box(x, y, 100, label=T("Date"), text=visit.get("date"))
+        x = box(x, y, rw(x), label=T("Reason for visit"), text=visit.get("reason"))
 
-
-            # Vitals
+        # Vitals
         page_number = canvas._pageNumber
         if page_number == 1:
-            vitals = patient.vitals
             y -= bh + 8
+            vitals = patient.vitals
+
+            label = "%s %s" % (T("Vital Signs"), vitals.get("date", ""))
             draw_value(canvas, self.leftMargin + pw/2, y,
-                       "Vitalparameter %s" % vitals.get("date", ""),
+                       label,
                        width = pw,
-                       height = 10,
-                       size = 8,
-                       bold = True,
+                       height = 9,
+                       size = 7,
+                       bold = False,
                        halign = "left",
                        )
 
+            x = self.leftMargin
             y -= bh + 4
+            x = box(x, y, 180, label=T("Airways##medical"), text=vitals.get("airways"))
+            x = box(x, y, 60, label=T("RR##vitals"), text=vitals.get("rr"))
+            x = box(x, y, 60, label=T("O2 Sat%"), text=vitals.get("o2sat"))
+            x = box(x, y, 60, label=T("O2 L/min"), text=vitals.get("o2sub"))
+
             x = self.leftMargin
-            box(canvas, x, y, width=180, height=bh, label="Airways", text=vitals.get("airways"))
-            x += 180
-            box(canvas, x, y, width=60, height=bh, label="RF", text=vitals.get("rf"))
-            x += 60
-            box(canvas, x, y, width=60, height=bh, label="O2 Sat", text=vitals.get("o2sat"))
-            x += 60
-            box(canvas, x, y, width=60, height=bh, label="O2 L/min", text=vitals.get("o2sub"))
             y -= bh
-            x = self.leftMargin
-            box(canvas, x, y, width=180, height=bh, label="Consciousness", text=vitals.get("consc"))
-            x += 180
-            box(canvas, x, y, width=60, height=bh, label="Blood Pressure", text=vitals.get("bp"))
-            x += 60
-            box(canvas, x, y, width=60, height=bh, label="HF", text=vitals.get("hf"))
-            x += 60
-            box(canvas, x, y, width=60, height=bh, label="Temp", text=vitals.get("temp"))
+            x = box(x, y, 180, label=T("Consciousness"), text=vitals.get("consc"))
+            x = box(x, y, 60, label=T("BP##vitals"), text=vitals.get("bp"))
+            x = box(x, y, 60, label=T("HR##vitals"), text=vitals.get("hr"))
+            x = box(x, y, 60, label=T("Temp"), text=vitals.get("temp"))
             # Empty box for annotations
-            x+= 60
-            box(canvas, x, y, width=rw(x), height=bh*2, label="Annotations")
+            x = box(x, y, rw(x), h=bh*2, label=T("Annotations"))
 
         # Bottom box
         epicrisis = patient.epicrisis
         report_status = T("final") if epicrisis and epicrisis.is_final else T("preliminary")
         now = S3DateTime.datetime_represent(current.request.utcnow, utc=True)
 
-        y = self.bottomMargin
         x = self.leftMargin
-        box(canvas, x, y, width=100, height=bh, label="Report generated", text=now)
-        x += 100
-        box(canvas, x, y, width=100, height=bh, label="Report is", text=report_status)
-        x += 100
-        box(canvas, x, y, width=200, height=bh, label="Signature")
-        x += 200
-        box(canvas, x, y, width=rw(x), height=bh, label="Page")
+        y = self.bottomMargin
+        x = box(x, y, 100, label=T("Document generated"), text=now)
+        x = box(x, y, 100, label=T("Report is"), text=report_status)
+        x = box(x, y, 200, label=T("Signature"))
+        x = box(x, y, rw(x), label=T("Page"))
 
     # -------------------------------------------------------------------------
     @staticmethod

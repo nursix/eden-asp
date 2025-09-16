@@ -49,6 +49,9 @@ $action_btn_fgcolor_disabled: $action_btn_fgcolor_hover !default;
 .delete-btn,
 .selected-action {
     @include tiny_button_style();
+    i.fa {
+        margin: 0 0.2rem;
+    }
 }
 
 // Action buttons

@@ -1107,7 +1107,11 @@ class MedVitalsModel(DataModel):
                            requires = IS_IN_SET(airway_status, zero=None, sort=False),
                            represent = self.represent_discrete(dict(airway_status), normal={"N"}),
                            ),
-                     Field("rf", "integer",
+                     Field("rf", "integer", # TODO remove after migration to rr
+                           readable = False,
+                           writable = False,
+                           ),
+                     Field("rr", "integer",
                            label = T("Respiratory Rate"),
                            requires = IS_EMPTY_OR(IS_INT_IN_RANGE(minimum=2, maximum=80)),
                            represent = represent_normal(12, 20),
@@ -1131,7 +1135,11 @@ class MedVitalsModel(DataModel):
                            requires = IS_EMPTY_OR(IS_BLOOD_PRESSURE()),
                            represent = self.represent_bp(110, 220),
                            ),
-                     Field("hf", "integer",
+                     Field("hf", "integer", # TODO remove after migration to hr
+                           readable = False,
+                           writable = False,
+                           ),
+                     Field("hr", "integer",
                            label = T("Heart Rate"),
                            requires = IS_INT_IN_RANGE(minimum=10, maximum=300),
                            represent = represent_normal(51, 90),
@@ -1152,11 +1160,11 @@ class MedVitalsModel(DataModel):
         # List fields
         list_fields = ["date",
                        "airways",
-                       (T("RF##vitals"), "rf"),
+                       (T("RR##vitals"), "rr"),
                        "o2sat",
                        "o2sub",
                        (T("BP##vitals"), "bp"),
-                       (T("HF##vitals"), "hf"),
+                       (T("HR##vitals"), "hr"),
                        (T("Temp"), "temp"),
                        "consc",
                        "risk_class",
@@ -1596,6 +1604,7 @@ class MedEpicrisisModel(DataModel):
                      DateTimeField(
                         default = "now",
                         future = 0,
+                        readable = False,
                         writable = False,
                         ),
                      CommentsField("situation",
@@ -2213,7 +2222,7 @@ class RiskClass:
     """
 
     # Vital parameters used for calculation
-    indicators = ("airways", "rf", "o2sat", "o2sub", "hypox", "bp", "hf", "temp", "consc")
+    indicators = ("airways", "rr", "o2sat", "o2sub", "hypox", "bp", "hr", "temp", "consc")
 
     def __init__(self, vitals_id):
         """
@@ -2359,14 +2368,14 @@ class RiskClass:
             risk = "M"
 
         # B - Breathing status
-        rf = params.get("rf")
-        if rf is not None:
-            if rf <= 8 or rf >= 25:
+        rr = params.get("rr")
+        if rr is not None:
+            if rr <= 8 or rr >= 25:
                 score += 3
                 risk = "M"
-            elif rf > 20:
+            elif rr > 20:
                 score += 2
-            elif rf < 12:
+            elif rr < 12:
                 score += 1
 
         o2sub = params.get("o2sub") # O2 Substitution
@@ -2414,14 +2423,14 @@ class RiskClass:
             elif sbp <= 110:
                 score += 1
 
-        hf = params.get("hf")
-        if hf is not None:
-            if hf <= 40 or hf > 130:
+        hr = params.get("hr")
+        if hr is not None:
+            if hr <= 40 or hr > 130:
                 score += 3
                 risk = "M"
-            elif hf > 110:
+            elif hr > 110:
                 score += 2
-            elif hf <= 50 or hf > 90:
+            elif hr <= 50 or hr > 90:
                 score += 1
 
         # D - Disability
