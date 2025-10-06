@@ -1165,7 +1165,6 @@ class PRPersonModel(DataModel):
                        med_anamnesis = {"joinby": "person_id",
                                         "multiple": False,
                                         },
-                       med_epicrisis = "person_id",
                        med_vitals = "person_id",
                        med_status = {"name": "med_status",
                                      "joinby": "person_id",

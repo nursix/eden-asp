@@ -829,7 +829,15 @@ class MedPatientModel(DataModel):
     # -------------------------------------------------------------------------
     @staticmethod
     def set_patient(record):
-        # TODO docstring
+        """
+            Link a vitals/status/treatment record to a person or patient
+
+            Args:
+                record - the record, must contain:
+                            - id
+                            - either person_id or patient_id
+                            - date
+        """
 
         db = current.db
         s3db = current.s3db
@@ -844,18 +852,22 @@ class MedPatientModel(DataModel):
                 record.update_record(person_id=patient.person_id)
 
         elif record.person_id:
-
-            # TODO if the record has a date, choose the patient record
-            #      with a matching time frame (if any)
-            open_status = ("ARRIVED", "TREATMENT")
-            query = (table.person_id == record.person_id) & \
-                    (table.status.belongs(open_status)) & \
-                    (table.invalid == False) & \
-                    (table.deleted == False)
+            query = (table.person_id == record.person_id)
+            date = record.date if "date" in record else None
+            if date:
+                # Choose the latest patient record matching this date
+                query &= (table.date <= date) & \
+                         ((table.end_date == None) | (table.end_date >= date))
+            else:
+                # Choose the latest open patient record
+                open_status = ("ARRIVED", "TREATMENT")
+                query &= (table.status.belongs(open_status))
+            query &= (table.invalid == False) & \
+                     (table.deleted == False)
             patient = db(query).select(table.id,
-                                        orderby = ~table.date,
-                                        limitby = (0, 1),
-                                        ).first()
+                                       orderby = ~table.date,
+                                       limitby = (0, 1),
+                                       ).first()
             if patient:
                 record.update_record(patient_id=patient.id)
 
@@ -992,6 +1004,7 @@ class MedStatusModel(DataModel):
         record = db(query).select(table.id,
                                   table.person_id,
                                   table.patient_id,
+                                  table.date,
                                   table.is_final,
                                   limitby = (0, 1),
                                   ).first()
@@ -1225,6 +1238,7 @@ class MedVitalsModel(DataModel):
         record = db(query).select(table.id,
                                   table.person_id,
                                   table.patient_id,
+                                  table.date,
                                   limitby = (0, 1),
                                   ).first()
 
@@ -1696,6 +1710,7 @@ class MedEpicrisisModel(DataModel):
         record = db(query).select(table.id,
                                   table.person_id,
                                   table.patient_id,
+                                  table.date,
                                   table.is_final,
                                   limitby = (0, 1),
                                   ).first()
@@ -3187,20 +3202,14 @@ def med_rheader(r, tabs=None):
 
         if tablename == "pr_person":
             if not tabs:
-                # TODO should always be patient, with epicrisis embedded
                 has_permission = current.auth.s3_has_permission
-                if has_permission("read", "med_epicrisis", c="med", f="patient"):
-                    history = "epicrisis"
-                else:
-                    history = "patient"
                 tabs = [(T("Basic Details"), None),
                         (T("Background"), "anamnesis"),
                         (T("Vaccinations"), "vaccination"),
                         (T("Medication"), "medication"),
-                        (T("Treatment Occasions"), history),
-                        # TODO Expose these when model refactored
-                        #(T("Vital Signs"), "vitals", {"_class": "emphasis"}),
-                        #(T("Status Reports"), "med_status", {"_class": "emphasis"}),
+                        (T("Treatment Occasions"), "patient"),
+                        (T("Vital Signs"), "vitals", {"_class": "emphasis"}),
+                        (T("Status Reports"), "med_status", {"_class": "emphasis"}),
                         ]
                 # Add document-tab only if the user is permitted to
                 # access documents through the med/patient controller

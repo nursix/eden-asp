@@ -474,16 +474,16 @@ def person():
         return True
     s3.prep = prep
 
-    def postp(r, output):
-
-        if r.component_name == "patient":
-            if isinstance(output, dict) and \
-               auth.permission.has_permission("read", c="med", f="patient"):
-                # Open in med/patient controller rather than on component tab
-                output["native"] = True
-
-        return output
-    s3.postp = postp
+    #def postp(r, output):
+    #
+    #    if r.component_name == "patient":
+    #        if isinstance(output, dict) and \
+    #           auth.permission.has_permission("read", c="med", f="patient"):
+    #            # Open in med/patient controller rather than on component tab
+    #            output["native"] = True
+    #
+    #    return output
+    #s3.postp = postp
 
     return crud_controller("pr", "person", rheader=s3db.med_rheader)
 
