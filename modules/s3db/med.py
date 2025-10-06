@@ -677,7 +677,10 @@ class MedPatientModel(DataModel):
                 row = db(query).select(table.id, limitby=(0, 1)).first()
                 if row:
                     error = T("Person already has an ongoing patient registration")
-                    form.errors.person_id = error
+                    for fn in ("person_id", "status", "reason"):
+                        if fn in form.vars:
+                            form.errors[fn] = error
+                            break
 
             # Area capacity handling
             capacity_handling = settings.get_med_area_over_capacity()
@@ -2772,7 +2775,9 @@ class med_StatusListLayout(S3DataListLayout):
 
         self.editable = []
         self.visible = []
+
         self.patient_id = None
+        self.person_id = None
 
     # -------------------------------------------------------------------------
     def prep(self, resource, records):
@@ -2796,10 +2801,12 @@ class med_StatusListLayout(S3DataListLayout):
         query = table.id.belongs(record_ids) & \
                 ((table.is_final==True) | (table.created_by==user_id)) & \
                 (table.deleted == False)
-        rows = db(query).select(table.id, table.patient_id)
+        rows = db(query).select(table.id, table.patient_id, table.person_id)
         visible = self.visible = [row.id for row in rows]
         if rows:
-            self.patient_id = rows.first().patient_id
+            row = rows.first()
+            self.patient_id = row.patient_id
+            self.person_id = row.person_id
 
         # Editable only if not final and created by the current user
         query = table.id.belongs(visible) & \
@@ -2899,18 +2906,29 @@ class med_StatusListLayout(S3DataListLayout):
         toolbox = DIV(_class = "edit-bar fright")
 
         # Look up the patient ID
-        patient_id = self.patient_id
-        if not patient_id:
+        f = current.request.function
+        if f == "person":
+            person_id = self.person_id
+            update_url = URL(c = "med",
+                             f = "person",
+                             args = [person_id, "med_status", record_id, "update.popup"],
+                             vars = {"refresh": list_id,
+                                     "record": record_id,
+                                     "profile": self.profile,
+                                     },
+                             )
+        elif f == "patient":
+            patient_id = self.patient_id
+            update_url = URL(c = "med",
+                             f = "patient",
+                             args = [patient_id, "status", record_id, "update.popup"],
+                             vars = {"refresh": list_id,
+                                     "record": record_id,
+                                     "profile": self.profile,
+                                     },
+                             )
+        else:
             return None
-
-        update_url = URL(c="med",
-                         f="patient",
-                         args = [patient_id, "status", record_id, "update.popup"],
-                         vars = {"refresh": list_id,
-                                 "record": record_id,
-                                 "profile": self.profile,
-                                 },
-                         )
 
         has_permission = current.auth.s3_has_permission
 

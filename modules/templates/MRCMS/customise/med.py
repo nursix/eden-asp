@@ -9,14 +9,6 @@ from gluon import current, A
 from core import ICON
 
 # =============================================================================
-def med_person_controller(**attr):
-
-    # TODO if the user does not have permission to access dvr/person
-    #      => filter to persons with a current patient record
-
-    pass
-
-# =============================================================================
 def med_patient_resource(r, tablename):
 
     s3db = current.s3db

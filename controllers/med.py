@@ -422,37 +422,6 @@ def person():
                 msg_list_empty = T("No Treatment Occasions currently registered"),
                 )
 
-        elif r.component_name == "epicrisis":
-            # Filter out invalid patient records
-            r.component.add_filter(FS("patient_id$invalid") == False)
-
-            # Read-only in this perspective
-            r.component.configure(insertable = False,
-                                  editable = False,
-                                  deletable = False,
-                                  )
-            ctable = r.component.table
-
-            # Adapt patient_id visibility+label to perspective
-            from core import S3Represent
-            field = ctable.patient_id
-            field.label = T("Treatment Occasion")
-            field.readable = True
-
-            # Include is-final flag
-            field = ctable.is_final
-            field.readable = True
-
-            # Adapt list fields to perspective
-            list_fields = ["date",
-                           "patient_id",
-                           "patient_id$status",
-                           "situation",
-                           "diagnoses",
-                           "is_final",
-                           ]
-            r.component.configure(list_fields=list_fields)
-
         # CRUD Form
         crud_fields = settings.get_pr_name_fields()
         crud_fields.extend(["date_of_birth",
@@ -474,16 +443,16 @@ def person():
         return True
     s3.prep = prep
 
-    #def postp(r, output):
-    #
-    #    if r.component_name == "patient":
-    #        if isinstance(output, dict) and \
-    #           auth.permission.has_permission("read", c="med", f="patient"):
-    #            # Open in med/patient controller rather than on component tab
-    #            output["native"] = True
-    #
-    #    return output
-    #s3.postp = postp
+    def postp(r, output):
+
+       if r.component_name == "patient":
+           if isinstance(output, dict) and \
+              auth.permission.has_permission("read", c="med", f="patient"):
+               # Open in med/patient controller rather than on component tab
+               output["native"] = True
+
+       return output
+    s3.postp = postp
 
     return crud_controller("pr", "person", rheader=s3db.med_rheader)
 

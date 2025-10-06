@@ -928,16 +928,6 @@ def configure_dvr_person_controller(r, privileged=False, administration=False):
 
     resource = r.resource
 
-    # Components that can be written to without permission
-    # to update the master record
-    s3db.configure("pr_person",
-                   ignore_master_access = ("anamnesis",
-                                           "medication",
-                                           "vaccination",
-                                           "case_appointment",
-                                           ),
-                   )
-
     # Autocomplete using alternative search method
     search_fields = ("first_name", "last_name", "pe_label")
     s3db.set_method("pr_person",
@@ -1135,6 +1125,95 @@ def configure_dvr_person_controller(r, privileged=False, administration=False):
             # the OrgAdmin (or Admin) can select someone else:
             field.writable = is_org_admin if field.default else True
             field.represent = represent
+
+# -------------------------------------------------------------------------
+def configure_med_person_controller(r):
+
+    T = current.T
+    db = current.db
+    s3db = current.s3db
+
+    s3 = current.response.s3
+
+    # Access to case files without case list permission requires
+    # that the client is a current patient
+    if not current.auth.s3_has_permission("read", "pr_person", c="dvr", f="person"):
+        record = r.record
+        open_status = ("ARRIVED", "TREATMENT")
+        if record:
+            # Make sure the person has an active patient file
+            ptable = s3db.med_patient
+            query = (ptable.person_id == record.id) & \
+                    (ptable.status.belongs(open_status)) & \
+                    (ptable.invalid == False) & \
+                    (ptable.deleted == False)
+            row = db(query).select(ptable.id, limitby=(0, 1)).first()
+            if not row:
+                r.unauthorised()
+        else:
+            # Filter out persons without active patient file
+            query = FS("patient.status").belongs(open_status)
+            r.resource.add_filter(query)
+
+    # Components which can be written to without permission to
+    # update the person record itself
+    s3db.configure("pr_person",
+                   ignore_master_access = ("anamnesis",
+                                           "case_appointment",
+                                           "med_status",
+                                           "medication",
+                                           "patient",
+                                           "vaccination",
+                                           "vitals",
+                                           ),
+                   )
+
+    component = r.component
+    component_name = r.component_name
+
+    if component_name == "patient":
+        # Filter out invalid patient records
+        r.component.add_filter(FS("invalid") == False)
+
+        # Perspective-specific list fields
+        list_fields = ["date",
+                       "unit_id",
+                       "refno",
+                       "reason",
+                       "status",
+                       ]
+
+        # TODO Custom CRUD form with embedded epicrisis and treatment
+
+        # Reconfigure component
+        component.configure(crud_form = CustomForm(*list_fields),
+                            subheadings = None,
+                            list_fields = list_fields,
+                            orderby = "%s.date desc" % r.component.tablename,
+                            insertable = True,
+                            editable = True,
+                            deletable = False,
+                            )
+
+        # Adapt CRUD strings to perspective
+        s3.crud_strings["med_patient"] = Storage(
+            label_create = T("Add Treatment Occasion"),
+            title_display = T("Treatment Occasion"),
+            title_list = T("Treatment Occasions"),
+            title_update = T("Edit Treatment Occasion"),
+            label_list_button = T("List Treatment Occasions"),
+            # label_delete_button = T("Delete Treatment Occasion"),
+            msg_record_created = T("Treatment Occasion added"),
+            msg_record_modified = T("Treatment Occasion updated"),
+            # msg_record_deleted = T("Treatment Occasion deleted"),
+            msg_list_empty = T("No Treatment Occasions currently registered"),
+            )
+
+    elif component_name == "vitals":
+        pass
+
+    elif component_name == "med_status":
+        pass
 
 # -------------------------------------------------------------------------
 def configure_security_person_controller(r):
@@ -1552,9 +1631,7 @@ def pr_person_controller(**attr):
         controller = r.controller
 
         # Is this a case file view?
-        case_file = controller in ("dvr", "counsel", "supply") or \
-                    controller == "med" and not r.viewing
-
+        case_file = controller in ("dvr", "counsel", "supply", "med")
         if case_file:
             # Call custom dvr/person prep
             from .dvr import dvr_person_prep
@@ -1563,34 +1640,36 @@ def pr_person_controller(**attr):
             # Call standard prep
             result = standard_prep(r) if callable(standard_prep) else True
 
-        get_vars = r.get_vars
-
         if case_file:
             # Adjust list title for invalid cases (normally "Archived")
-            archived = get_vars.get("archived")
+            archived = r.get_vars.get("archived")
             if archived in ("1", "true", "yes"):
                 crud_strings = s3.crud_strings["pr_person"]
                 crud_strings["title_list"] = T("Invalid Cases")
 
-            # Configure case perspective
+            # Configure case file
             configure_dvr_person_controller(r,
                                             privileged = privileged,
                                             administration = administration,
                                             )
-
-        # TODO person-tab of patient file
-        #elif controller == "med":
-        #    configure_med_person_controller(r)
+            # Additional perspective-specific configurations
+            if controller == "med":
+                # med/person
+                configure_med_person_controller(r)
 
         elif controller == "security":
+            # Person records for security checks
             configure_security_person_controller(r)
 
         elif controller == "hrm":
+            # Staff records
             configure_hrm_person_controller(r)
 
         elif controller == "default":
+            # The user's own record
             configure_default_person_controller(r)
 
+        # View-independent configurations
         if r.component_name == "identity":
 
             if r.component_id:
@@ -1617,7 +1696,7 @@ def pr_person_controller(**attr):
     standard_postp = s3.postp
     def postp(r, output):
         # Call standard postp
-        if callable(standard_postp):
+        if r.controller != "med" and callable(standard_postp):
             output = standard_postp(r, output)
 
         if QUARTERMASTER:
