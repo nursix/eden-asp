@@ -844,6 +844,9 @@ class MedPatientModel(DataModel):
                 record.update_record(person_id=patient.person_id)
 
         elif record.person_id:
+
+            # TODO if the record has a date, choose the patient record
+            #      with a matching time frame (if any)
             open_status = ("ARRIVED", "TREATMENT")
             query = (table.person_id == record.person_id) & \
                     (table.status.belongs(open_status)) & \
@@ -3184,6 +3187,7 @@ def med_rheader(r, tabs=None):
 
         if tablename == "pr_person":
             if not tabs:
+                # TODO should always be patient, with epicrisis embedded
                 has_permission = current.auth.s3_has_permission
                 if has_permission("read", "med_epicrisis", c="med", f="patient"):
                     history = "epicrisis"
@@ -3194,6 +3198,9 @@ def med_rheader(r, tabs=None):
                         (T("Vaccinations"), "vaccination"),
                         (T("Medication"), "medication"),
                         (T("Treatment Occasions"), history),
+                        # TODO Expose these when model refactored
+                        #(T("Vital Signs"), "vitals", {"_class": "emphasis"}),
+                        #(T("Status Reports"), "med_status", {"_class": "emphasis"}),
                         ]
                 # Add document-tab only if the user is permitted to
                 # access documents through the med/patient controller
@@ -3211,7 +3218,6 @@ def med_rheader(r, tabs=None):
 
             if not tabs:
                 tabs = [(T("Overview"), None),
-                        # Person details [viewing]
                         # Background [viewing]
                         # Vaccinations [viewing]
                         # Medication [viewing]
@@ -3222,8 +3228,7 @@ def med_rheader(r, tabs=None):
                         (T("Documents"), "document"),
                         ]
                 if person_id:
-                    tabs[1:1] = [#(T("Person Details"), "person/"),
-                                 (T("Background"), "anamnesis/"),
+                    tabs[1:1] = [(T("Background"), "anamnesis/"),
                                  (T("Medication"), "medication/"),
                                  (T("Vaccinations"), "vaccination/"),
                                  ]

@@ -125,8 +125,10 @@ def dvr_rheader(r, tabs=None):
                         tabs.extend([(T("Background"), "anamnesis"),
                                      (T("Vaccinations"), "vaccination"),
                                      (T("Medication"), "medication"),
-                                     (T("Appointments"), "case_appointment"),
                                      (T("Treatment Occasions"), history),
+                                     (T("Vital Signs"), "vitals", {"_class": "emphasis"}),
+                                     (T("Status Reports"), "med_status", {"_class": "emphasis"}),
+                                     (T("Appointments"), "case_appointment"),
                                      ])
                         # Add document-tab only if the user is permitted to
                         # access documents through the med/patient controller

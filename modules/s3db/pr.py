@@ -1166,6 +1166,10 @@ class PRPersonModel(DataModel):
                                         "multiple": False,
                                         },
                        med_epicrisis = "person_id",
+                       med_vitals = "person_id",
+                       med_status = {"name": "med_status",
+                                     "joinby": "person_id",
+                                     },
 
                        # Seized Items (owner)
                        security_seized_item = "person_id",

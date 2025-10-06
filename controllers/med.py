@@ -20,8 +20,13 @@ def index_alt():
         Module homepage for non-Admin users when no CMS content found
     """
 
-    # Just redirect to the list of persons
-    s3_redirect_default(URL(f="patient"))
+    # NB import required since executed in different environment
+    from gluon import current
+    has_permission = current.auth.s3_has_permission
+
+    f = "patient" if has_permission("read", "med_patient", f="patient") else "unit"
+
+    s3_redirect_default(URL(f=f))
 
 # =============================================================================
 def unit():
