@@ -335,18 +335,25 @@ def person():
         resource = r.resource
         table = resource.table
 
+        component = r.component
+        component_name = r.component_name
+
         viewing = r.viewing
         if viewing:
             # On person-tab of patient record
-            person_id = None
+            person_id = patient_id = None
 
             vtablename, record_id = viewing
             if vtablename == "med_patient" and record_id:
                 # Load person_id from patient
                 ptable = s3db.med_patient
                 query = (ptable.id == record_id) & (ptable.deleted == False)
-                row = db(query).select(ptable.person_id, limitby=(0, 1)).first()
-                person_id = row.person_id if row else None
+                row = db(query).select(ptable.id,
+                                       ptable.person_id,
+                                       limitby=(0, 1)).first()
+                if row:
+                    patient_id = row.id
+                    person_id = row.person_id
 
             if not person_id:
                 r.error(404, current.ERROR.BAD_RECORD)
@@ -387,7 +394,32 @@ def person():
                 field.writable = False
                 field.comment = None
 
-        elif r.component_name == "patient":
+        else:
+            # Primary med/person perspective
+            record = r.record
+            patient_id = s3db.med_get_current_patient_id(record.id) if record else None
+
+        if not component:
+            # CRUD Form
+            crud_fields = settings.get_pr_name_fields()
+            crud_fields.extend(["date_of_birth",
+                                "gender",
+                                "person_details.nationality",
+                                # "person_details.marital_status",
+                                # "person_details.nationality",
+                                # "person_details.religion",
+                                # "person_details.occupation",
+                                "deceased",
+                                "date_of_death",
+                                "comments",
+                                ])
+
+            resource.configure(crud_form = s3base.CustomForm(*crud_fields),
+                               insertable = False,
+                               deletable = False,
+                               )
+
+        elif component_name == "patient":
             # On patient-tab of person record
             # Reconfigure data table and form
             list_fields = ["date",
@@ -400,8 +432,7 @@ def person():
                                   subheadings = None,
                                   list_fields = list_fields,
                                   orderby = "%s.date desc" % r.component.tablename,
-                                  insertable = False,
-                                  editable = False,
+                                  insertable = not patient_id,
                                   deletable = False,
                                   )
 
@@ -422,24 +453,50 @@ def person():
                 msg_list_empty = T("No Treatment Occasions currently registered"),
                 )
 
-        # CRUD Form
-        crud_fields = settings.get_pr_name_fields()
-        crud_fields.extend(["date_of_birth",
-                            "gender",
-                            "person_details.nationality",
-                            # "person_details.marital_status",
-                            # "person_details.nationality",
-                            # "person_details.religion",
-                            # "person_details.occupation",
-                            "deceased",
-                            "date_of_death",
-                            "comments",
-                            ])
+        elif component_name == "vitals":
+            # Require active patient file for adding new record
+            component.configure(insertable = bool(patient_id))
+            component.table.patient_id.default = patient_id
 
-        resource.configure(crud_form = s3base.CustomForm(*crud_fields),
-                           insertable = False,
-                           deletable = False,
-                           )
+        elif component_name == "med_status":
+            # Require active patient file for adding new record
+            component.configure(insertable = bool(patient_id))
+            component.table.patient_id.default = patient_id
+
+            ctable = component.table
+            get_vars = r.get_vars
+            is_delete = r.is_delete()
+
+            # Look up the current record
+            if r.component_id or not r.component.multiple:
+                rows = component.load()
+                crecord = rows[0] if rows else None
+            elif is_delete and r.representation == "dl" and "delete" in get_vars:
+                # Datalist delete-request
+                crecord_id = get_vars.get("delete")
+                crecord = db(ctable.id == crecord_id).select(limitby=(0, 1)).first()
+            else:
+                crecord = None
+
+            # Prevent deletion of finalized records
+            if is_delete and (not crecord or crecord.is_final):
+                r.error(403, current.ERROR.NOT_PERMITTED)
+
+            # Enforce author-locking and is-final status
+            user = current.auth.user
+            user_id = user.id if user else None
+            if crecord:
+                if crecord.is_final:
+                    editable = deletable = False
+                else:
+                    editable = crecord.created_by == user_id
+                    deletable = True
+                component.configure(editable=editable, deletable=deletable)
+
+            # Expose is_final flag when not yet marked as final
+            field = ctable.is_final
+            field.readable = field.writable = not crecord or not crecord.is_final
+
         return True
     s3.prep = prep
 

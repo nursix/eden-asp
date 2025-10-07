@@ -36,6 +36,7 @@ __all__ = ("MedUnitModel",
            "MedVaccinationModel",
            "med_UnitRepresent",
            "med_DocEntityRepresent",
+           "med_get_current_patient_id",
            "med_configure_unit_id",
            "med_rheader",
            )
@@ -3088,6 +3089,32 @@ def med_configure_unit_id(table, patient=None):
             jquery_ready.append(script)
 
     return not single_unit
+
+# =============================================================================
+def med_get_current_patient_id(person_id):
+    """
+        Returns the ID of the latest active patient record for a person
+
+        Args:
+            person_id: the person record ID
+
+        Returns:
+            patient_id, or None if no active patient record exists
+    """
+
+    db = current.db
+    s3db = current.s3db
+
+    open_status = ("ARRIVED", "TREATMENT")
+
+    table = s3db.med_patient
+    query = (table.person_id == person_id) & \
+            (table.status.belongs(open_status)) & \
+            (table.invalid == False) & \
+            (table.deleted == False)
+    patient = db(query).select(table.id, limitby=(0, 1), orderby=~table.date).first()
+
+    return patient.id if patient else None
 
 # =============================================================================
 def med_patient_header(record):

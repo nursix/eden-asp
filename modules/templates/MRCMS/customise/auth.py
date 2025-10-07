@@ -251,9 +251,10 @@ def realm_entity(table, row):
                        "med_treatment",
                        "med_epicrisis",
                        ):
-        # TODO status/vitals: if not related to a patient record,
-        #                     inherit from person record
         realm_entity = inherit_realm(tablename, row, "med_patient", "patient_id")
+        if realm_entity == 0:
+            # Inherit from person if not linked to a patient record
+            realm_entity = person_realm_entity(table, row, default=realm_entity)
 
     elif tablename in ("med_substance",
                        "med_vaccination_type",

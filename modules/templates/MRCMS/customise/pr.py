@@ -1135,10 +1135,12 @@ def configure_med_person_controller(r):
 
     s3 = current.response.s3
 
+    record = r.record
+    resource = r.resource
+
     # Access to case files without case list permission requires
     # that the client is a current patient
     if not current.auth.s3_has_permission("read", "pr_person", c="dvr", f="person"):
-        record = r.record
         open_status = ("ARRIVED", "TREATMENT")
         if record:
             # Make sure the person has an active patient file
@@ -1153,23 +1155,24 @@ def configure_med_person_controller(r):
         else:
             # Filter out persons without active patient file
             query = FS("patient.status").belongs(open_status)
-            r.resource.add_filter(query)
+            resource.add_filter(query)
 
     # Components which can be written to without permission to
     # update the person record itself
-    s3db.configure("pr_person",
-                   ignore_master_access = ("anamnesis",
-                                           "case_appointment",
-                                           "med_status",
-                                           "medication",
-                                           "patient",
-                                           "vaccination",
-                                           "vitals",
-                                           ),
-                   )
+    resource.configure(ignore_master_access = ("anamnesis",
+                                               "case_appointment",
+                                               "med_status",
+                                               "medication",
+                                               "patient",
+                                               "vaccination",
+                                               "vitals",
+                                               ),
+                       )
 
     component = r.component
     component_name = r.component_name
+
+    patient_id = s3db.med_get_current_patient_id(record.id) if record else None
 
     if component_name == "patient":
         # Filter out invalid patient records
@@ -1190,7 +1193,7 @@ def configure_med_person_controller(r):
                             subheadings = None,
                             list_fields = list_fields,
                             orderby = "%s.date desc" % r.component.tablename,
-                            insertable = True,
+                            insertable = not patient_id,
                             editable = True,
                             deletable = False,
                             )
@@ -1210,10 +1213,48 @@ def configure_med_person_controller(r):
             )
 
     elif component_name == "vitals":
-        pass
+        # Require active patient file for adding new record
+        component.configure(insertable = bool(patient_id))
+        component.table.patient_id.default = patient_id
 
     elif component_name == "med_status":
-        pass
+        # Require active patient file for adding new record
+        component.configure(insertable = bool(patient_id))
+        component.table.patient_id.default = patient_id
+
+        ctable = component.table
+        get_vars = r.get_vars
+        is_delete = r.is_delete()
+
+        # Look up the current record
+        if r.component_id or not r.component.multiple:
+            rows = component.load()
+            crecord = rows[0] if rows else None
+        elif is_delete and r.representation == "dl" and "delete" in get_vars:
+            # Datalist delete-request
+            crecord_id = get_vars.get("delete")
+            crecord = db(ctable.id == crecord_id).select(limitby=(0, 1)).first()
+        else:
+            crecord = None
+
+        # Prevent deletion of finalized records
+        if is_delete and (not crecord or crecord.is_final):
+            r.error(403, current.ERROR.NOT_PERMITTED)
+
+        # Enforce author-locking and is-final status
+        user = current.auth.user
+        user_id = user.id if user else None
+        if crecord:
+            if crecord.is_final:
+                editable = deletable = False
+            else:
+                editable = crecord.created_by == user_id
+                deletable = True
+            component.configure(editable=editable, deletable=deletable)
+
+        # Expose is_final flag when not yet marked as final
+        field = ctable.is_final
+        field.readable = field.writable = not crecord or not crecord.is_final
 
 # -------------------------------------------------------------------------
 def configure_security_person_controller(r):
