@@ -140,7 +140,7 @@ def config(settings):
     #
     settings.ui.calendar_clear_icon = True
 
-    #settings.ui.auto_open_update = True
+    settings.ui.auto_open_update = False
     #settings.ui.inline_cancel_edit = "submit"
 
     #settings.ui.organizer_snap_duration = "00:10:00"

@@ -403,7 +403,7 @@ def cr_shelter_controller(**attr):
 
         if not r.component:
             # Open shelter basic details in read mode
-            settings.ui.open_read_first = True
+            resource.configure(open_read_first=True)
 
             # Deletability
             if r.record and is_admin:
@@ -457,7 +457,7 @@ def cr_shelter_controller(**attr):
                 r.component.add_filter(FS("status") != 3)
 
         elif r.component_name == "shelter_note":
-            settings.ui.open_read_first = True
+            r.component.configure(open_read_first=True)
             current.s3db.cr_configure_shelter_note_form(r)
 
         elif r.component_name == "document":

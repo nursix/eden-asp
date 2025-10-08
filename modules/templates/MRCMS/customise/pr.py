@@ -159,7 +159,7 @@ def pr_person_resource(r, tablename):
     has_permission = auth.s3_has_permission
 
     controller = r.controller
-    if controller in ("dvr", "counsel", "supply"):
+    if controller in ("dvr", "counsel", "supply", "med"):
 
         case_administration = has_permission("create", "pr_person")
 
@@ -498,7 +498,6 @@ def configure_case_form(resource, *,
         flags = None
 
     if privileged:
-
         # Extended form for privileged user roles
         crud_form = CustomForm(
                 # Case Details ----------------------------
@@ -604,11 +603,8 @@ def configure_case_form(resource, *,
                 reg_shelter,
                 reg_unit_id,
                 InlineComponent(
-                        "contact",
+                        "phone",
                         fields = [("", "value")],
-                        filterby = {"field": "contact_method",
-                                    "options": "SMS",
-                                    },
                         label = T("Mobile Phone"),
                         multiple = False,
                         name = "phone",
@@ -955,8 +951,27 @@ def configure_dvr_person_controller(r, privileged=False, administration=False):
         person_id = None
         case_organisation = default_case_organisation
 
-    if not r.component:
+    # Components which can be written to without permission to
+    # update the person record itself
+    resource.configure(ignore_master_access = (# Case Administration
+                                               "case_appointment",
+                                               "service_contact",
+                                               "case_note",
+                                               # Medical
+                                               "anamnesis",
+                                               "med_status",
+                                               "medication",
+                                               "patient",
+                                               "vaccination",
+                                               "vitals",
+                                               ),
+                       )
 
+    # Default open-method read for non-administrative roles
+    if not administration:
+        resource.configure(open_read_first=True)
+
+    if not r.component:
         # Attach registration history method
         from ..presence import RegistrationHistory
         s3db.set_method("pr_person",
@@ -1152,22 +1167,10 @@ def configure_med_person_controller(r):
             row = db(query).select(ptable.id, limitby=(0, 1)).first()
             if not row:
                 r.unauthorised()
-        else:
+        elif r.method != "search_ac":
             # Filter out persons without active patient file
             query = FS("patient.status").belongs(open_status)
             resource.add_filter(query)
-
-    # Components which can be written to without permission to
-    # update the person record itself
-    resource.configure(ignore_master_access = ("anamnesis",
-                                               "case_appointment",
-                                               "med_status",
-                                               "medication",
-                                               "patient",
-                                               "vaccination",
-                                               "vitals",
-                                               ),
-                       )
 
     component = r.component
     component_name = r.component_name
@@ -1643,7 +1646,7 @@ def pr_person_controller(**attr):
 
     administration = is_org_admin or is_case_admin
 
-    PRIVILEGED = ("CASE_MANAGER", "CASE_ASSISTANT", "MED_PRACTITIONER")
+    PRIVILEGED = ("CASE_MANAGER", "CASE_ASSISTANT",)
     privileged = administration or auth.s3_has_roles(PRIVILEGED)
 
     QUARTERMASTER = auth.s3_has_role("QUARTERMASTER") and not privileged

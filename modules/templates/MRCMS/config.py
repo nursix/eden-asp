@@ -161,6 +161,7 @@ def config(settings):
                                       "STAFF": ("ORG_GROUP_ADMIN", "ORG_ADMIN"),
                                       "CASE_ADMIN": "ORG_ADMIN",
                                       "CASE_MANAGER": "ORG_ADMIN",
+                                      "CASE_ASSISTANT": "ORG_ADMIN",
                                       "SECURITY": "ORG_ADMIN",
                                       "CATERING": "ORG_ADMIN",
                                       "ISSUE_REPORTER": "ORG_ADMIN",
@@ -173,7 +174,6 @@ def config(settings):
                                       "MED_ASSISTANT": "MED_ADMIN",
                                       "MED_READER": "MED_ADMIN",
                                       # These are restricted for now until better-defined
-                                      "CASE_ASSISTANT": "ADMIN",
                                       "QUARTERMASTER": "ADMIN",
                                       "JANITOR": "ADMIN",
                                       "CHECKPOINT": "ADMIN",

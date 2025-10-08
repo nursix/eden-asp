@@ -129,7 +129,7 @@ def hrm_human_resource_controller(**attr):
         result = standard_prep(r) if callable(standard_prep) else True
 
         if not r.component:
-            current.deployment_settings.ui.open_read_first = True
+            r.resource.configure(open_read_first=True)
 
             # TODO Adjust filters
 

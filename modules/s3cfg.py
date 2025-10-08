@@ -2213,18 +2213,24 @@ class S3Config(Storage):
     def get_ui_auto_open_update(self):
         """
             Render "Open" action buttons in datatables without explicit
-            CRUD-method => this allows automatic per-record decision
-            whether to open as update- or read-form based on permissions,
-            e.g. if the user doesn't have permission to update for all
-            records in the datatable due to oACL or realm-restriction
+            CRUD-method, to allow automatic per-record decision whether
+            to open as update- or read-form based on permissions (e.g.
+            if the user has update-permission for only some of the records
+            in the datatable).
+
+            Note:
+                - can be overridden per-resource.
         """
-        return self.ui.get("auto_open_update", False)
+        return self.ui.get("auto_open_update", True)
 
     def get_ui_open_read_first(self):
         """
             Render "Open" action buttons with explicit "read" method
             irrespective permissions (i.e. always, even if the user
-            were permitted to edit records)
+            were permitted to edit records).
+
+            Note:
+                - can be overridden per-resource.
         """
         return self.ui.get("open_read_first", False)
 

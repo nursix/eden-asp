@@ -1353,28 +1353,14 @@ def crud_controller(prefix=None, resourcename=None, **attr):
             # Get table config
             get_config = s3db.get_config
             listadd = get_config(tablename, "listadd", True)
-
-            # Which is the standard open-action?
-            if settings.get_ui_open_read_first():
-                # Always read, irrespective permissions
-                editable = False
-            else:
-                editable = get_config(tablename, "editable", True)
-                if editable and \
-                   auth.permission.ownership_required("update", table):
-                    # User cannot edit all records in the table
-                    if settings.get_ui_auto_open_update():
-                        # Decide automatically per-record (implicit method)
-                        editable = "auto"
-                    else:
-                        # Always open read first (explicit read)
-                        editable = False
-
             deletable = get_config(tablename, "deletable", True)
             copyable = get_config(tablename, "copyable", False)
 
-            # URL to open the resource
+            # Which is the standard open-action?
             from .methods import BasicCRUD
+            editable = BasicCRUD._default_editable(table)
+
+            # URL to open the resource
             open_url = BasicCRUD._linkto(r,
                                          authorised = authorised,
                                          update = editable,
