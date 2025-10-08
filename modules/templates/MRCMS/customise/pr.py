@@ -910,7 +910,7 @@ def configure_dvr_person_controller(r, privileged=False, administration=False):
             - dvr/person
             - counsel/person
             - supply/person
-            - med/person (without viewing)
+            - med/person
 
         Args:
             r: the CRUDRequest
@@ -1143,6 +1143,7 @@ def configure_dvr_person_controller(r, privileged=False, administration=False):
 
 # -------------------------------------------------------------------------
 def configure_med_person_controller(r):
+    # TODO move this into customise/med
 
     T = current.T
     db = current.db
@@ -1153,23 +1154,27 @@ def configure_med_person_controller(r):
     record = r.record
     resource = r.resource
 
+    # Include recently treated patients
+    recently = current.request.utcnow - datetime.timedelta(hours=12)
+
     # Access to case files without case list permission requires
-    # that the client is a current patient
+    # that the client is currently or has recently been a patient
     if not current.auth.s3_has_permission("read", "pr_person", c="dvr", f="person"):
         open_status = ("ARRIVED", "TREATMENT")
         if record:
-            # Make sure the person has an active patient file
             ptable = s3db.med_patient
-            query = (ptable.person_id == record.id) & \
-                    (ptable.status.belongs(open_status)) & \
+            active = (ptable.status.belongs(open_status)) | \
+                     (ptable.end_date != None) & (ptable.end_date > recently)
+            query = (ptable.person_id == record.id) & active & \
                     (ptable.invalid == False) & \
                     (ptable.deleted == False)
             row = db(query).select(ptable.id, limitby=(0, 1)).first()
             if not row:
-                r.unauthorised()
+                r.error(403, current.ERROR.NOT_PERMITTED)
         elif r.method != "search_ac":
-            # Filter out persons without active patient file
-            query = FS("patient.status").belongs(open_status)
+            query = FS("patient.status").belongs(open_status) | \
+                    (FS("patient.end_date") != None) & \
+                    (FS("patient.end_date") > recently)
             resource.add_filter(query)
 
     component = r.component
@@ -1179,26 +1184,88 @@ def configure_med_person_controller(r):
 
     if component_name == "patient":
         # Filter out invalid patient records
-        r.component.add_filter(FS("invalid") == False)
+        component.add_filter(FS("invalid") == False)
 
         # Perspective-specific list fields
-        list_fields = ["date",
+        list_fields = ["refno",
+                       "date",
                        "unit_id",
-                       "refno",
                        "reason",
                        "status",
                        ]
 
-        # TODO Custom CRUD form with embedded epicrisis and treatment
+        etable = s3db.med_epicrisis
+        if r.component_id:
+            # TODO make all patient-fields read-only if it was closed
+            #      more than 12 hours or it is closed and there is a
+            #      later patient record for the same person
+            #      ...however, permit edit for comments+epicrisis
+            query = (etable.patient_id == r.component_id) & \
+                    (etable.deleted == False)
+            epicrisis = db(query).select(etable.id,
+                                         etable.is_final,
+                                         limitby = (0, 1),
+                                         ).first()
+        else:
+            epicrisis = None
+
+        efields = ["situation", "diagnoses", "progress", "outcome", "recommendation"]
+        if not epicrisis or not epicrisis.is_final:
+            for fn in efields:
+                etable[fn].writable = True
+            etable.is_final.writable = True
+        else:
+            for fn in efields:
+                etable[fn].writable = False
+            etable.is_final.writable = False
+
+        # CRUD form
+        if current.auth.s3_has_permission("create", "med_patient"):
+            priority = "priority"
+            hazards = "hazards"
+            hazards_advice = "hazards_advice"
+            comments = "comments"
+            invalid = "invalid"
+        else:
+            priority = hazards = hazards_advice = comments = invalid = None
+
+        crud_form = CustomForm(# ------- Treatment Occasion ---------
+                               "unit_id",
+                               "date",
+                               "refno",
+                               "reason",
+                               priority,
+                               "status",
+                               # ------- Epicrisis ------------------
+                               "epicrisis.situation",
+                               "epicrisis.diagnoses",
+                               "epicrisis.progress",
+                               "epicrisis.outcome",
+                               "epicrisis.recommendation",
+                               "epicrisis.is_final",
+                               # ------- Hazards --------------------
+                               hazards,
+                               hazards_advice,
+                               # ------- Administrative -------------
+                               comments,
+                               invalid,
+                               )
+
+        subheadings = {"unit_id": T("Treatment Occasion"),
+                       "hazards": T("Hazards Advice"),
+                       "epicrisis_situation": T("Progress"),
+                       "comments": T("Administrative"),
+                       }
 
         # Reconfigure component
-        component.configure(crud_form = CustomForm(*list_fields),
-                            subheadings = None,
+        component.configure(crud_form = crud_form,
+                            subheadings = subheadings,
                             list_fields = list_fields,
                             orderby = "%s.date desc" % r.component.tablename,
                             insertable = not patient_id,
                             editable = True,
                             deletable = False,
+                            open_read_first = True,
                             )
 
         # Adapt CRUD strings to perspective
