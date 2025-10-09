@@ -497,6 +497,21 @@ def person():
             field = ctable.is_final
             field.readable = field.writable = not crecord or not crecord.is_final
 
+        elif component_name == "treatment":
+            # Require active patient file for adding new record
+            component.configure(insertable = bool(current_patient_id))
+            component.table.patient_id.default = current_patient_id
+
+            list_fields = ["date",
+                           (T("Occasion"), "patient_id"),
+                           "details",
+                           "status",
+                           "start_date",
+                           "end_date",
+                           "comments",
+                           ]
+            component.configure(list_fields = list_fields)
+
         return True
     s3.prep = prep
 

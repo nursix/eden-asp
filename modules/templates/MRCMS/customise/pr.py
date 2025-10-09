@@ -904,7 +904,7 @@ def configure_id_cards(r, resource, administration=False):
                                 )
 
 # -------------------------------------------------------------------------
-def configure_dvr_person_controller(r, privileged=False, administration=False):
+def configure_case_file(r, privileged=False, administration=False):
     """
         Case File (Full), used in
             - dvr/person
@@ -1140,191 +1140,6 @@ def configure_dvr_person_controller(r, privileged=False, administration=False):
             # the OrgAdmin (or Admin) can select someone else:
             field.writable = is_org_admin if field.default else True
             field.represent = represent
-
-# -------------------------------------------------------------------------
-def configure_med_person_controller(r):
-    # TODO move this into customise/med
-
-    T = current.T
-    db = current.db
-    s3db = current.s3db
-
-    s3 = current.response.s3
-
-    record = r.record
-    resource = r.resource
-
-    # Include recently treated patients
-    recently = current.request.utcnow - datetime.timedelta(hours=12)
-
-    # Access to case files without case list permission requires
-    # that the client is currently or has recently been a patient
-    if not current.auth.s3_has_permission("read", "pr_person", c="dvr", f="person"):
-        open_status = ("ARRIVED", "TREATMENT")
-        if record:
-            ptable = s3db.med_patient
-            active = (ptable.status.belongs(open_status)) | \
-                     (ptable.end_date != None) & (ptable.end_date > recently)
-            query = (ptable.person_id == record.id) & active & \
-                    (ptable.invalid == False) & \
-                    (ptable.deleted == False)
-            row = db(query).select(ptable.id, limitby=(0, 1)).first()
-            if not row:
-                r.error(403, current.ERROR.NOT_PERMITTED)
-        elif r.method != "search_ac":
-            query = FS("patient.status").belongs(open_status) | \
-                    (FS("patient.end_date") != None) & \
-                    (FS("patient.end_date") > recently)
-            resource.add_filter(query)
-
-    component = r.component
-    component_name = r.component_name
-
-    patient_id = s3db.med_get_current_patient_id(record.id) if record else None
-
-    if component_name == "patient":
-        # Filter out invalid patient records
-        component.add_filter(FS("invalid") == False)
-
-        # Perspective-specific list fields
-        list_fields = ["refno",
-                       "date",
-                       "unit_id",
-                       "reason",
-                       "status",
-                       ]
-
-        etable = s3db.med_epicrisis
-        if r.component_id:
-            # TODO make all patient-fields read-only if it was closed
-            #      more than 12 hours or it is closed and there is a
-            #      later patient record for the same person
-            #      ...however, permit edit for comments+epicrisis
-            query = (etable.patient_id == r.component_id) & \
-                    (etable.deleted == False)
-            epicrisis = db(query).select(etable.id,
-                                         etable.is_final,
-                                         limitby = (0, 1),
-                                         ).first()
-        else:
-            epicrisis = None
-
-        efields = ["situation", "diagnoses", "progress", "outcome", "recommendation"]
-        if not epicrisis or not epicrisis.is_final:
-            for fn in efields:
-                etable[fn].writable = True
-            etable.is_final.writable = True
-        else:
-            for fn in efields:
-                etable[fn].writable = False
-            etable.is_final.writable = False
-
-        # CRUD form
-        if current.auth.s3_has_permission("create", "med_patient"):
-            priority = "priority"
-            hazards = "hazards"
-            hazards_advice = "hazards_advice"
-            comments = "comments"
-            invalid = "invalid"
-        else:
-            priority = hazards = hazards_advice = comments = invalid = None
-
-        crud_form = CustomForm(# ------- Treatment Occasion ---------
-                               "unit_id",
-                               "date",
-                               "refno",
-                               "reason",
-                               priority,
-                               "status",
-                               # ------- Epicrisis ------------------
-                               "epicrisis.situation",
-                               "epicrisis.diagnoses",
-                               "epicrisis.progress",
-                               "epicrisis.outcome",
-                               "epicrisis.recommendation",
-                               "epicrisis.is_final",
-                               # ------- Hazards --------------------
-                               hazards,
-                               hazards_advice,
-                               # ------- Administrative -------------
-                               comments,
-                               invalid,
-                               )
-
-        subheadings = {"unit_id": T("Treatment Occasion"),
-                       "hazards": T("Hazards Advice"),
-                       "epicrisis_situation": T("Progress"),
-                       "comments": T("Administrative"),
-                       }
-
-        # Reconfigure component
-        component.configure(crud_form = crud_form,
-                            subheadings = subheadings,
-                            list_fields = list_fields,
-                            orderby = "%s.date desc" % r.component.tablename,
-                            insertable = not patient_id,
-                            editable = True,
-                            deletable = False,
-                            open_read_first = True,
-                            )
-
-        # Adapt CRUD strings to perspective
-        s3.crud_strings["med_patient"] = Storage(
-            label_create = T("Add Treatment Occasion"),
-            title_display = T("Treatment Occasion"),
-            title_list = T("Treatment Occasions"),
-            title_update = T("Edit Treatment Occasion"),
-            label_list_button = T("List Treatment Occasions"),
-            # label_delete_button = T("Delete Treatment Occasion"),
-            msg_record_created = T("Treatment Occasion added"),
-            msg_record_modified = T("Treatment Occasion updated"),
-            # msg_record_deleted = T("Treatment Occasion deleted"),
-            msg_list_empty = T("No Treatment Occasions currently registered"),
-            )
-
-    elif component_name == "vitals":
-        # Require active patient file for adding new record
-        component.configure(insertable = bool(patient_id))
-        component.table.patient_id.default = patient_id
-
-    elif component_name == "med_status":
-        # Require active patient file for adding new record
-        component.configure(insertable = bool(patient_id))
-        component.table.patient_id.default = patient_id
-
-        ctable = component.table
-        get_vars = r.get_vars
-        is_delete = r.is_delete()
-
-        # Look up the current record
-        if r.component_id or not r.component.multiple:
-            rows = component.load()
-            crecord = rows[0] if rows else None
-        elif is_delete and r.representation == "dl" and "delete" in get_vars:
-            # Datalist delete-request
-            crecord_id = get_vars.get("delete")
-            crecord = db(ctable.id == crecord_id).select(limitby=(0, 1)).first()
-        else:
-            crecord = None
-
-        # Prevent deletion of finalized records
-        if is_delete and (not crecord or crecord.is_final):
-            r.error(403, current.ERROR.NOT_PERMITTED)
-
-        # Enforce author-locking and is-final status
-        user = current.auth.user
-        user_id = user.id if user else None
-        if crecord:
-            if crecord.is_final:
-                editable = deletable = False
-            else:
-                editable = crecord.created_by == user_id
-                deletable = True
-            component.configure(editable=editable, deletable=deletable)
-
-        # Expose is_final flag when not yet marked as final
-        field = ctable.is_final
-        field.readable = field.writable = not crecord or not crecord.is_final
 
 # -------------------------------------------------------------------------
 def configure_security_person_controller(r):
@@ -1759,14 +1574,15 @@ def pr_person_controller(**attr):
                 crud_strings["title_list"] = T("Invalid Cases")
 
             # Configure case file
-            configure_dvr_person_controller(r,
-                                            privileged = privileged,
-                                            administration = administration,
-                                            )
+            configure_case_file(r,
+                                privileged = privileged,
+                                administration = administration,
+                                )
             # Additional perspective-specific configurations
             if controller == "med":
                 # med/person
-                configure_med_person_controller(r)
+                from .med import configure_med_case_file
+                configure_med_case_file(r)
 
         elif controller == "security":
             # Person records for security checks

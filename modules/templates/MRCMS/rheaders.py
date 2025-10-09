@@ -123,7 +123,8 @@ def dvr_rheader(r, tabs=None):
                                      (T("Medication"), "medication"),
                                      (T("Treatment Occasions"), "patient"),
                                      (T("Vital Signs"), "vitals", {"_class": "emphasis"}),
-                                     (T("Status Reports"), "med_status", {"_class": "emphasis"}),
+                                     (T("Status"), "med_status", {"_class": "emphasis"}),
+                                     (T("Treatment"), "treatment", {"_class": "emphasis"}),
                                      (T("Appointments"), "case_appointment"),
                                      ])
                         # Add document-tab only if the user is permitted to

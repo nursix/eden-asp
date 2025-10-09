@@ -1169,6 +1169,7 @@ class PRPersonModel(DataModel):
                        med_status = {"name": "med_status",
                                      "joinby": "person_id",
                                      },
+                       med_treatment = "person_id",
 
                        # Seized Items (owner)
                        security_seized_item = "person_id",
