@@ -1629,9 +1629,8 @@ class MedEpicrisisModel(DataModel):
                         writable = False,
                         ),
                      CommentsField("situation",
-                                   label = T("Initial Situation Details"),
+                                   label = T("Situation"),
                                    comment = None,
-                                   requires = IS_NOT_EMPTY(),
                                    ),
                      CommentsField("diagnoses",
                                    label = T("Relevant Diagnoses"),
@@ -1666,6 +1665,7 @@ class MedEpicrisisModel(DataModel):
 
         # Table configuration
         self.configure(tablename,
+                       onvalidation = self.epicrisis_onvalidation,
                        onaccept = self.epicrisis_onaccept,
                        orderby = "%s.date desc" % tablename,
                        )
@@ -1694,6 +1694,29 @@ class MedEpicrisisModel(DataModel):
         """ Safe defaults for names in case the module is disabled """
 
         return {}
+
+    # -------------------------------------------------------------------------
+    @staticmethod
+    def epicrisis_onvalidation(form):
+        """
+            Form validation for epicrisis reports
+            - situation required when marked as final
+        """
+
+        T = current.T
+
+        fields = ["situation", "is_final"]
+
+        table = current.s3db.med_epicrisis
+        data = get_form_record_data(form, table, fields)
+
+        # Verify that situation field is filled when marking as final
+        if data.get("is_final") and not data.get("situation"):
+            error = T("Situation description required to finalize report")
+            for fn in ("situation", "is_final"):
+                if fn in form.vars:
+                    form.errors[fn] = error
+                    break
 
     # -------------------------------------------------------------------------
     @staticmethod
