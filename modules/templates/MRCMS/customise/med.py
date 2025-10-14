@@ -169,7 +169,6 @@ def configure_med_case_file(r):
                             )
 
         # Adapt CRUD strings to perspective
-        # TODO translations
         s3.crud_strings["med_patient"] = Storage(
             label_create = T("Add Treatment Occasion"),
             title_display = T("Treatment Occasion"),

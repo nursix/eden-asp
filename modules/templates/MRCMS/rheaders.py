@@ -118,13 +118,15 @@ def dvr_rheader(r, tabs=None):
 
                     elif c == "med":
                         # Medical Perspective
+                        patient_id = current.s3db.med_get_current_patient_id(record.id)
+                        highlight = {"_class": "emphasis"} if patient_id else {}
                         tabs.extend([(T("Background"), "anamnesis"),
                                      (T("Vaccinations"), "vaccination"),
                                      (T("Medication"), "medication"),
                                      (T("Treatment Occasions"), "patient"),
-                                     (T("Vital Signs"), "vitals", {"_class": "emphasis"}),
-                                     (T("Status"), "med_status", {"_class": "emphasis"}),
-                                     (T("Treatment"), "treatment", {"_class": "emphasis"}),
+                                     (T("Vital Signs"), "vitals", highlight),
+                                     (T("Status"), "med_status", highlight),
+                                     (T("Treatment"), "treatment", highlight),
                                      (T("Appointments"), "case_appointment"),
                                      ])
                         # Add document-tab only if the user is permitted to

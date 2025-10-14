@@ -3270,15 +3270,17 @@ def med_rheader(r, tabs=None):
 
         if tablename == "pr_person":
             if not tabs:
+                patient_id = s3db.med_get_current_patient_id(record.id)
+                highlight = {"_class": "emphasis"} if patient_id else {}
                 has_permission = current.auth.s3_has_permission
                 tabs = [(T("Basic Details"), None),
                         (T("Background"), "anamnesis"),
                         (T("Vaccinations"), "vaccination"),
                         (T("Medication"), "medication"),
                         (T("Treatment Occasions"), "patient"),
-                        (T("Vital Signs"), "vitals", {"_class": "emphasis"}),
-                        (T("Status"), "med_status", {"_class": "emphasis"}),
-                        (T("Treatment"), "treatment", {"_class": "emphasis"}),
+                        (T("Vital Signs"), "vitals", highlight),
+                        (T("Status"), "med_status", highlight),
+                        (T("Treatment"), "treatment", highlight),
                         ]
                 # Add document-tab only if the user is permitted to
                 # access documents through the med/patient controller
