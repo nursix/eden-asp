@@ -11,7 +11,7 @@ from gluon import current, URL, A, IS_EMPTY_OR, SPAN
 from gluon.storage import Storage
 
 from core import AgeFilter, DateFilter, OptionsFilter, TextFilter, get_filter_options, \
-                 Anonymize, AnonymizeWidget, \
+                 Anonymize, AnonymizeWidget, ICON, \
                  FS, IS_ONE_OF, IS_PERSON_GENDER, JSONSEPARATORS, \
                  PersonSelector, S3CalendarWidget, \
                  CustomForm, InlineComponent, InlineLink, \
@@ -255,6 +255,15 @@ def pr_person_resource(r, tablename):
                 ## Configure case document template methods
                 #from .doc import GenerateCaseDocument
                 #GenerateCaseDocument.configure("pr_person")
+
+        if controller == "med":
+            # Patient summary export method
+            from ..patient import PatientSummary
+            s3db.set_method("pr_person",
+                            component = "patient",
+                            method = "summarize",
+                            action = PatientSummary,
+                            )
 
     # Do not include acronym in Case-Org Representation
     table = s3db.dvr_case
@@ -1513,6 +1522,17 @@ def configure_custom_actions(r, output, is_case_admin=False, is_org_admin=False)
             inject_button(output, btn, before="delete_btn", alt=None)
         elif r.component_name == "identity":
             inject_button(output, btn)
+
+    if controller == "med" and r.component_name == "patient" and r.component_id:
+        # Inject button to generate summary PDF
+        btn = A(ICON("file-pdf"), T("Summary"),
+                data = {"url": r.url(method="summarize",
+                                     representation="pdf"
+                                     ),
+                        },
+                _class = "action-btn activity button s3-download-button",
+                )
+        inject_button(output, btn, before="delete_btn", alt=None)
 
 # -------------------------------------------------------------------------
 def pr_person_controller(**attr):
