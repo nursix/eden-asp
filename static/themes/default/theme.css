@@ -602,12 +602,22 @@ button.toggle-text {
 }
 
 /* line 402, ../scss/theme/_represent.scss */
+.med-reason, .med-reason-historical {
+  font-size: 0.8rem;
+}
+
+/* line 405, ../scss/theme/_represent.scss */
 .med-reason {
-  font-size: 0.9rem;
   color: #840088;
 }
 
-/* line 406, ../scss/theme/_represent.scss */
+/* line 408, ../scss/theme/_represent.scss */
+.med-reason-historical {
+  color: #444;
+  font-style: italic;
+}
+
+/* line 412, ../scss/theme/_represent.scss */
 .med-area {
   font-size: 0.8rem;
   padding: 0.2rem 0.4rem;
@@ -617,38 +627,41 @@ button.toggle-text {
   vertical-align: top;
 }
 
-/* line 414, ../scss/theme/_represent.scss */
+/* line 420, ../scss/theme/_represent.scss */
 .med-patient, .med-unregistered {
   font-size: 0.9rem;
   vertical-align: top;
 }
 
-/* line 418, ../scss/theme/_represent.scss */
+/* line 424, ../scss/theme/_represent.scss */
 .med-unregistered {
   font-style: italic;
   color: grey;
 }
 
-/* line 422, ../scss/theme/_represent.scss */
+/* line 428, ../scss/theme/_represent.scss */
 .med-refno {
-  font-size: 0.8rem;
-  padding: 0 0.25rem;
+  font-size: 0.7rem;
+  padding: 0.025rem 0.25rem;
   vertical-align: top;
-  margin-right: 0.5rem;
+  margin-right: 0.4rem;
   color: #666;
   background: #ffddbb;
   border: 1px solid #333;
   border-radius: 1rem;
+  min-width: 1rem;
+  display: inline-block;
+  text-align: center;
 }
 
-/* line 436, ../scss/theme/_represent.scss */
+/* line 445, ../scss/theme/_represent.scss */
 .client-gender-age {
   font-size: 0.7rem;
   vertical-align: top;
   color: #999;
   margin: 0 1rem;
 }
-/* line 440, ../scss/theme/_represent.scss */
+/* line 449, ../scss/theme/_represent.scss */
 .client-gender-age .fa {
   margin: 0 0.2rem;
 }
@@ -3982,15 +3995,25 @@ table th, table td {
 /* line 124, ../scss/theme/_datalists.scss */
 .med-status-header .meta {
   display: inline-block;
-  padding: 0 0.5rem;
+  padding: 0.1rem 0.5rem;
 }
-/* line 129, ../scss/theme/_datalists.scss */
+/* line 128, ../scss/theme/_datalists.scss */
+.med-status-header .meta.meta-fix {
+  min-width: 27%;
+  background-color: #f0f0f0;
+  line-height: 0.9rem;
+}
+/* line 134, ../scss/theme/_datalists.scss */
 .med-status-header.editable {
   background-color: #fde7bd;
 }
-/* line 130, ../scss/theme/_datalists.scss */
+/* line 135, ../scss/theme/_datalists.scss */
 .med-status-header.editable .meta {
   color: #b03737;
+}
+/* line 137, ../scss/theme/_datalists.scss */
+.med-status-header.editable .meta.meta-fix {
+  background-color: #fff6e4;
 }
 
 /* line 11, ../scss/theme/_summary.scss */

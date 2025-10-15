@@ -601,7 +601,10 @@ class MedPatientModel(DataModel):
                        )
 
         # Foreign key template
-        represent = S3Represent(lookup=tablename, fields=["reason"], show_link=True)
+        represent = med_PatientRepresent(lookup = tablename,
+                                         fields = ["refno", "reason", "status"],
+                                         show_link = True,
+                                         )
         patient_id = FieldTemplate("patient_id", "reference %s" % tablename,
                                    label = T("Patient"),
                                    ondelete = "RESTRICT",
@@ -1179,6 +1182,7 @@ class MedVitalsModel(DataModel):
 
         # List fields
         list_fields = ["date",
+                       (T("Occasion"), "patient_id"),
                        "airways",
                        (T("RR##vitals"), "rr"),
                        "o2sat",
@@ -2650,6 +2654,34 @@ class med_UnitRepresent(S3Represent):
         return reprstr
 
 # =============================================================================
+class med_PatientRepresent(S3Represent):
+    """ Representation of treatment occasions """
+
+    def represent_row(self, row):
+        """
+            Generates a string representation from a Row
+
+            Args:
+                row: the Row
+        """
+
+        if hasattr(row, "med_patient"):
+            row = row.med_patient
+
+        formatted = DIV()
+
+        # Include refno if present in row
+        if "refno" in row:
+            formatted.append(SPAN(row.refno, _class="med-refno"))
+
+        # Decide CSS class by status, if present in row
+        active = "status" in row and row.status in (("ARRIVED", "TREATMENT"))
+        css = "med-reason" if active else "med-reason-historical"
+
+        formatted.append(SPAN(s3_truncate(row.reason), _class=css))
+        return formatted
+
+# =============================================================================
 class med_DocEntityRepresent(S3Represent):
     """ Module context-specific representation of doc-entities """
 
@@ -2859,6 +2891,12 @@ class med_StatusListLayout(S3DataListLayout):
         header = DIV(_class="med-status-header")
         if editable:
             header.add_class("editable")
+
+        # Include treatment occasion (patient_id), if available
+        if "med_status.patient_id" in record:
+            header.append(DIV(record["med_status.patient_id"],
+                              _class = "meta meta-fix",
+                              ))
 
         # Show date and original author
         for colname in ("med_status.date", "med_status.created_by"):
