@@ -1268,45 +1268,52 @@ class PRPersonModel(DataModel):
 
     # -------------------------------------------------------------------------
     @staticmethod
-    def pr_age(row, months=False):
+    def pr_age(person, months=False):
         """
-            Compute the age of a person
+            Compute the age of a person (current age, or age at death if deceased)
 
             Args:
-                row: a Row containing the person record
+                person: a Row containing the person record
                 months: return the age in months rather than years
 
             Returns:
                 age in years or months (integer)
         """
 
-        if hasattr(row, "pr_person"):
-            row = row.pr_person
-        if hasattr(row, "date_of_birth"):
-            dob = row.date_of_birth
-        elif hasattr(row, "id"):
-            # date_of_birth not in row: reload the record
+        if hasattr(person, "pr_person"):
+            person = person.pr_person
+
+        age = dob = None
+
+        # Check if all relevant fields are available,
+        # otherwise attempt to reload the record
+        fields = ("date_of_birth", "deceased", "date_of_death")
+        if not all(hasattr(person, fn) for fn in fields) and hasattr(person, "id"):
             table = current.s3db.pr_person
-            person = current.db(table.id == row.id).select(table.date_of_birth,
+            row = current.db(table.id == person.id).select(table.date_of_birth,
                                                            table.deceased,
                                                            table.date_of_death,
-                                                           limitby=(0, 1),
+                                                           limitby = (0, 1),
                                                            ).first()
-            dob = person.date_of_birth if person else None
-        else:
-            dob = None
+            if row:
+                person = row
 
-        if hasattr(row, "deceased") and row.deceased:
-            reference = row.date_of_death if hasattr(row, "date_of_death") else None
-        else:
-            reference = current.request.utcnow.date()
+        # Determine the date of birth
+        if hasattr(person, "date_of_birth"):
+            dob = person.date_of_birth
 
+        # Determine date of death if person is known to be deceased
+        deceased = person.deceased if hasattr(person, "deceased") else False
+        dod = person.date_of_death if deceased and hasattr(person, "date_of_death") else None
+
+        # Compute age if possible
+        reference = dod if dod else current.request.utcnow.date()
         if dob and reference:
             from dateutil.relativedelta import relativedelta
             delta = relativedelta(reference, dob)
-            return delta.months if months else delta.years
-        else:
-            return None
+            age = delta.months if months else delta.years
+
+        return age
 
     # -------------------------------------------------------------------------
     @staticmethod
