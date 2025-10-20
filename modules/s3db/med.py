@@ -1727,8 +1727,9 @@ class MedEpicrisisModel(DataModel):
     def epicrisis_onaccept(form):
         """
             Onaccept-routine for epicrisis reports
-            - set person_id
-            - compute vhash if final
+            - set person_id/patient_id
+            - update the date if changed
+            - compute vhash if final (or remove it otherwise)
         """
 
         db = current.db
@@ -1743,6 +1744,12 @@ class MedEpicrisisModel(DataModel):
                                   table.patient_id,
                                   table.date,
                                   table.is_final,
+                                  table.vhash,
+                                  table.situation,
+                                  table.diagnoses,
+                                  table.progress,
+                                  table.outcome,
+                                  table.recommendation,
                                   limitby = (0, 1),
                                   ).first()
 
@@ -1751,36 +1758,35 @@ class MedEpicrisisModel(DataModel):
 
         MedPatientModel.set_patient(record)
 
+        now = current.request.utcnow.replace(microsecond=0)
         if record.is_final:
-            record = db(query).select(table.id,
-                                      table.person_id,
-                                      table.patient_id,
-                                      table.date,
-                                      table.situation,
-                                      table.diagnoses,
-                                      table.progress,
-                                      table.outcome,
-                                      table.recommendation,
-                                      limitby = (0, 1),
-                                      ).first()
+            # Reload the person_id/patient_id as they could have changed
+            row = db(query).select(table.person_id,
+                                   table.patient_id,
+                                   limitby = (0, 1),
+                                   ).first()
 
-            # Compute vhash
+            # Compute verification hash
             dt = record.date
-            if dt:
-                dtstr = dt.replace(microsecond=0).isoformat()
-            else:
-                dtstr = "-"
-            values = [record.person_id,
-                      record.patient_id,
-                      dtstr,
-                      ]
+            dtstr = dt.replace(microsecond=0).isoformat() if dt else "-"
+            values = [row.person_id, row.patient_id, dtstr]
             for fn in ("situation", "diagnoses", "progress", "outcome", "recommendation"):
                 value = record[fn]
                 if not value:
                     value = "-"
                 values.append(value)
             vhash = datahash(values)
-            record.update_record(vhash=vhash)
+
+            # Check if the record has changed
+            if vhash != record.vhash:
+                # Recompute the verification hash with new date, and update both
+                values[2] = now.isoformat()
+                vhash = datahash(values)
+                record.update_record(date=now, vhash=vhash)
+        else:
+            # Record is not final
+            # => Remove the verification hash, set new date
+            record.update_record(date=now, vhash=None)
 
 # =============================================================================
 class MedAnamnesisModel(DataModel):
