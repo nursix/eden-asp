@@ -48,7 +48,11 @@ def config(settings):
     #settings.auth.registration_requires_verification = True
     # Do new users need to be approved by an administrator prior to being able to login?
     #settings.auth.registration_requires_approval = True
+    # Do not send welcome emails to newly registered users
+    settings.auth.registration_welcome_email = False
+    # New user registration requires selection of organisation
     settings.auth.registration_requests_organisation = True
+    # Automatically register new users as staff members of their organisation
     settings.auth.registration_link_user_to = {"staff": T("Staff"),
                                                #"volunteer": T("Volunteer"),
                                                }
