@@ -19,6 +19,7 @@ def configure_med_case_file(r):
     T = current.T
     db = current.db
     s3db = current.s3db
+    auth = current.auth
 
     s3 = current.response.s3
 
@@ -29,7 +30,7 @@ def configure_med_case_file(r):
 
     # Access to case files without case list permission requires
     # that the client is currently or has recently been a patient
-    if not current.auth.s3_has_permission("read", "pr_person", c="dvr", f="person"):
+    if not auth.s3_has_permission("read", "pr_person", c="dvr", f="person"):
         open_status = ("ARRIVED", "TREATMENT")
         if record:
             ptable = s3db.med_patient
@@ -112,7 +113,7 @@ def configure_med_case_file(r):
             etable.is_final.writable = False
 
         # CRUD form
-        if current.auth.s3_has_permission("create", "med_patient"):
+        if auth.s3_has_permission("create", "med_patient"):
             priority = "priority"
             hazards = "hazards"
             hazards_advice = "hazards_advice"
@@ -150,10 +151,14 @@ def configure_med_case_file(r):
                        }
 
         # Perspective-specific list fields
-        list_fields = ["refno",
-                       "date",
+        if auth.permission.has_permission("read", c="med", f="patient"):
+            reason = (T("Reason for visit"), "patient_link")
+        else:
+            reason = "reason"
+        list_fields = ["date",
+                       "refno",
+                       reason,
                        "unit_id",
-                       "reason",
                        "status",
                        ]
 
@@ -212,7 +217,7 @@ def configure_med_case_file(r):
             r.error(403, current.ERROR.NOT_PERMITTED)
 
         # Enforce author-locking and is-final status
-        user = current.auth.user
+        user = auth.user
         user_id = user.id if user else None
         if crecord:
             if crecord.is_final:

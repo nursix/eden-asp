@@ -532,6 +532,7 @@ class MedPatientModel(DataModel):
                            default = False,
                            ),
                      CommentsField(),
+                     s3_fieldmethod("patient_link", self.patient_link, search_field="reason"),
                      )
 
         # Components
@@ -593,6 +594,7 @@ class MedPatientModel(DataModel):
                        crud_form = crud_form,
                        subheadings = subheadings,
                        list_fields = list_fields,
+                       extra_fields = ["reason"],
                        onvalidation = self.patient_onvalidation,
                        onaccept = self.patient_onaccept,
                        # TODO if not using areas, order by priority
@@ -793,6 +795,30 @@ class MedPatientModel(DataModel):
             if free_capacity < 0:
                 current.response.warning = current.T("%(name)s occupied over capacity") % \
                                            {"name": area_name}
+
+    # -------------------------------------------------------------------------
+    @staticmethod
+    def patient_link(row):
+        """
+            Field method to represent the reason for visit as link to the
+            patient record (med/patient), useful to allow switching between
+            person and patient perspectives
+
+            Args:
+                row: the med_patient row (must include id and reason)
+
+            Returns:
+                a link to the patient record
+        """
+
+        if hasattr(row, "med_patient"):
+            row = row.med_patient
+        label = row.reason if "reason" in row else "?"
+        if "id" in row:
+            output = A(label, _href=URL(c="med", f="patient", args=[row.id]))
+        else:
+            output = label
+        return output
 
     # -------------------------------------------------------------------------
     @staticmethod

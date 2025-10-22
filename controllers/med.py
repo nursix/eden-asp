@@ -421,23 +421,40 @@ def person():
 
         elif component_name == "patient":
             # On patient-tab of person record
-            # Reconfigure data table and form
+
+            # Filter out invalid patient records
+            r.component.add_filter(FS("invalid") == False)
+
+            # CRUD form
+            # TODO extend form to allow complete data entry in-place
+            crud_form = s3base.CustomForm("date",
+                                          "unit_id",
+                                          "refno",
+                                          "reason",
+                                          "status",
+                                          )
+            subheadings = None
+
+            # Adjust list fields for perspective
+            if current.auth.permission.has_permission("read", c="med", f="patient"):
+                reason = (T("Reason for visit"), "patient_link")
+            else:
+                reason = "reason"
             list_fields = ["date",
-                           "unit_id",
                            "refno",
-                           "reason",
+                           reason,
+                           "unit_id",
                            "status",
                            ]
-            r.component.configure(crud_form = s3base.CustomForm(*list_fields),
-                                  subheadings = None,
+
+            # Reconfigure resource
+            r.component.configure(crud_form = crud_form,
+                                  subheadings = subheadings,
                                   list_fields = list_fields,
                                   orderby = "%s.date desc" % r.component.tablename,
                                   insertable = not patient_id,
                                   deletable = False,
                                   )
-
-            # Filter out invalid patient records
-            r.component.add_filter(FS("invalid") == False)
 
             # Adapt CRUD strings to perspective
             s3.crud_strings["med_patient"] = Storage(
