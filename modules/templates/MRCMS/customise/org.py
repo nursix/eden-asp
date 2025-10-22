@@ -242,8 +242,6 @@ def org_organisation_controller(**attr):
 
         elif r.component_name == "human_resource":
 
-            settings.ui.open_read_first = True
-
             phone_label = settings.get_ui_label_mobile_phone()
             list_fields = ["person_id",
                            "job_title_id",
@@ -251,7 +249,9 @@ def org_organisation_controller(**attr):
                            (phone_label, "person_id$phone.value"),
                            "status",
                            ]
-            r.component.configure(list_fields=list_fields)
+            r.component.configure(list_fields = list_fields,
+                                  open_read_first = True,
+                                  )
 
         elif r.component_name in ("document", "template"):
 

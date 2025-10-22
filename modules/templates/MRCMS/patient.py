@@ -96,14 +96,17 @@ class PatientSummary(CRUDMethod):
 
         response = current.response
 
-        if r.tablename != "med_patient" or not r.record:
+        tablename = r.target()[-1]
+        record_id = self._record_id(r)
+
+        if tablename != "med_patient" or not record_id:
             r.error(400, current.ERROR.BAD_RESOURCE)
         if not self._permitted("read"):
             r.unauthorised()
 
         # Generate patient summary PDF
         # TODO log this for audit
-        patient = Patient(r.record.id)
+        patient = Patient(record_id)
         output = patient.pdf()
 
         # Generate individual filename
@@ -363,14 +366,11 @@ class Patient:
                 a dict with vital parameters
                 {airways, rr, o2sat, o2sub, bp, hr, temp, consc}
 
-            Notes:
-                - only values from within the last 12 hours will be reported,
-                  if no assessment has happened within that time frame, the
-                  returned dict will be empty
+            Note:
                 - only values from the same assessment will be reported,
                   except for temperature, which may be drawn from an
-                  earlier assessment within the time frame if not available
-                  in the latest set
+                  earlier assessment (within a 12-hour time frame) if not
+                  available in the latest set
         """
 
         vitals = self._vitals
@@ -382,12 +382,9 @@ class Patient:
 
             fields = ("airways", "rr", "o2sat", "o2sub", "bp", "hr", "temp", "consc")
 
-            # Must not be older than 12 hours
-            earliest = current.request.utcnow - datetime.timedelta(hours=12)
-
+            # Look up the last vitals report for this patient record
             vtable = s3db.med_vitals
             query = (vtable.patient_id == self.patient_id) & \
-                    (vtable.date > earliest) & \
                     (vtable.deleted == False)
             row = db(query).select(vtable.id,
                                    vtable.date,
@@ -397,10 +394,16 @@ class Patient:
                                    ).first()
             if row:
                 vitals = {fn: row[fn] for fn in fields + ("date",)}
-                if not row.temp:
-                    # Look up temp from any earlier record in the last 12 hours
-                    query = (vtable.temp != None) & query
-                    row = db(query).select(vtable.temp, limitby=(0, 1), orderby=~vtable.date).first()
+                if not row.temp and row.date:
+                    # Look up last temp within the previous 12 hours
+                    earliest = row.date - datetime.timedelta(hours=12)
+                    query = (vtable.temp != None) & \
+                            (vtable.date > earliest) & \
+                            query
+                    row = db(query).select(vtable.temp,
+                                           limitby = (0, 1),
+                                           orderby = ~vtable.date,
+                                           ).first()
                     vitals["temp"] = row.temp if row else None
 
                 # Represent values

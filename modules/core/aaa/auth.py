@@ -1844,8 +1844,6 @@ $('form.auth_consent').submit(S3ClearNavigateAwayConfirm);''')
                         i.e. org_admin coming from admin.py/user()
         """
 
-        from ..tools import IS_ONE_OF
-
         T = current.T
         db = current.db
         s3db = current.s3db
@@ -1855,11 +1853,11 @@ $('form.auth_consent').submit(S3ClearNavigateAwayConfirm);''')
         settings = self.settings
         deployment_settings = current.deployment_settings
 
-        if deployment_settings.get_ui_multiselect_widget():
-            from ..ui import S3MultiSelectWidget
-            multiselect_widget = True
-        else:
-            multiselect_widget = False
+        from ..tools import IS_ONE_OF
+        from ..ui import S3MultiSelectWidget
+
+        # Should we use multi-select widgets rather than simple dropdowns?
+        multiselect_widget = bool(deployment_settings.get_ui_multiselect_widget())
 
         utable = self.settings.table_user
 
@@ -3070,6 +3068,8 @@ Please go to %(url)s to approve this user."""
                     other = db(ltable.pe_id == person.pe_id).select(ltable.id,
                                                                     limitby=(0, 1),
                                                                     ).first()
+                else:
+                    other = None
 
                 if person and not other:
                     # Match found, and it isn't linked to another user account
@@ -3409,7 +3409,7 @@ Please go to %(url)s to approve this user."""
             if rows:
                 # Multiple records
                 # => check if there is one for this organisation and site
-                if type(person_id) is list:
+                if isinstance(person_id, list):
                     person_id = person_id[0]
                 query = (htable.person_id == person_id) & \
                         (htable.organisation_id == organisation_id) & \
@@ -3612,7 +3612,8 @@ Please go to %(url)s to approve this user."""
 
         messages = self.messages
         if not settings.get_mail_sender():
-            current.response.error = messages.unable_send_email
+            # Email sender not configured, mail system disabled
+            current.response.warning = messages.unable_send_email
             return
 
         # Ensure that we send out the mails in the language that
@@ -3636,19 +3637,21 @@ Please go to %(url)s to approve this user."""
         # Restore language for UI
         T.force(current.session.s3.language)
 
-        recipient = user["email"]
-        if settings.has_module("msg"):
-            results = current.msg.send_email(recipient,
-                                             subject = subject,
-                                             message = message,
-                                             )
+        recipient = user.get("email")
+        if recipient:
+            if settings.has_module("msg"):
+                send_email = current.msg.send_email
+            else:
+                send_email = current.mail.send
+            result = send_email(recipient,
+                                subject = subject,
+                                message = message,
+                                )
         else:
-            results = current.mail.send(recipient,
-                                        subject = subject,
-                                        message = message,
-                                        )
-        if not results:
-            current.response.error = messages.unable_send_email
+            result = False
+
+        if not result:
+            current.response.warning = messages.unable_send_email
 
     # -------------------------------------------------------------------------
     def s3_password(self, length=32):
@@ -4036,8 +4039,7 @@ Please go to %(url)s to approve this user."""
                     descendants = s3db.pr_descendants(entities)
 
                     # Add the subsidiaries to the realms
-                    for group_id in realms:
-                        realm = realms[group_id]
+                    for group_id, realm in realms.items():
                         if realm is None:
                             continue
                         append = realm.append
@@ -4275,20 +4277,19 @@ Please go to %(url)s to approve this user."""
         mtable = self.settings.table_membership
 
         # Find the group IDs
-        query = None
+        query = group_ids = None
         if isinstance(group_id, (list, tuple)):
             if isinstance(group_id[0], str):
                 query = (gtable.uuid.belongs(group_id))
             else:
                 group_ids = group_id
-        elif isinstance(group_id, str):
-            query = (gtable.uuid == group_id)
         else:
-            group_ids = [group_id]
+            if isinstance(group_id, str):
+                query = (gtable.uuid == group_id)
+            else:
+                group_ids = {group_id}
         if query is not None:
-            query = (gtable.deleted == False) & query
-            groups = db(query).select(gtable.id)
-            group_ids = [g.id for g in groups]
+            group_ids = db(query & (gtable.deleted == False))._select(gtable.id)
 
         # Get the assigned groups
         query = (mtable.deleted == False) & \
@@ -4302,20 +4303,22 @@ Please go to %(url)s to approve this user."""
         if for_pe is not DEFAULT and for_pe != []:
             query &= ((mtable.pe_id == for_pe) | \
                       (mtable.group_id.belongs(unrestrictable)))
-        memberships = db(query).select()
+        memberships = db(query).select(mtable.id,
+                                       mtable.user_id,
+                                       mtable.group_id,
+                                       mtable.pe_id,
+                                       )
 
         # Archive the memberships
         for m in memberships:
-            deleted_fk = {"user_id": m.user_id,
-                          "group_id": m.group_id,
-                          }
+            deleted_fk = {"user_id": m.user_id, "group_id": m.group_id}
             if m.pe_id:
                 deleted_fk["pe_id"] = m.pe_id
-            deleted_fk = json.dumps(deleted_fk)
             m.update_record(deleted = True,
-                            deleted_fk = deleted_fk,
+                            deleted_fk = json.dumps(deleted_fk),
                             user_id = None,
                             group_id = None,
+                            pe_id = None,
                             )
 
         # Update roles for current user if required
@@ -4990,8 +4993,7 @@ Please go to %(url)s to approve this user."""
         else:
             record_id = record
 
-        data = dict((key, fields[key]) for key in fields
-                                       if key in ownership_fields)
+        data = {k: v for k, v in fields.items() if k in ownership_fields}
         if not data:
             return
 
@@ -5400,14 +5402,12 @@ Please go to %(url)s to approve this user."""
             return
 
         for instance_record in instance_records:
-            for skey in tables:
-                supertable = tables[skey]
+            for skey, supertable in tables.items():
                 if skey in instance_record:
                     query = (supertable[skey] == instance_record[skey])
                 else:
                     continue
-                updates = dict((f, data[f])
-                               for f in data if f in supertable.fields)
+                updates = {f: v for f, v in data.items() if f in supertable.fields}
                 if not updates:
                     continue
                 db(query).update(**updates)

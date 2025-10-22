@@ -157,7 +157,6 @@ def config(settings):
 
     settings.ui.calendar_clear_icon = True
 
-    settings.ui.auto_open_update = True
     #settings.ui.inline_cancel_edit = "submit"
 
     # Business hours to indicate in organizer (Mo-Fr 08-18)

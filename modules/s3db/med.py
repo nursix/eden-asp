@@ -36,6 +36,7 @@ __all__ = ("MedUnitModel",
            "MedVaccinationModel",
            "med_UnitRepresent",
            "med_DocEntityRepresent",
+           "med_get_current_patient_id",
            "med_configure_unit_id",
            "med_rheader",
            )
@@ -531,6 +532,7 @@ class MedPatientModel(DataModel):
                            default = False,
                            ),
                      CommentsField(),
+                     s3_fieldmethod("patient_link", self.patient_link, search_field="reason"),
                      )
 
         # Components
@@ -592,6 +594,7 @@ class MedPatientModel(DataModel):
                        crud_form = crud_form,
                        subheadings = subheadings,
                        list_fields = list_fields,
+                       extra_fields = ["reason"],
                        onvalidation = self.patient_onvalidation,
                        onaccept = self.patient_onaccept,
                        # TODO if not using areas, order by priority
@@ -600,7 +603,10 @@ class MedPatientModel(DataModel):
                        )
 
         # Foreign key template
-        represent = S3Represent(lookup=tablename, fields=["reason"], show_link=True)
+        represent = med_PatientRepresent(lookup = tablename,
+                                         fields = ["refno", "reason", "status"],
+                                         show_link = True,
+                                         )
         patient_id = FieldTemplate("patient_id", "reference %s" % tablename,
                                    label = T("Patient"),
                                    ondelete = "RESTRICT",
@@ -677,7 +683,10 @@ class MedPatientModel(DataModel):
                 row = db(query).select(table.id, limitby=(0, 1)).first()
                 if row:
                     error = T("Person already has an ongoing patient registration")
-                    form.errors.person_id = error
+                    for fn in ("person_id", "status", "reason"):
+                        if fn in form.vars:
+                            form.errors[fn] = error
+                            break
 
             # Area capacity handling
             capacity_handling = settings.get_med_area_over_capacity()
@@ -789,6 +798,30 @@ class MedPatientModel(DataModel):
 
     # -------------------------------------------------------------------------
     @staticmethod
+    def patient_link(row):
+        """
+            Field method to represent the reason for visit as link to the
+            patient record (med/patient), useful to allow switching between
+            person and patient perspectives
+
+            Args:
+                row: the med_patient row (must include id and reason)
+
+            Returns:
+                a link to the patient record
+        """
+
+        if hasattr(row, "med_patient"):
+            row = row.med_patient
+        label = row.reason if "reason" in row else "?"
+        if "id" in row:
+            output = A(label, _href=URL(c="med", f="patient", args=[row.id]))
+        else:
+            output = label
+        return output
+
+    # -------------------------------------------------------------------------
+    @staticmethod
     def hazards_represent(options):
         """
             Returns a function that represents a hazard list as group of icons
@@ -829,7 +862,15 @@ class MedPatientModel(DataModel):
     # -------------------------------------------------------------------------
     @staticmethod
     def set_patient(record):
-        # TODO docstring
+        """
+            Link a vitals/status/treatment record to a person or patient
+
+            Args:
+                record - the record, must contain:
+                            - id
+                            - either person_id or patient_id
+                            - date
+        """
 
         db = current.db
         s3db = current.s3db
@@ -844,15 +885,22 @@ class MedPatientModel(DataModel):
                 record.update_record(person_id=patient.person_id)
 
         elif record.person_id:
-            open_status = ("ARRIVED", "TREATMENT")
-            query = (table.person_id == record.person_id) & \
-                    (table.status.belongs(open_status)) & \
-                    (table.invalid == False) & \
-                    (table.deleted == False)
+            query = (table.person_id == record.person_id)
+            date = record.date if "date" in record else None
+            if date:
+                # Choose the latest patient record matching this date
+                query &= (table.date <= date) & \
+                         ((table.end_date == None) | (table.end_date >= date))
+            else:
+                # Choose the latest open patient record
+                open_status = ("ARRIVED", "TREATMENT")
+                query &= (table.status.belongs(open_status))
+            query &= (table.invalid == False) & \
+                     (table.deleted == False)
             patient = db(query).select(table.id,
-                                        orderby = ~table.date,
-                                        limitby = (0, 1),
-                                        ).first()
+                                       orderby = ~table.date,
+                                       limitby = (0, 1),
+                                       ).first()
             if patient:
                 record.update_record(patient_id=patient.id)
 
@@ -989,6 +1037,7 @@ class MedStatusModel(DataModel):
         record = db(query).select(table.id,
                                   table.person_id,
                                   table.patient_id,
+                                  table.date,
                                   table.is_final,
                                   limitby = (0, 1),
                                   ).first()
@@ -1159,6 +1208,7 @@ class MedVitalsModel(DataModel):
 
         # List fields
         list_fields = ["date",
+                       (T("Occasion"), "patient_id"),
                        "airways",
                        (T("RR##vitals"), "rr"),
                        "o2sat",
@@ -1222,6 +1272,7 @@ class MedVitalsModel(DataModel):
         record = db(query).select(table.id,
                                   table.person_id,
                                   table.patient_id,
+                                  table.date,
                                   limitby = (0, 1),
                                   ).first()
 
@@ -1608,9 +1659,8 @@ class MedEpicrisisModel(DataModel):
                         writable = False,
                         ),
                      CommentsField("situation",
-                                   label = T("Initial Situation Details"),
+                                   label = T("Situation"),
                                    comment = None,
-                                   requires = IS_NOT_EMPTY(),
                                    ),
                      CommentsField("diagnoses",
                                    label = T("Relevant Diagnoses"),
@@ -1645,6 +1695,7 @@ class MedEpicrisisModel(DataModel):
 
         # Table configuration
         self.configure(tablename,
+                       onvalidation = self.epicrisis_onvalidation,
                        onaccept = self.epicrisis_onaccept,
                        orderby = "%s.date desc" % tablename,
                        )
@@ -1676,11 +1727,35 @@ class MedEpicrisisModel(DataModel):
 
     # -------------------------------------------------------------------------
     @staticmethod
+    def epicrisis_onvalidation(form):
+        """
+            Form validation for epicrisis reports
+            - situation required when marked as final
+        """
+
+        T = current.T
+
+        fields = ["situation", "is_final"]
+
+        table = current.s3db.med_epicrisis
+        data = get_form_record_data(form, table, fields)
+
+        # Verify that situation field is filled when marking as final
+        if data.get("is_final") and not data.get("situation"):
+            error = T("Situation description required to finalize report")
+            for fn in ("situation", "is_final"):
+                if fn in form.vars:
+                    form.errors[fn] = error
+                    break
+
+    # -------------------------------------------------------------------------
+    @staticmethod
     def epicrisis_onaccept(form):
         """
             Onaccept-routine for epicrisis reports
-            - set person_id
-            - compute vhash if final
+            - set person_id/patient_id
+            - update the date if changed
+            - compute vhash if final (or remove it otherwise)
         """
 
         db = current.db
@@ -1693,7 +1768,14 @@ class MedEpicrisisModel(DataModel):
         record = db(query).select(table.id,
                                   table.person_id,
                                   table.patient_id,
+                                  table.date,
                                   table.is_final,
+                                  table.vhash,
+                                  table.situation,
+                                  table.diagnoses,
+                                  table.progress,
+                                  table.outcome,
+                                  table.recommendation,
                                   limitby = (0, 1),
                                   ).first()
 
@@ -1702,36 +1784,35 @@ class MedEpicrisisModel(DataModel):
 
         MedPatientModel.set_patient(record)
 
+        now = current.request.utcnow.replace(microsecond=0)
         if record.is_final:
-            record = db(query).select(table.id,
-                                      table.person_id,
-                                      table.patient_id,
-                                      table.date,
-                                      table.situation,
-                                      table.diagnoses,
-                                      table.progress,
-                                      table.outcome,
-                                      table.recommendation,
-                                      limitby = (0, 1),
-                                      ).first()
+            # Reload the person_id/patient_id as they could have changed
+            row = db(query).select(table.person_id,
+                                   table.patient_id,
+                                   limitby = (0, 1),
+                                   ).first()
 
-            # Compute vhash
+            # Compute verification hash
             dt = record.date
-            if dt:
-                dtstr = dt.replace(microsecond=0).isoformat()
-            else:
-                dtstr = "-"
-            values = [record.person_id,
-                      record.patient_id,
-                      dtstr,
-                      ]
+            dtstr = dt.replace(microsecond=0).isoformat() if dt else "-"
+            values = [row.person_id, row.patient_id, dtstr]
             for fn in ("situation", "diagnoses", "progress", "outcome", "recommendation"):
                 value = record[fn]
                 if not value:
                     value = "-"
                 values.append(value)
             vhash = datahash(values)
-            record.update_record(vhash=vhash)
+
+            # Check if the record has changed
+            if vhash != record.vhash:
+                # Recompute the verification hash with new date, and update both
+                values[2] = now.isoformat()
+                vhash = datahash(values)
+                record.update_record(date=now, vhash=vhash)
+        else:
+            # Record is not final
+            # => Remove the verification hash, set new date
+            record.update_record(date=now, vhash=None)
 
 # =============================================================================
 class MedAnamnesisModel(DataModel):
@@ -2605,6 +2686,34 @@ class med_UnitRepresent(S3Represent):
         return reprstr
 
 # =============================================================================
+class med_PatientRepresent(S3Represent):
+    """ Representation of treatment occasions """
+
+    def represent_row(self, row):
+        """
+            Generates a string representation from a Row
+
+            Args:
+                row: the Row
+        """
+
+        if hasattr(row, "med_patient"):
+            row = row.med_patient
+
+        formatted = DIV()
+
+        # Include refno if present in row
+        if "refno" in row:
+            formatted.append(SPAN(row.refno, _class="med-refno"))
+
+        # Decide CSS class by status, if present in row
+        active = "status" in row and row.status in (("ARRIVED", "TREATMENT"))
+        css = "med-reason" if active else "med-reason-historical"
+
+        formatted.append(SPAN(s3_truncate(row.reason), _class=css))
+        return formatted
+
+# =============================================================================
 class med_DocEntityRepresent(S3Represent):
     """ Module context-specific representation of doc-entities """
 
@@ -2754,7 +2863,9 @@ class med_StatusListLayout(S3DataListLayout):
 
         self.editable = []
         self.visible = []
+
         self.patient_id = None
+        self.person_id = None
 
     # -------------------------------------------------------------------------
     def prep(self, resource, records):
@@ -2778,10 +2889,12 @@ class med_StatusListLayout(S3DataListLayout):
         query = table.id.belongs(record_ids) & \
                 ((table.is_final==True) | (table.created_by==user_id)) & \
                 (table.deleted == False)
-        rows = db(query).select(table.id, table.patient_id)
+        rows = db(query).select(table.id, table.patient_id, table.person_id)
         visible = self.visible = [row.id for row in rows]
         if rows:
-            self.patient_id = rows.first().patient_id
+            row = rows.first()
+            self.patient_id = row.patient_id
+            self.person_id = row.person_id
 
         # Editable only if not final and created by the current user
         query = table.id.belongs(visible) & \
@@ -2810,6 +2923,12 @@ class med_StatusListLayout(S3DataListLayout):
         header = DIV(_class="med-status-header")
         if editable:
             header.add_class("editable")
+
+        # Include treatment occasion (patient_id), if available
+        if "med_status.patient_id" in record:
+            header.append(DIV(record["med_status.patient_id"],
+                              _class = "meta meta-fix",
+                              ))
 
         # Show date and original author
         for colname in ("med_status.date", "med_status.created_by"):
@@ -2881,18 +3000,29 @@ class med_StatusListLayout(S3DataListLayout):
         toolbox = DIV(_class = "edit-bar fright")
 
         # Look up the patient ID
-        patient_id = self.patient_id
-        if not patient_id:
+        f = current.request.function
+        if f == "person":
+            person_id = self.person_id
+            update_url = URL(c = "med",
+                             f = "person",
+                             args = [person_id, "med_status", record_id, "update.popup"],
+                             vars = {"refresh": list_id,
+                                     "record": record_id,
+                                     "profile": self.profile,
+                                     },
+                             )
+        elif f == "patient":
+            patient_id = self.patient_id
+            update_url = URL(c = "med",
+                             f = "patient",
+                             args = [patient_id, "status", record_id, "update.popup"],
+                             vars = {"refresh": list_id,
+                                     "record": record_id,
+                                     "profile": self.profile,
+                                     },
+                             )
+        else:
             return None
-
-        update_url = URL(c="med",
-                         f="patient",
-                         args = [patient_id, "status", record_id, "update.popup"],
-                         vars = {"refresh": list_id,
-                                 "record": record_id,
-                                 "profile": self.profile,
-                                 },
-                         )
 
         has_permission = current.auth.s3_has_permission
 
@@ -3054,6 +3184,32 @@ def med_configure_unit_id(table, patient=None):
     return not single_unit
 
 # =============================================================================
+def med_get_current_patient_id(person_id):
+    """
+        Returns the ID of the latest active patient record for a person
+
+        Args:
+            person_id: the person record ID
+
+        Returns:
+            patient_id, or None if no active patient record exists
+    """
+
+    db = current.db
+    s3db = current.s3db
+
+    open_status = ("ARRIVED", "TREATMENT")
+
+    table = s3db.med_patient
+    query = (table.person_id == person_id) & \
+            (table.status.belongs(open_status)) & \
+            (table.invalid == False) & \
+            (table.deleted == False)
+    patient = db(query).select(table.id, limitby=(0, 1), orderby=~table.date).first()
+
+    return patient.id if patient else None
+
+# =============================================================================
 def med_patient_header(record):
     """
         Represents a patient record as name, gender and age of the person;
@@ -3184,16 +3340,17 @@ def med_rheader(r, tabs=None):
 
         if tablename == "pr_person":
             if not tabs:
+                patient_id = s3db.med_get_current_patient_id(record.id)
+                highlight = {"_class": "emphasis"} if patient_id else {}
                 has_permission = current.auth.s3_has_permission
-                if has_permission("read", "med_epicrisis", c="med", f="patient"):
-                    history = "epicrisis"
-                else:
-                    history = "patient"
                 tabs = [(T("Basic Details"), None),
                         (T("Background"), "anamnesis"),
                         (T("Vaccinations"), "vaccination"),
                         (T("Medication"), "medication"),
-                        (T("Treatment Occasions"), history),
+                        (T("Treatment Occasions"), "patient"),
+                        (T("Vital Signs"), "vitals", highlight),
+                        (T("Status"), "med_status", highlight),
+                        (T("Treatment"), "treatment", highlight),
                         ]
                 # Add document-tab only if the user is permitted to
                 # access documents through the med/patient controller
@@ -3211,19 +3368,17 @@ def med_rheader(r, tabs=None):
 
             if not tabs:
                 tabs = [(T("Overview"), None),
-                        # Person details [viewing]
                         # Background [viewing]
                         # Vaccinations [viewing]
                         # Medication [viewing]
                         (T("Vital Signs"), "vitals", {"_class": "emphasis"}),
-                        (T("Status Reports"), "status", {"_class": "emphasis"}),
-                        (T("Treatment"), "treatment"),
+                        (T("Status"), "status", {"_class": "emphasis"}),
+                        (T("Treatment"), "treatment", {"_class": "emphasis"}),
                         (T("Epicrisis"), "epicrisis"),
                         (T("Documents"), "document"),
                         ]
                 if person_id:
-                    tabs[1:1] = [#(T("Person Details"), "person/"),
-                                 (T("Background"), "anamnesis/"),
+                    tabs[1:1] = [(T("Background"), "anamnesis/"),
                                  (T("Medication"), "medication/"),
                                  (T("Vaccinations"), "vaccination/"),
                                  ]

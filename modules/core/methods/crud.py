@@ -36,6 +36,8 @@ from gluon.languages import lazyT
 from gluon.storage import Storage
 from gluon.tools import callback
 
+from s3dal import original_tablename
+
 from ..resource import DataExporter
 from ..tools import JSONSEPARATORS, S3DateTime, get_crud_string, \
                     s3_decode_iso_datetime, s3_represent_value, \
@@ -645,10 +647,9 @@ class BasicCRUD(CRUDMethod):
             else:
                 empty = False
 
-            # Redirect to update if user has permission unless
-            # a method has been specified in the URL
-            # MH: Is this really desirable? Many users would prefer to open as read
-            if not r.method: #or r.method == "review":
+            # Redirect to update if user has permission unless method was
+            # specified explicitly or default-read is enforced
+            if not r.method and self._default_editable(table) == "auto":
                 authorised = self._permitted("update")
                 if authorised and representation == "html" and editable:
                     return self.update(r, **attr)
@@ -2773,9 +2774,7 @@ class BasicCRUD(CRUDMethod):
             target = {}
 
         if editable is None:
-            # Fall back to settings if caller didn't override
-            editable = False if settings.get_ui_open_read_first() else \
-                       "auto" if settings.get_ui_auto_open_update() else True
+            editable = cls._default_editable(table)
 
         # Open-action (Update or Read)
         authorised = editable and has_permission("update", table)
@@ -2798,7 +2797,10 @@ class BasicCRUD(CRUDMethod):
         else:
             # User has permission to edit only some - or none - of the records
             if not read_url:
-                method = [] if authorised else ["read"]
+                if authorised and editable == "auto":
+                    method = []
+                else:
+                    method = ["read"]
                 read_url = iframe_safe(URL(args = args + method, #.popup to use modals
                                            vars = get_vars,
                                            ))
@@ -2857,6 +2859,50 @@ class BasicCRUD(CRUDMethod):
         # Append custom actions
         if custom_actions:
             s3.actions = s3.actions + custom_actions
+
+    # -------------------------------------------------------------------------
+    @staticmethod
+    def _default_editable(table):
+        """
+            Determines what method to use to open a record
+
+            Args:
+                table: the table (or table name)
+
+            Returns:
+                True - require explicit method for update, link open-action
+                       in datatables to update if permitted for all records
+                       in the table, otherwise read
+                False - require explicit method for update, link open-action
+                        in datatables to read regardless of permissions
+                "auto" - use implicit (=no) method, i.e. let BasicCRUD decide
+                         per-record what to do based on permissions
+        """
+
+        tablename = table if isinstance(table, str) else original_tablename(table)
+
+        get_config = current.s3db.get_config
+        settings = current.deployment_settings
+
+        open_read_first = get_config(tablename, "open_read_first")
+        if open_read_first is None:
+            open_read_first = settings.get_ui_open_read_first()
+        if open_read_first:
+            # Always read, irrespective permissions
+            editable = False
+        else:
+            editable = get_config(tablename, "editable", True)
+            if editable and current.auth.permission.ownership_required("update", table):
+                # User can edit only some (or no) records in the table
+                auto_open_update = get_config(tablename, "auto_open_update")
+                if auto_open_update is None:
+                    auto_open_update = settings.get_ui_auto_open_update()
+                editable = "auto" if auto_open_update else False
+            #else:
+            #    # User can edit any record in the table, apply table-setting as-is
+            #    pass
+
+        return editable
 
     # -------------------------------------------------------------------------
     def _default_cancel_button(self, r):

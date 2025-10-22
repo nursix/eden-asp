@@ -118,15 +118,16 @@ def dvr_rheader(r, tabs=None):
 
                     elif c == "med":
                         # Medical Perspective
-                        if has_permission("read", "med_epicrisis", c="med", f="patient"):
-                            history = "epicrisis"
-                        else:
-                            history = "patient"
+                        patient_id = current.s3db.med_get_current_patient_id(record.id)
+                        highlight = {"_class": "emphasis"} if patient_id else {}
                         tabs.extend([(T("Background"), "anamnesis"),
                                      (T("Vaccinations"), "vaccination"),
                                      (T("Medication"), "medication"),
+                                     (T("Treatment Occasions"), "patient"),
+                                     (T("Vital Signs"), "vitals", highlight),
+                                     (T("Status"), "med_status", highlight),
+                                     (T("Treatment"), "treatment", highlight),
                                      (T("Appointments"), "case_appointment"),
-                                     (T("Treatment Occasions"), history),
                                      ])
                         # Add document-tab only if the user is permitted to
                         # access documents through the med/patient controller

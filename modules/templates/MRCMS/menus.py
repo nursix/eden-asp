@@ -76,10 +76,18 @@ class MainMenu(default.MainMenu):
             shelter_menu = MM("Shelters", c="cr", f="shelter")
 
         # Med-menu
-        if has_permission("read", "med_patient", c="med", f="patient"):
-            med_menu = MM("Med-Point", c="med", f=("patient", "*"))
+        if has_permission("read", "pr_person", c="dvr", f="person") and \
+           has_permission("read", "pr_person", c="med", f="person"):
+            # Primary perspective for case assistants
+            med_menu = MM("Medical", c="med", f=("person", "*"))
+        elif has_permission("read", "med_patient", c="med", f="patient"):
+            # Primary perspective for other medical personnel
+            med_menu = MM("Medical", c="med", f=("patient", "*"))
         else:
-            med_menu = MM("Med-Point", c="med", f=("unit", "*"))
+            # Fallback
+            # - will self-disable if user not permitted, hence no
+            #   MED-link at all without at least this permission
+            med_menu = MM("Medical", c="med", f=("unit", "*"))
 
         menu = [
             MM("Clients", c=("dvr", "pr"), f=("person", "*")),
@@ -400,18 +408,28 @@ class OptionsMenu(default.OptionsMenu):
 
         ADMIN = current.session.s3.system_roles.ADMIN
 
-        return M(c="med")(
-                    M("Current Patients", f="patient")(
-                        M("Create", m="create"),
-                        M("Former Patients", f="patient", vars={"closed": "only"}),
-                        ),
-                    # M("Persons", f="person"),
-                    M("Units", f="unit")(
-                        M("Create", m="create"),
-                        ),
-                    M("Administration", link=False, restrict=[ADMIN])(
-                        M("Active Substances", f="substance"),
-                        M("Vaccination Types", f="vaccination_type"),
+        is_case_reader = current.auth.s3_has_permission("read", "pr_person", c="dvr", f="person")
+
+        if is_case_reader:
+            menu = M()(
+                        M("Current Cases", c="med", f="person"),
+                        M("Patients", c="med", f="patient")(
+                            M("Create", m="create"),
+                            M("Former Patients", vars={"closed": "only"}),
+                            ),
+                        )
+        else:
+            menu = M()(
+                        M("Patients", c="med", f="patient")(
+                            M("Create", m="create"),
+                            M("Case Files", f="person"),
+                            ),
+                        )
+
+        return menu(M("Administration", c="med", link=False)(
+                        M("Care Units", f="unit", restrict=["ORG_ADMIN", "MED_ADMIN"]),
+                        M("Active Substances", f="substance", restrict=ADMIN),
+                        M("Vaccination Types", f="vaccination_type", restrict=ADMIN),
                         ),
                     )
 

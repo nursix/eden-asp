@@ -571,7 +571,7 @@ def org_organisation_controller(**attr):
 
         elif component_name == "facility":
 
-            settings.ui.open_read_first = True
+            r.component.configure(open_read_first=True)
 
             if r.component_id and \
                 (is_org_group_admin or \
@@ -636,11 +636,8 @@ def org_organisation_controller(**attr):
                            "status",
                            ]
             r.component.configure(list_fields = list_fields,
+                                  open_read_first = True,
                                   )
-
-            # Open read-view first
-            settings.ui.open_read_first = True
-
         return result
     s3.prep = prep
 
@@ -1308,7 +1305,6 @@ def org_facility_controller(**attr):
 
     T = current.T
     s3 = current.response.s3
-    settings = current.deployment_settings
 
     s3db = current.s3db
     auth = current.auth
@@ -1341,7 +1337,7 @@ def org_facility_controller(**attr):
             #resource.add_filter(FS("obsolete") == False)
 
             # Open read-view first, even if permitted to edit
-            settings.ui.open_read_first = True
+            resource.configure(open_read_first=True)
 
             if is_org_group_admin and r.method == "report":
                 s3.crud_strings["org_facility"].title_report = T("Facilities Statistics")

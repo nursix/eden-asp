@@ -37,8 +37,8 @@ from io import BytesIO
 from gluon import HTTP, current
 from gluon.contenttype import contenttype
 
-from ..tools import get_crud_string, s3_get_foreign_key, s3_str, s3_strip_markup, s3_has_foreign_key
-
+from ..tools import S3DateTime, get_crud_string, s3_get_foreign_key, \
+                    s3_has_foreign_key, s3_str, s3_strip_markup
 from .base import FormatWriter
 
 ROWS_PER_SHEET = 1048576
@@ -138,6 +138,10 @@ class XLSXWriter(FormatWriter):
         even_odd = attr_get("even_odd", True)
         cls.add_styles(wb, use_color=use_color, even_odd=even_odd)
 
+        # Local date/time
+        dt = S3DateTime.to_local(current.request.utcnow)
+        now = current.calendar.format_datetime(dt, local=True)
+
         # Determine title row length and batch size
         title_row = settings.get_xls_title_row()
         if title_row:
@@ -185,8 +189,7 @@ class XLSXWriter(FormatWriter):
                 top.style = "large_header"
                 ws.append([top])
 
-                # Second row: export date/time
-                now = current.calendar.format_datetime(current.request.now, local=True)
+                # Second row: date/time of export
                 sub = Cell(ws, value="%s: %s" % (T("Date Exported"), now))
                 sub.style = "header"
                 ws.append([sub])
@@ -353,7 +356,7 @@ class XLSXWriter(FormatWriter):
                                orderby = orderby,
                                represent = True,
                                show_links = False,
-                               raw_data = True if expand_hierarchy else False,
+                               raw_data = bool(expand_hierarchy),
                                )
 
         rfields = data.rfields
@@ -425,7 +428,7 @@ class XLSXWriter(FormatWriter):
         values = set()
         for row in rows:
             value = row["_row"][colname]
-            if type(value) is list:
+            if isinstance(value, list):
                 value = value[0]
             values.add(value)
 
@@ -439,7 +442,7 @@ class XLSXWriter(FormatWriter):
         colnames = ["%s__%s" % (colname, l) for l in range(num_levels)]
         for row in rows:
             value = row["_row"][colname]
-            if type(value) is list:
+            if isinstance(value, list):
                 value = value[0]
             hcols = expanded.get(value)
             for level in range(num_levels):
@@ -649,7 +652,6 @@ class XLSXPivotTableWriter:
                   )
 
             # Current date/time (in local timezone)
-            from ..tools import S3DateTime
             dt = S3DateTime.to_local(current.request.utcnow)
             write(sheet, 1, 0, dt, style = "subheader", numfmt = "datetime")
 
@@ -775,7 +777,7 @@ class XLSXPivotTableWriter:
               sheet,
               rowindex,
               colindex,
-              value,
+              value, *,
               style=None,
               numfmt=None,
               rowspan=None,
@@ -801,7 +803,7 @@ class XLSXPivotTableWriter:
         rowindex += 1
         colindex += 1
 
-        if type(value) is list:
+        if isinstance(value, list):
             labels = [s3_str(v) for v in value]
             contents = "\n".join(labels)
         else:
@@ -1109,7 +1111,7 @@ class XLSXPivotTableWriter:
 
             if fvalue is None:
                 continue
-            if type(fvalue) is not list:
+            if not isinstance(fvalue, list):
                 fvalue = [fvalue]
 
             for v in fvalue:
@@ -1203,8 +1205,8 @@ def to_int(string):
 
     try:
         value = int(string.strip().replace(sep, ""))
-    except (ValueError, TypeError, AttributeError):
-        raise ValueError("not an integer number")
+    except (ValueError, TypeError, AttributeError) as e:
+        raise ValueError("not an integer number") from e
     return value
 
 # =============================================================================
@@ -1230,8 +1232,8 @@ def to_float(string):
 
     try:
         value = float(string.strip().replace(tsep, "").replace(dsep, "."))
-    except (ValueError, TypeError, AttributeError):
-        raise ValueError("not a floating point number")
+    except (ValueError, TypeError, AttributeError) as e:
+        raise ValueError("not a floating point number") from e
     return value
 
 # END =========================================================================

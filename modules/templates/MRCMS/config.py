@@ -48,7 +48,11 @@ def config(settings):
     #settings.auth.registration_requires_verification = True
     # Do new users need to be approved by an administrator prior to being able to login?
     #settings.auth.registration_requires_approval = True
+    # Do not send welcome emails to newly registered users
+    settings.auth.registration_welcome_email = False
+    # New user registration requires selection of organisation
     settings.auth.registration_requests_organisation = True
+    # Automatically register new users as staff members of their organisation
     settings.auth.registration_link_user_to = {"staff": T("Staff"),
                                                #"volunteer": T("Volunteer"),
                                                }
@@ -161,6 +165,7 @@ def config(settings):
                                       "STAFF": ("ORG_GROUP_ADMIN", "ORG_ADMIN"),
                                       "CASE_ADMIN": "ORG_ADMIN",
                                       "CASE_MANAGER": "ORG_ADMIN",
+                                      "CASE_ASSISTANT": "ORG_ADMIN",
                                       "SECURITY": "ORG_ADMIN",
                                       "CATERING": "ORG_ADMIN",
                                       "ISSUE_REPORTER": "ORG_ADMIN",
@@ -173,7 +178,6 @@ def config(settings):
                                       "MED_ASSISTANT": "MED_ADMIN",
                                       "MED_READER": "MED_ADMIN",
                                       # These are restricted for now until better-defined
-                                      "CASE_ASSISTANT": "ADMIN",
                                       "QUARTERMASTER": "ADMIN",
                                       "JANITOR": "ADMIN",
                                       "CHECKPOINT": "ADMIN",

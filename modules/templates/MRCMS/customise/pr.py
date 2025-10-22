@@ -11,7 +11,7 @@ from gluon import current, URL, A, IS_EMPTY_OR, SPAN
 from gluon.storage import Storage
 
 from core import AgeFilter, DateFilter, OptionsFilter, TextFilter, get_filter_options, \
-                 Anonymize, AnonymizeWidget, \
+                 Anonymize, AnonymizeWidget, ICON, \
                  FS, IS_ONE_OF, IS_PERSON_GENDER, JSONSEPARATORS, \
                  PersonSelector, S3CalendarWidget, \
                  CustomForm, InlineComponent, InlineLink, \
@@ -159,7 +159,7 @@ def pr_person_resource(r, tablename):
     has_permission = auth.s3_has_permission
 
     controller = r.controller
-    if controller in ("dvr", "counsel", "supply"):
+    if controller in ("dvr", "counsel", "supply", "med"):
 
         case_administration = has_permission("create", "pr_person")
 
@@ -255,6 +255,15 @@ def pr_person_resource(r, tablename):
                 ## Configure case document template methods
                 #from .doc import GenerateCaseDocument
                 #GenerateCaseDocument.configure("pr_person")
+
+        if controller == "med":
+            # Patient summary export method
+            from ..patient import PatientSummary
+            s3db.set_method("pr_person",
+                            component = "patient",
+                            method = "summarize",
+                            action = PatientSummary,
+                            )
 
     # Do not include acronym in Case-Org Representation
     table = s3db.dvr_case
@@ -498,7 +507,6 @@ def configure_case_form(resource, *,
         flags = None
 
     if privileged:
-
         # Extended form for privileged user roles
         crud_form = CustomForm(
                 # Case Details ----------------------------
@@ -604,11 +612,8 @@ def configure_case_form(resource, *,
                 reg_shelter,
                 reg_unit_id,
                 InlineComponent(
-                        "contact",
+                        "phone",
                         fields = [("", "value")],
-                        filterby = {"field": "contact_method",
-                                    "options": "SMS",
-                                    },
                         label = T("Mobile Phone"),
                         multiple = False,
                         name = "phone",
@@ -908,13 +913,13 @@ def configure_id_cards(r, resource, administration=False):
                                 )
 
 # -------------------------------------------------------------------------
-def configure_dvr_person_controller(r, privileged=False, administration=False):
+def configure_case_file(r, privileged=False, administration=False):
     """
         Case File (Full), used in
             - dvr/person
             - counsel/person
             - supply/person
-            - med/person (without viewing)
+            - med/person
 
         Args:
             r: the CRUDRequest
@@ -927,16 +932,6 @@ def configure_dvr_person_controller(r, privileged=False, administration=False):
     settings = current.deployment_settings
 
     resource = r.resource
-
-    # Components that can be written to without permission
-    # to update the master record
-    s3db.configure("pr_person",
-                   ignore_master_access = ("anamnesis",
-                                           "medication",
-                                           "vaccination",
-                                           "case_appointment",
-                                           ),
-                   )
 
     # Autocomplete using alternative search method
     search_fields = ("first_name", "last_name", "pe_label")
@@ -965,8 +960,27 @@ def configure_dvr_person_controller(r, privileged=False, administration=False):
         person_id = None
         case_organisation = default_case_organisation
 
-    if not r.component:
+    # Components which can be written to without permission to
+    # update the person record itself
+    resource.configure(ignore_master_access = (# Case Administration
+                                               "case_appointment",
+                                               "service_contact",
+                                               "case_note",
+                                               # Medical
+                                               "anamnesis",
+                                               "med_status",
+                                               "medication",
+                                               "patient",
+                                               "vaccination",
+                                               "vitals",
+                                               ),
+                       )
 
+    # Default open-method read for non-administrative roles
+    if not administration:
+        resource.configure(open_read_first=True)
+
+    if not r.component:
         # Attach registration history method
         from ..presence import RegistrationHistory
         s3db.set_method("pr_person",
@@ -1509,6 +1523,17 @@ def configure_custom_actions(r, output, is_case_admin=False, is_org_admin=False)
         elif r.component_name == "identity":
             inject_button(output, btn)
 
+    if controller == "med" and r.component_name == "patient" and r.component_id:
+        # Inject button to generate summary PDF
+        btn = A(ICON("file-pdf"), T("Summary"),
+                data = {"url": r.url(method="summarize",
+                                     representation="pdf"
+                                     ),
+                        },
+                _class = "action-btn activity button s3-download-button",
+                )
+        inject_button(output, btn, before="delete_btn", alt=None)
+
 # -------------------------------------------------------------------------
 def pr_person_controller(**attr):
 
@@ -1523,7 +1548,7 @@ def pr_person_controller(**attr):
 
     administration = is_org_admin or is_case_admin
 
-    PRIVILEGED = ("CASE_MANAGER", "CASE_ASSISTANT", "MED_PRACTITIONER")
+    PRIVILEGED = ("CASE_MANAGER", "CASE_ASSISTANT",)
     privileged = administration or auth.s3_has_roles(PRIVILEGED)
 
     QUARTERMASTER = auth.s3_has_role("QUARTERMASTER") and not privileged
@@ -1552,9 +1577,7 @@ def pr_person_controller(**attr):
         controller = r.controller
 
         # Is this a case file view?
-        case_file = controller in ("dvr", "counsel", "supply") or \
-                    controller == "med" and not r.viewing
-
+        case_file = controller in ("dvr", "counsel", "supply", "med")
         if case_file:
             # Call custom dvr/person prep
             from .dvr import dvr_person_prep
@@ -1563,34 +1586,37 @@ def pr_person_controller(**attr):
             # Call standard prep
             result = standard_prep(r) if callable(standard_prep) else True
 
-        get_vars = r.get_vars
-
         if case_file:
             # Adjust list title for invalid cases (normally "Archived")
-            archived = get_vars.get("archived")
+            archived = r.get_vars.get("archived")
             if archived in ("1", "true", "yes"):
                 crud_strings = s3.crud_strings["pr_person"]
                 crud_strings["title_list"] = T("Invalid Cases")
 
-            # Configure case perspective
-            configure_dvr_person_controller(r,
-                                            privileged = privileged,
-                                            administration = administration,
-                                            )
-
-        # TODO person-tab of patient file
-        #elif controller == "med":
-        #    configure_med_person_controller(r)
+            # Configure case file
+            configure_case_file(r,
+                                privileged = privileged,
+                                administration = administration,
+                                )
+            # Additional perspective-specific configurations
+            if controller == "med":
+                # med/person
+                from .med import configure_med_case_file
+                configure_med_case_file(r)
 
         elif controller == "security":
+            # Person records for security checks
             configure_security_person_controller(r)
 
         elif controller == "hrm":
+            # Staff records
             configure_hrm_person_controller(r)
 
         elif controller == "default":
+            # The user's own record
             configure_default_person_controller(r)
 
+        # View-independent configurations
         if r.component_name == "identity":
 
             if r.component_id:
@@ -1617,7 +1643,7 @@ def pr_person_controller(**attr):
     standard_postp = s3.postp
     def postp(r, output):
         # Call standard postp
-        if callable(standard_postp):
+        if r.controller != "med" and callable(standard_postp):
             output = standard_postp(r, output)
 
         if QUARTERMASTER:

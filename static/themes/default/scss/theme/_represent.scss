@@ -399,9 +399,15 @@
 }
 
 // Patient rheader
+.med-reason, .med-reason-historical {
+    font-size: 0.8rem;
+}
 .med-reason {
-    font-size: 0.9rem;
     color: #840088;
+}
+.med-reason-historical {
+    color: $black;
+    font-style: italic;
 }
 .med-area {
     font-size: 0.8rem;
@@ -420,14 +426,17 @@
     color: grey;
 }
 .med-refno {
-  font-size: 0.8rem;
-  padding: 0 0.25rem;
-  vertical-align: top;
-  margin-right: 0.5rem;
-  color: #666;
-  background: #ffddbb;
-  border: 1px solid #333;
-  border-radius: 1rem;
+    font-size: 0.7rem;
+    padding: 0.025rem 0.25rem;
+    vertical-align: top;
+    margin-right: 0.4rem;
+    color: #666;
+    background: #ffddbb;
+    border: 1px solid #333;
+    border-radius: 1rem;
+    min-width: 1rem;
+    display: inline-block;
+    text-align: center;
 }
 
 // ----------------------------------------------------------------------------

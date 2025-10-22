@@ -20,8 +20,13 @@ def index_alt():
         Module homepage for non-Admin users when no CMS content found
     """
 
-    # Just redirect to the list of persons
-    s3_redirect_default(URL(f="patient"))
+    # NB import required since executed in different environment
+    from gluon import current
+    has_permission = current.auth.s3_has_permission
+
+    f = "patient" if has_permission("read", "med_patient", f="patient") else "unit"
+
+    s3_redirect_default(URL(f=f))
 
 # =============================================================================
 def unit():
@@ -330,18 +335,25 @@ def person():
         resource = r.resource
         table = resource.table
 
+        component = r.component
+        component_name = r.component_name
+
         viewing = r.viewing
         if viewing:
             # On person-tab of patient record
-            person_id = None
+            person_id = patient_id = None
 
             vtablename, record_id = viewing
             if vtablename == "med_patient" and record_id:
                 # Load person_id from patient
                 ptable = s3db.med_patient
                 query = (ptable.id == record_id) & (ptable.deleted == False)
-                row = db(query).select(ptable.person_id, limitby=(0, 1)).first()
-                person_id = row.person_id if row else None
+                row = db(query).select(ptable.id,
+                                       ptable.person_id,
+                                       limitby=(0, 1)).first()
+                if row:
+                    patient_id = row.id
+                    person_id = row.person_id
 
             if not person_id:
                 r.error(404, current.ERROR.BAD_RECORD)
@@ -382,102 +394,153 @@ def person():
                 field.writable = False
                 field.comment = None
 
-        elif r.component_name == "patient":
+        else:
+            # Primary med/person perspective
+            record = r.record
+            patient_id = s3db.med_get_current_patient_id(record.id) if record else None
+
+        if not component:
+            # CRUD Form
+            crud_fields = settings.get_pr_name_fields()
+            crud_fields.extend(["date_of_birth",
+                                "gender",
+                                "person_details.nationality",
+                                # "person_details.marital_status",
+                                # "person_details.nationality",
+                                # "person_details.religion",
+                                # "person_details.occupation",
+                                "deceased",
+                                "date_of_death",
+                                "comments",
+                                ])
+
+            resource.configure(crud_form = s3base.CustomForm(*crud_fields),
+                               insertable = False,
+                               deletable = False,
+                               )
+
+        elif component_name == "patient":
             # On patient-tab of person record
-            # Reconfigure data table and form
-            list_fields = ["date",
-                           "unit_id",
-                           "refno",
-                           "reason",
-                           "status",
-                           ]
-            r.component.configure(crud_form = s3base.CustomForm(*list_fields),
-                                  subheadings = None,
-                                  list_fields = list_fields,
-                                  orderby = "%s.date desc" % r.component.tablename,
-                                  insertable = False,
-                                  editable = False,
-                                  deletable = False,
-                                  )
 
             # Filter out invalid patient records
             r.component.add_filter(FS("invalid") == False)
 
+            # CRUD form
+            # TODO extend form to allow complete data entry in-place
+            crud_form = s3base.CustomForm("date",
+                                          "unit_id",
+                                          "refno",
+                                          "reason",
+                                          "status",
+                                          )
+            subheadings = None
+
+            # Adjust list fields for perspective
+            if current.auth.permission.has_permission("read", c="med", f="patient"):
+                reason = (T("Reason for visit"), "patient_link")
+            else:
+                reason = "reason"
+            list_fields = ["date",
+                           "refno",
+                           reason,
+                           "unit_id",
+                           "status",
+                           ]
+
+            # Reconfigure resource
+            r.component.configure(crud_form = crud_form,
+                                  subheadings = subheadings,
+                                  list_fields = list_fields,
+                                  orderby = "%s.date desc" % r.component.tablename,
+                                  insertable = not patient_id,
+                                  deletable = False,
+                                  )
+
             # Adapt CRUD strings to perspective
             s3.crud_strings["med_patient"] = Storage(
-                # label_create = T("Add Treatment Occasion"),
+                label_create = T("Add Treatment Occasion"),
                 title_display = T("Treatment Occasion"),
                 title_list = T("Treatment Occasions"),
-                # title_update = T("Edit Treatment Occasion"),
+                title_update = T("Edit Treatment Occasion"),
                 label_list_button = T("List Treatment Occasions"),
                 # label_delete_button = T("Delete Treatment Occasion"),
-                # msg_record_created = T("Treatment Occasion added"),
-                # msg_record_modified = T("Treatment Occasion updated"),
+                msg_record_created = T("Treatment Occasion added"),
+                msg_record_modified = T("Treatment Occasion updated"),
                 # msg_record_deleted = T("Treatment Occasion deleted"),
                 msg_list_empty = T("No Treatment Occasions currently registered"),
                 )
 
-        elif r.component_name == "epicrisis":
-            # Filter out invalid patient records
-            r.component.add_filter(FS("patient_id$invalid") == False)
+        elif component_name == "vitals":
+            # Require active patient file for adding new record
+            component.configure(insertable = bool(patient_id))
+            component.table.patient_id.default = patient_id
 
-            # Read-only in this perspective
-            r.component.configure(insertable = False,
-                                  editable = False,
-                                  deletable = False,
-                                  )
-            ctable = r.component.table
+        elif component_name == "med_status":
+            # Require active patient file for adding new record
+            component.configure(insertable = bool(patient_id))
+            component.table.patient_id.default = patient_id
 
-            # Adapt patient_id visibility+label to perspective
-            from core import S3Represent
-            field = ctable.patient_id
-            field.label = T("Treatment Occasion")
-            field.readable = True
+            ctable = component.table
+            get_vars = r.get_vars
+            is_delete = r.is_delete()
 
-            # Include is-final flag
+            # Look up the current record
+            if r.component_id or not r.component.multiple:
+                rows = component.load()
+                crecord = rows[0] if rows else None
+            elif is_delete and r.representation == "dl" and "delete" in get_vars:
+                # Datalist delete-request
+                crecord_id = get_vars.get("delete")
+                crecord = db(ctable.id == crecord_id).select(limitby=(0, 1)).first()
+            else:
+                crecord = None
+
+            # Prevent deletion of finalized records
+            if is_delete and (not crecord or crecord.is_final):
+                r.error(403, current.ERROR.NOT_PERMITTED)
+
+            # Enforce author-locking and is-final status
+            user = current.auth.user
+            user_id = user.id if user else None
+            if crecord:
+                if crecord.is_final:
+                    editable = deletable = False
+                else:
+                    editable = crecord.created_by == user_id
+                    deletable = True
+                component.configure(editable=editable, deletable=deletable)
+
+            # Expose is_final flag when not yet marked as final
             field = ctable.is_final
-            field.readable = True
+            field.readable = field.writable = not crecord or not crecord.is_final
 
-            # Adapt list fields to perspective
+        elif component_name == "treatment":
+            # Require active patient file for adding new record
+            component.configure(insertable = bool(current_patient_id))
+            component.table.patient_id.default = current_patient_id
+
             list_fields = ["date",
-                           "patient_id",
-                           "patient_id$status",
-                           "situation",
-                           "diagnoses",
-                           "is_final",
+                           (T("Occasion"), "patient_id"),
+                           "details",
+                           "status",
+                           "start_date",
+                           "end_date",
+                           "comments",
                            ]
-            r.component.configure(list_fields=list_fields)
+            component.configure(list_fields = list_fields)
 
-        # CRUD Form
-        crud_fields = settings.get_pr_name_fields()
-        crud_fields.extend(["date_of_birth",
-                            "gender",
-                            "person_details.nationality",
-                            # "person_details.marital_status",
-                            # "person_details.nationality",
-                            # "person_details.religion",
-                            # "person_details.occupation",
-                            "deceased",
-                            "date_of_death",
-                            "comments",
-                            ])
-
-        resource.configure(crud_form = s3base.CustomForm(*crud_fields),
-                           insertable = False,
-                           deletable = False,
-                           )
         return True
     s3.prep = prep
 
     def postp(r, output):
 
-        if r.component_name == "patient":
-            if isinstance(output, dict) and \
-               auth.permission.has_permission("read", c="med", f="patient"):
-                # Open in med/patient controller rather than on component tab
-                output["native"] = True
+       if r.component_name == "patient":
+           if isinstance(output, dict) and \
+              auth.permission.has_permission("read", c="med", f="patient"):
+               # Open in med/patient controller rather than on component tab
+               output["native"] = True
 
-        return output
+       return output
     s3.postp = postp
 
     return crud_controller("pr", "person", rheader=s3db.med_rheader)
