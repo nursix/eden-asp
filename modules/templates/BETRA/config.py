@@ -298,13 +298,14 @@ def config(settings):
     # Uncomment this to have allowance payments update last_seen_on
     #settings.dvr.payments_update_last_seen_on = True
 
-    from .customise.dvr import dvr_task_resource, \
+    from .customise.dvr import dvr_case_resource, \
                                dvr_note_resource, \
+                               dvr_task_resource, \
                                dvr_case_activity_status_resource
                                #dvr_case_activity_resource
                                #dvr_note_type_resource
 
-
+    settings.customise_dvr_case_resource = dvr_case_resource
     settings.customise_dvr_note_resource = dvr_note_resource
     settings.customise_dvr_task_resource = dvr_task_resource
     settings.customise_dvr_case_activity_status_resource = dvr_case_activity_status_resource

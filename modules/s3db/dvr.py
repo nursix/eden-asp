@@ -251,6 +251,13 @@ class DVRCaseModel(DataModel):
                         "N": T("no"),
                         }
 
+        # Terms and Conditions document signed, options
+        tc_options = WorkflowOptions(("Y", "Signed", "green"),
+                                     ("N", "Not Signed", "red"),
+                                     ("N/A", "not applicable", "grey"),
+                                     none = "N",
+                                     )
+
         SITE = settings.get_org_site_label()
         site_represent = self.org_SiteRepresent(show_link=False)
 
@@ -313,13 +320,8 @@ class DVRCaseModel(DataModel):
                                                 zero = None,
                                                 ),
                            ),
-                     Field("disclosure_consent", "string", length=8,
-                           label = T("Consenting to Data Disclosure"),
-                           requires = IS_EMPTY_OR(IS_IN_SET(consent_opts)),
-                           represent = represent_option(consent_opts),
-                           readable = False,
-                           writable = False,
-                           ),
+
+                     # Flags
                      Field("archived", "boolean",
                            default = False,
                            label = T("Archived"),
@@ -406,6 +408,26 @@ class DVRCaseModel(DataModel):
                                          ),
                            ),
 
+                     # Legal conditions, activate in template as-needed
+                     Field("tc_signed",
+                           label = T("Terms and Conditions accepted?"),
+                           default = None,
+                           requires = IS_EMPTY_OR(IS_IN_SET(
+                                                tc_options.selectable(True),
+                                                sort = False,
+                                                )),
+                           represent = tc_options.represent,
+                           readable = False,
+                           writable = False,
+                           ),
+                     Field("disclosure_consent", "string", length=8,
+                           label = T("Consenting to Data Disclosure"),
+                           requires = IS_EMPTY_OR(IS_IN_SET(consent_opts)),
+                           represent = represent_option(consent_opts),
+                           readable = False,
+                           writable = False,
+                           ),
+
                      # Case transfer management
                      transfer_site_id("origin_site_id",
                                       label = T("Admission from"),
@@ -470,9 +492,6 @@ class DVRCaseModel(DataModel):
         # Components
         self.add_components(tablename,
                             dvr_case_activity = "case_id",
-                            dvr_case_details = {"joinby": "case_id",
-                                                "multiple": False,
-                                                },
                             dvr_case_event = "case_id",
                             dvr_need =  {"link": "dvr_case_need",
                                          "joinby": "case_id",
@@ -537,20 +556,10 @@ class DVRCaseModel(DataModel):
                      )
 
         # ---------------------------------------------------------------------
-        # Case Details: extended attributes for DVR cases
+        # Case Details: extended person details for DVR
         #
-        # Terms and Conditions document signed or not?
-        tc_options = WorkflowOptions(("Y", "Signed", "green"),
-                                     ("N", "Not Signed", "red"),
-                                     ("N/A", "not applicable", "grey"),
-                                     none = "N",
-                                     )
-
         tablename = "dvr_case_details"
         define_table(tablename,
-                     case_id(empty = False,
-                             ondelete = "CASCADE",
-                             ),
                      person_id(empty = False,
                                ondelete = "CASCADE",
                                ),
@@ -563,14 +572,6 @@ class DVRCaseModel(DataModel):
                            default = False,
                            label = T("Enrolled in Public School"),
                            represent = s3_yes_no_represent,
-                           ),
-                     Field("tc_signed",
-                           label = T("Terms and Conditions accepted?"),
-                           default = None,
-                           requires = IS_IN_SET(tc_options.selectable(True),
-                                                sort = False,
-                                                ),
-                           represent = tc_options.represent,
                            ),
                      DateField("arrival_date",
                                label = T("Arrival Date"),

@@ -87,7 +87,7 @@
          Institute......................optional.....person education institute
          Photo..........................optional.....pr_image.image (URL to remote server to download)
          TC Acceptance..................optional.....person has accepted terms and conditions
-                                                     dvr_case_details.tc_signed (Y|N|N/A)
+                                                     dvr_case.tc_signed (Y|N|N/A)
 
          Column headers looked up in labels.xml:
 
@@ -287,6 +287,11 @@
                         </xsl:attribute>
                     </reference>
                 </xsl:if>
+                <xsl:if test="$TC!=''">
+                    <data field="tc_signed">
+                        <xsl:attribute name="value"><xsl:value-of select="$TC"/></xsl:attribute>
+                    </data>
+                </xsl:if>
 
                 <!-- Link to Organisation -->
                 <reference field="organisation_id" resource="org_organisation">
@@ -318,15 +323,6 @@
                             </xsl:call-template>
                         </xsl:attribute>
                     </reference>
-                </xsl:if>
-            </resource>
-
-            <!-- Case Details -->
-            <resource name="dvr_case_details">
-                <xsl:if test="$TC!=''">
-                    <data field="tc_signed">
-                        <xsl:attribute name="value"><xsl:value-of select="$TC"/></xsl:attribute>
-                    </data>
                 </xsl:if>
             </resource>
 
