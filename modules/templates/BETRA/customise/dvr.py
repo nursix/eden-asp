@@ -4,7 +4,19 @@
     License: MIT
 """
 
-from gluon import current
+from gluon import current, IS_EMPTY_OR
+
+# -----------------------------------------------------------------------------
+def dvr_case_resource(r, tablename):
+
+    table = current.s3db.dvr_case
+
+    # Expose tc_signed + make it mandatory
+    field = table.tc_signed
+    field.readable = field.writable = True
+    requires = field.requires
+    if isinstance(requires, IS_EMPTY_OR):
+        field.requires = requires.other
 
 # -----------------------------------------------------------------------------
 def dvr_note_resource(r, tablename):
