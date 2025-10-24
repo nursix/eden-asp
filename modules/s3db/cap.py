@@ -5370,7 +5370,7 @@ def clone(r, record=None, **attr):
     tag_table = s3db.cap_area_tag
     resource_table = s3db.cap_resource
     unwanted_fields = ["id", "doc_id"]
-    unwanted_fields.extend(s3_all_meta_field_names())
+    unwanted_fields.extend(META_FIELD_NAMES)
     if record:
         unwanted_fields = ["id", "alert_id", "info_id", "is_template", "doc_id"]
     unwanted_fields = set(unwanted_fields)

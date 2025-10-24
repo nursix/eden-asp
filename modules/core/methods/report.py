@@ -782,15 +782,14 @@ class S3ReportForm:
         self.show_totals = True
 
     # -------------------------------------------------------------------------
-    def html(self,
-             data,
+    def html(self, data, *,
              filter_widgets = None,
              get_vars = None,
              ajaxurl = None,
              filter_url = None,
              filter_form = None,
              filter_tab = None,
-             widget_id = None
+             widget_id = None,
              ):
         """
             Render the form for the report

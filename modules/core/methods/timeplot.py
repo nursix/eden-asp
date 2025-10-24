@@ -56,10 +56,13 @@ class TimePlot(CRUDMethod):
                 attr: controller attributes for the request
         """
 
+        output = None
+
         if r.http == "GET":
             output = self.timeplot(r, **attr)
         else:
             r.error(405, current.ERROR.BAD_METHOD)
+
         return output
 
     # -------------------------------------------------------------------------
@@ -389,8 +392,7 @@ class TimePlotForm(S3ReportForm):
     """ Helper class to render a report form """
 
     # -------------------------------------------------------------------------
-    def html(self,
-             data,
+    def html(self, data, *,
              filter_widgets = None,
              get_vars = None,
              ajaxurl = None,
@@ -591,12 +593,10 @@ class TimePlotForm(S3ReportForm):
         if options and "facts" in options:
             opts = options["facts"]
         else:
-            from ..model import s3_all_meta_field_names
-            meta_fields = s3_all_meta_field_names()
-
+            from ..model import META_FIELD_NAMES
             opts = [(T("Number of Records"), default)]
             for fn in table.fields:
-                if fn in meta_fields:
+                if fn in META_FIELD_NAMES:
                     continue
                 field = table[fn]
                 if not field.readable:
