@@ -2354,10 +2354,10 @@ class IS_DYNAMIC_FIELDNAME(Validator):
 
             name = str(value).lower().strip()
 
-            from ..model import s3_all_meta_field_names
+            from ..model import META_FIELD_NAMES
 
             if name != "id" and \
-               name not in s3_all_meta_field_names() and \
+               name not in META_FIELD_NAMES and \
                self.PATTERN.match(name):
                 return name
 

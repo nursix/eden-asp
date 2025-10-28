@@ -44,7 +44,7 @@ from s3dal import Row, Rows, Table, original_tablename
 from ..tools import IS_ONE_OF, get_last_record_id, remove_last_record_id, \
                     s3_format_datetime, s3_has_foreign_key, s3_str
 from ..ui import DataTable, S3DataList
-from ..model import s3_all_meta_field_names
+from ..model import META_FIELD_NAMES
 
 from .components import S3Components
 from .query import FS, S3ResourceField, S3Joins
@@ -1078,7 +1078,7 @@ class CRUDResource:
             if "all_meta_fields" in s3:
                 meta_fields = s3.all_meta_fields
             else:
-                meta_fields = s3.all_meta_fields = s3_all_meta_field_names()
+                meta_fields = s3.all_meta_fields = META_FIELD_NAMES
             s3db = current.s3db
             superkeys = s3db.get_super_keys(table)
         else:
@@ -1951,7 +1951,7 @@ class CRUDResource:
     @staticmethod
     def import_fields(table, data, mandatory=None):
 
-        fnames = set(s3_all_meta_field_names())
+        fnames = set(META_FIELD_NAMES)
         fnames.add(table._id.name)
         if mandatory:
             fnames |= set(mandatory)

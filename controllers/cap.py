@@ -942,9 +942,8 @@ def alert():
                 rows = db(itable.alert_id == lastid).select(itable.id)
 
                 rtable = s3db.cap_resource
-                r_unwanted_fields = set(s3base.s3_all_meta_field_names())
-                rfields = [rtable[f] for f in rtable.fields
-                           if f not in r_unwanted_fields]
+                from core import META_FIELD_NAMES
+                rfields = [rtable[f] for f in rtable.fields if f not in META_FIELD_NAMES]
                 rows_ = db(rtable.alert_id == alert.template_id).select(*rfields)
                 for row in rows_:
                     row_clone = row.as_dict()

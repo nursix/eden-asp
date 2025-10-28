@@ -24,7 +24,7 @@
     OTHER DEALINGS IN THE SOFTWARE.
 """
 
-import datetime         # Needed for Feed Refresh checks & web2py version check
+import datetime # Needed for Feed Refresh checks & web2py version check
 import json
 import os
 import re
@@ -32,21 +32,21 @@ import re
 from http import cookies as Cookie
 from urllib.parse import quote as urllib_quote
 
+from gluon import current, URL
+from gluon.languages import regex_translate
+
+from ..model import META_FIELD_NAMES
+from ..tools import JSONERRORS, JSONSEPARATORS, s3_str
+
+from .marker import Marker
+from .projection import Projection
+
 # Map Defaults
 # Also in static/S3/s3.gis.js
 # http://dev.openlayers.org/docs/files/OpenLayers/Strategy/Cluster-js.html
 CLUSTER_ATTRIBUTE = "colour"
 CLUSTER_DISTANCE = 20   # pixels
 CLUSTER_THRESHOLD = 2   # minimum # of features to form a cluster
-
-from gluon import current, URL
-from gluon.languages import regex_translate
-
-from ..model import s3_all_meta_field_names
-from ..tools import JSONERRORS, JSONSEPARATORS, s3_str
-
-from .marker import Marker
-from .projection import Projection
 
 # =============================================================================
 class Layer:
@@ -71,9 +71,7 @@ class Layer:
 
         tablename = self.tablename
         table = current.s3db[tablename]
-        fields = table.fields
-        metafields = s3_all_meta_field_names()
-        fields = [table[f] for f in fields if f not in metafields]
+        fields = [table[f] for f in table.fields if f not in META_FIELD_NAMES]
         layer_ids = [row["gis_layer_config.layer_id"] for row in all_layers if \
                      row["gis_layer_entity.instance_type"] == tablename]
         query = (table.layer_id.belongs(set(layer_ids)))
@@ -602,7 +600,7 @@ class LayerGeoRSS(Layer):
     style = True
 
     def __init__(self, all_layers, openlayers=6):
-        super(LayerGeoRSS, self).__init__(all_layers, openlayers)
+        super().__init__(all_layers, openlayers)
         LayerGeoRSS.SubLayer.cachetable = current.s3db.gis_cache
 
     # -------------------------------------------------------------------------
@@ -869,7 +867,7 @@ class LayerKML(Layer):
     def __init__(self, all_layers, openlayers=6, init=True):
         "Set up the KML cache, should be done once per request"
 
-        super(LayerKML, self).__init__(all_layers, openlayers)
+        super().__init__(all_layers, openlayers)
 
         # Can we cache downloaded KML feeds?
         # Needed for unzipping & filtering as well
@@ -1248,7 +1246,7 @@ class LayerWMS(Layer):
 
     # -------------------------------------------------------------------------
     def __init__(self, all_layers, openlayers=6):
-        super(LayerWMS, self).__init__(all_layers, openlayers)
+        super().__init__(all_layers, openlayers)
         if self.sublayers:
             if current.response.s3.debug:
                 self.scripts.append("gis/gxp/plugins/WMSGetFeatureInfo.js")

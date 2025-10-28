@@ -35,9 +35,9 @@ __all__ = ("CommentsField",
            "MetaFields",
            "s3_fieldmethod",
            "s3_meta_fields",
-           "s3_all_meta_field_names",
            "s3_role_required",
            "s3_roles_permitted",
+           "META_FIELD_NAMES",
            )
 
 import datetime
@@ -223,20 +223,20 @@ s3uuid = SQLCustomType(type = "string",
 # Representation of user roles (auth_group)
 auth_group_represent = S3Represent(lookup="auth_group", fields=["role"])
 
-ALL_META_FIELD_NAMES = ("uuid",
-                        "mci",
-                        "deleted",
-                        "deleted_fk",
-                        "deleted_rb",
-                        "created_on",
-                        "created_by",
-                        "modified_on",
-                        "modified_by",
-                        "approved_by",
-                        "owned_by_user",
-                        "owned_by_group",
-                        "realm_entity",
-                        )
+META_FIELD_NAMES = ("uuid",
+                    "mci",
+                    "deleted",
+                    "deleted_fk",
+                    "deleted_rb",
+                    "created_on",
+                    "created_by",
+                    "modified_on",
+                    "modified_by",
+                    "approved_by",
+                    "owned_by_user",
+                    "owned_by_group",
+                    "realm_entity",
+                    )
 
 # -----------------------------------------------------------------------------
 class MetaFields:
@@ -551,16 +551,6 @@ def s3_meta_fields():
     """
 
     return MetaFields.all_meta_fields()
-
-def s3_all_meta_field_names():
-    """
-        Shortcut commonly used to include/exclude meta fields
-
-        Returns:
-            tuple of field names
-    """
-
-    return ALL_META_FIELD_NAMES
 
 # =============================================================================
 # Reusable roles fields
