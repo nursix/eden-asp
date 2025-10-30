@@ -29,6 +29,7 @@ __all__ = ("AuthS3",
            )
 
 import binascii
+import datetime
 import json
 import time
 
@@ -204,6 +205,8 @@ Thank you"""
         messages.user_disabled_log = "User %(user_id)s disabled"
         messages.user_enabled_log = "User %(user_id)s (re-)enabled"
         messages.user_approved_log = "User %(user_id)s approved"
+        messages.user_locked_log = "User %%(%s)s locked due to excessive failed login attempts" % settings.login_userfield
+        messages.login_attempts_exceeded = "Login attempts exceeded"
 
         # Optional log messages
         if log_failed_logins:
@@ -579,6 +582,8 @@ Thank you"""
             log = messages.login_log
 
         user = None # default
+        lock_count = deployment_settings.get_auth_lock_failed_login_count()
+        lock_duration = deployment_settings.get_auth_lock_failed_login_reset()
 
         response.title = T("Login")
 
@@ -704,6 +709,13 @@ Thank you"""
                 # Check for username in db
                 existing = None
 
+                if lock_count > 0 and \
+                   session.lock_timeout and \
+                   session.lock_timeout > datetime.datetime.now(datetime.timezone.utc):
+                    # User is locked
+                    response.error = messages.login_attempts_exceeded
+                    return form
+
                 query = (utable[userfield] == form.vars[userfield])
                 user = db(query).select(limitby=(0, 1)).first()
 
@@ -771,6 +783,20 @@ Thank you"""
                     if existing or settings.log_all_failed_logins:
                         self.log_event(messages.login_failed_log, request.post_vars)
                     session.error = messages.invalid_login
+                    if lock_count > 0:
+                        # Track failed login attempts
+                        failed_logins = session.failed_logins or 0
+                        failed_logins += 1
+                        session.failed_logins = failed_logins
+                        if failed_logins > lock_count:
+                            # Lock account
+                            if existing:
+                                self.log_event(messages.user_locked_log, request.post_vars)
+                            session.lock_timeout = datetime.datetime.now(datetime.timezone.utc) + \
+                                    datetime.timedelta(seconds=lock_duration)
+                            session.failed_logins = 0
+                            session.error = messages.login_attempts_exceeded
+      
                     if inline:
                         # If inline, stay on the same page
                         next_url = URL(args=request.args,
