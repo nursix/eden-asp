@@ -200,6 +200,11 @@ No action is required."""
  - You can start using %(system_name)s at: %(url)s
  - To edit your profile go to: %(url)s%(profile)s
 Thank you"""
+        messages.locked_email_subject = "%(system_name)s - Account Locked"
+        messages.locked_email = \
+"""Your account on %(system_name)s has been locked due to excessive failed login attempts.
+ - Please change your password at your earliest convenience.
+ Thank you"""
 
         # Log messages
         messages.user_disabled_log = "User %(user_id)s disabled"
@@ -303,6 +308,12 @@ Thank you"""
                 Field("reset_password_key", length=512,
                       default="",
                       readable=False, writable=False),
+                Field("locked", "boolean",
+                      default=False),
+                Field("failed_attempts", "integer",
+                      default=0),
+                Field("locked_until", "datetime",
+                      default=""),
                 Field("deleted", "boolean",
                       default=False,
                       readable=False, writable=False),
@@ -582,8 +593,8 @@ Thank you"""
             log = messages.login_log
 
         user = None # default
-        lock_count = deployment_settings.get_auth_lock_failed_login_count()
-        lock_duration = deployment_settings.get_auth_lock_failed_login_reset()
+        failed_login_count = deployment_settings.get_auth_lock_failed_login_count()
+        failed_login_reset = deployment_settings.get_auth_lock_failed_login_reset()
 
         response.title = T("Login")
 
@@ -709,10 +720,12 @@ Thank you"""
                 # Check for username in db
                 existing = None
 
-                if lock_count > 0 and \
-                   session.lock_timeout and \
-                   session.lock_timeout > datetime.datetime.now(datetime.timezone.utc):
-                    # User is locked
+                # Check if the Session Lock Count is greater than 0 (0 means no lock policy)
+                # And if so, whether the lock period is still active
+                if failed_login_count > 0 and \
+                   session.locked_until and \
+                   session.locked_until > datetime.datetime.now(datetime.timezone.utc):
+                    # Session is locked
                     response.error = messages.login_attempts_exceeded
                     return form
 
@@ -722,6 +735,14 @@ Thank you"""
                 if user:
                     # User in db
                     existing = temp_user = user
+
+                    # Check if the user is locked and still within the lock period
+                    if temp_user.locked \
+                       and temp_user.locked_until \
+                       and temp_user.locked_until > datetime.datetime.now(datetime.timezone.utc):
+                        # User is locked
+                        response.error = messages.login_attempts_exceeded
+                        return form
 
                     # Check if registration pending or account disabled
                     if temp_user.registration_key == "pending":
@@ -783,18 +804,35 @@ Thank you"""
                     if existing or settings.log_all_failed_logins:
                         self.log_event(messages.login_failed_log, request.post_vars)
                     session.error = messages.invalid_login
-                    if lock_count > 0:
-                        # Track failed login attempts
-                        failed_logins = session.failed_logins or 0
-                        failed_logins += 1
-                        session.failed_logins = failed_logins
-                        if failed_logins > lock_count:
-                            # Lock account
+                    # Check if the Failed Login Count is greater than 0 (0 means no lock policy)
+                    if failed_login_count > 0:
+                        # Track failed login attempts in the session
+                        failed_attempts = session.failed_attempts or 0
+                        session.failed_attempts = failed_attempts + 1
+                        # If there is an existing user
+                        if existing:
+                            # Also track on the user record
+                            existing.failed_attempts = existing.failed_attempts + 1
+                            existing.update_record()
+                        # Check if we need to lock the session or the user account
+                        if session.failed_attempts > failed_login_count \
+                           or (existing and existing.failed_attempts > failed_login_count):
+                            # Set the Lock Timeout
+                            locked_until = datetime.datetime.now(datetime.timezone.utc) + \
+                                           datetime.timedelta(seconds=failed_login_reset)
+                            # Lock user account
                             if existing:
                                 self.log_event(messages.user_locked_log, request.post_vars)
-                            session.lock_timeout = datetime.datetime.now(datetime.timezone.utc) + \
-                                    datetime.timedelta(seconds=lock_duration)
-                            session.failed_logins = 0
+                                # Update the User's record
+                                existing.update_record(locked=True,
+                                                       failed_attempts=0,
+                                                       locked_until=locked_until)
+                                # Notify the user by email
+                                self.send_user_locked_email(existing)
+
+                            # Lock the session
+                            session.locked_until = locked_until
+                            session.failed_attempts = 0
                             session.error = messages.login_attempts_exceeded
       
                     if inline:
@@ -1164,11 +1202,20 @@ Thank you"""
             remember = "remember" in req_vars,
             hmac_key = web2py_uuid()
             )
+        session.locked = False
+        session.failed_attempts = 0
+        session.locked_until = None
+
         self.user = user
         self.s3_set_roles()
 
         # Set a Cookie to present user with login box by default
         self.set_cookie()
+
+        # If the user had been locked, unlock them now
+        self.user.update_record(locked=False,
+                                failed_attempts=0,
+                                locked_until=None)
 
         # Read their language from the Profile
         language = user.language
@@ -1658,6 +1705,35 @@ $('form.auth_consent').submit(S3ClearNavigateAwayConfirm);''')
                        subject = self.messages.reset_password_subject,
                        message = message):
             user.update_record(reset_password_key = reset_password_key)
+            return True
+
+        return False
+
+    # -------------------------------------------------------------------------
+    def send_user_locked_email(self, user):
+        """
+            Send an email to the user when their account is locked
+                - due to excessive failed login attempts
+
+            Args:
+                user: the auth_user record (Row)
+
+            Returns:
+                True if email sent successfully, else False
+        """
+
+        mailer = self.settings.mailer
+        if not mailer or not mailer.settings.server:
+            return False
+        
+        messages = self.messages
+        system_name = current.deployment_settings.get_system_name()
+
+        subject = messages.locked_email_subject % {"system_name": system_name}
+        message = messages.locked_email % {"system_name": system_name}
+        if mailer.send(to = user.email,
+                       subject = subject,
+                       message = message):
             return True
 
         return False

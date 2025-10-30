@@ -32,3 +32,6 @@
 /modules/plugins/*
 !/modules/plugins/__init__.py
 !/modules/plugins/skeleton.py
+# Ignore IDE project files
+.vscode/*
+*.code-workspace
