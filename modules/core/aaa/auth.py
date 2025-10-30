@@ -727,6 +727,7 @@ Thank you"""
                    session.locked_until > datetime.datetime.now(datetime.timezone.utc):
                     # Session is locked
                     response.error = messages.login_attempts_exceeded
+                    response.error_code = 423
                     return form
 
                 query = (utable[userfield] == form.vars[userfield])
@@ -742,6 +743,7 @@ Thank you"""
                        and temp_user.locked_until > datetime.datetime.now(datetime.timezone.utc):
                         # User is locked
                         response.error = messages.login_attempts_exceeded
+                        response.error_code = 423
                         return form
 
                     # Check if registration pending or account disabled
@@ -818,10 +820,13 @@ Thank you"""
                         if session.failed_attempts > failed_login_count \
                            or (existing and existing.failed_attempts > failed_login_count):
                             # Set the Lock Timeout
-                            locked_until = datetime.datetime.now(datetime.timezone.utc) + \
-                                           datetime.timedelta(seconds=failed_login_reset)
-                            # Lock user account
-                            if existing:
+                            if failed_login_reset:
+                              locked_until = datetime.datetime.now(datetime.timezone.utc) + \
+                                             datetime.timedelta(seconds=failed_login_reset)
+                            else:
+                              locked_until = datetime.datetime.max.replace(tzinfo=datetime.timezone.utc)
+                            # Lock user account if they are not an Admin
+                            if existing and not self.s3_has_role(self.get_system_roles().ADMIN):
                                 self.log_event(messages.user_locked_log, request.post_vars)
                                 # Update the User's record
                                 existing.update_record(locked=True,
@@ -830,7 +835,7 @@ Thank you"""
                                 # Notify the user by email
                                 self.send_user_locked_email(existing)
 
-                            # Lock the session
+                            # Lock the session regardless
                             session.locked_until = locked_until
                             session.failed_attempts = 0
                             session.error = messages.login_attempts_exceeded

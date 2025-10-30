@@ -567,20 +567,20 @@ class S3Config(Storage):
         """
             Lock failed logins count
         """
-        failed_login_count = self.auth.get("lock_failed_login_count", int(0))
+        failed_login_count = self.auth.get("lock_failed_login_count", None)
         if isinstance(failed_login_count, int) and failed_login_count > 0:
             return failed_login_count
-        return 0
+        return None
 
     def get_auth_lock_failed_login_reset(self):
         """
             Lock failed logins reset duration in seconds
             - defaults to 5 minutes
         """
-        failed_login_reset = self.auth.get("lock_failed_login_reset", int(0))
+        failed_login_reset = self.auth.get("lock_failed_login_reset", None)
         if isinstance(failed_login_reset, int) and failed_login_reset > 0:
             return failed_login_reset
-        return 300
+        return None
 
     def get_auth_password_changes(self):
         """
