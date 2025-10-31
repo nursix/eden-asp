@@ -593,6 +593,8 @@ Thank you"""
             log = messages.login_log
 
         user = None # default
+
+        # Get the Auth Lock settings
         failed_login_count = deployment_settings.get_auth_lock_failed_login_count()
         failed_login_reset = deployment_settings.get_auth_lock_failed_login_reset()
 
@@ -817,8 +819,8 @@ Thank you"""
                             existing.failed_attempts = existing.failed_attempts + 1
                             existing.update_record()
                         # Check if we need to lock the session or the user account
-                        if session.failed_attempts > failed_login_count \
-                           or (existing and existing.failed_attempts > failed_login_count):
+                        if session.failed_attempts >= failed_login_count \
+                           or (existing and existing.failed_attempts >= failed_login_count):
                             # Set the Lock Timeout
                             if failed_login_reset:
                               locked_until = datetime.datetime.now(datetime.timezone.utc) + \
