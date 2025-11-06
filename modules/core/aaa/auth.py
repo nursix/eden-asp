@@ -5699,12 +5699,8 @@ Please go to %(url)s to approve this user."""
               # Check if the lock has expired
               if user.locked_until:
                   now = datetime.datetime.now(datetime.timezone.utc)
-                  try:
-                      if user.locked_until > now:
-                          return True
-                  except:
-                      # Handle any exceptions that may occur
-                      return False
+                  if user.locked_until.replace(tzinfo=datetime.timezone.utc) > now:
+                      return True
         return False
 
     # -------------------------------------------------------------------------
@@ -5765,7 +5761,7 @@ Please go to %(url)s to approve this user."""
             # Check if the lock has expired
             if session.locked_until:
                 now = datetime.datetime.now(datetime.timezone.utc)
-                if session.locked_until > now:
+                if session.locked_until.replace(tzinfo=datetime.timezone.utc) > now:
                     return True
         return False
 
@@ -5800,7 +5796,7 @@ Please go to %(url)s to approve this user."""
             if session.failed_attempts >= failed_login_count \
                 or (user and user.failed_attempts >= failed_login_count):
                 # Set the Lock Timeout
-                if user and self.has_membership(user_id=user.id, role="ADMIN"):
+                if user and self.has_membership(user_id=user.id, role=self.get_system_roles().ADMIN):
                   locked_until = datetime.datetime.now(datetime.timezone.utc) + \
                                  datetime.timedelta(seconds=failed_login_reset_admin)
                 else:
