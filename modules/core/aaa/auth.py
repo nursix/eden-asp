@@ -5796,7 +5796,7 @@ Please go to %(url)s to approve this user."""
             if session.failed_attempts >= failed_login_count \
                 or (user and user.failed_attempts >= failed_login_count):
                 # Set the Lock Timeout
-                if user and self.has_membership(user_id=user.id, role=self.get_system_roles().ADMIN):
+                if user and self.has_membership(user_id=user.id, role="ADMIN"):
                   locked_until = datetime.datetime.now(datetime.timezone.utc) + \
                                  datetime.timedelta(seconds=failed_login_reset_admin)
                 else:
