@@ -575,12 +575,22 @@ class S3Config(Storage):
     def get_auth_lock_failed_login_reset(self):
         """
             Lock failed logins reset duration in seconds
-            - defaults to 5 minutes
+            - defaults to Indefinite (manual unlock only)
         """
         failed_login_reset = self.auth.get("lock_failed_login_reset", None)
         if isinstance(failed_login_reset, int) and failed_login_reset > 0:
             return failed_login_reset
         return None
+
+    def get_auth_lock_failed_login_reset_admin(self) -> int:
+        """
+            Lock failed logins reset duration in seconds for Admin users
+            - defaults to 5 minutes
+        """
+        failed_login_reset = self.auth.get("lock_failed_login_reset", int(0))
+        if isinstance(failed_login_reset, int) and failed_login_reset > 0:
+            return failed_login_reset
+        return 300
 
     def get_auth_password_changes(self):
         """
