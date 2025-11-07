@@ -81,6 +81,14 @@ settings.base.debug = False
 # Allow language files to be updated automatically
 #settings.L10n.languages_readonly = False
 
+# Authentication settings
+# Should failed login attempts lock the user account?
+# - set to None to disable account locking
+#settings.auth.lock_failed_login_count = None
+# After how many minutes should the failed login counter be reset?
+# - set to None to disable automatic reset
+#settings.auth.lock_failed_login_reset = None
+
 # This setting should be changed _before_ registering the 1st user
 # - should happen automatically if installing using supported scripts
 settings.auth.hmac_key = "akeytochange"

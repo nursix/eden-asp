@@ -29,6 +29,7 @@ __all__ = ("AuthS3",
            )
 
 import binascii
+import datetime
 import json
 import time
 
@@ -199,11 +200,23 @@ No action is required."""
  - You can start using %(system_name)s at: %(url)s
  - To edit your profile go to: %(url)s%(profile)s
 Thank you"""
+        messages.locked_email_subject = "%(system_name)s - Account Locked"
+        messages.locked_email = \
+"""Your account on %(system_name)s has been locked due to excessive failed login attempts.
+ - Please change your password at your earliest convenience.
+ Thank you"""
+        messages.unlocked_email_subject = "%(system_name)s - Account Unlocked"
+        messages.unlocked_email = \
+"""Your account on %(system_name)s has been unlocked.
+ - You can now log in again.
+ Thank you"""
 
         # Log messages
         messages.user_disabled_log = "User %(user_id)s disabled"
         messages.user_enabled_log = "User %(user_id)s (re-)enabled"
         messages.user_approved_log = "User %(user_id)s approved"
+        messages.user_locked_log = "User %%(%s)s locked due to excessive failed login attempts" % settings.login_userfield
+        messages.login_attempts_exceeded = "Login attempts exceeded"
 
         # Optional log messages
         if log_failed_logins:
@@ -299,6 +312,14 @@ Thank you"""
                       readable=False, writable=False),
                 Field("reset_password_key", length=512,
                       default="",
+                      readable=False, writable=False),
+                Field("locked", "boolean",
+                      default=False),
+                Field("failed_attempts", "integer",
+                      default=0,
+                      readable=False, writable=False),
+                Field("locked_until", "datetime",
+                      default=None,
                       readable=False, writable=False),
                 Field("deleted", "boolean",
                       default=False,
@@ -580,6 +601,9 @@ Thank you"""
 
         user = None # default
 
+        # Get the Auth Lock settings
+        failed_login_count = deployment_settings.get_auth_lock_failed_login_count()
+
         response.title = T("Login")
 
         # Do we use our own login form, or from a central source?
@@ -704,12 +728,26 @@ Thank you"""
                 # Check for username in db
                 existing = None
 
+                # Check if the session is locked and still within the lock period
+                if self.is_session_locked():
+                    # Session is locked
+                    response.error = messages.login_attempts_exceeded
+                    response.error_code = 423
+                    return form
+
                 query = (utable[userfield] == form.vars[userfield])
                 user = db(query).select(limitby=(0, 1)).first()
 
                 if user:
                     # User in db
                     existing = temp_user = user
+
+                    # Check if the user is locked and still within the lock period
+                    if self.is_user_locked(temp_user):
+                        # User is locked
+                        response.error = messages.login_attempts_exceeded
+                        response.error_code = 423
+                        return form
 
                     # Check if registration pending or account disabled
                     if temp_user.registration_key == "pending":
@@ -771,6 +809,9 @@ Thank you"""
                     if existing or settings.log_all_failed_logins:
                         self.log_event(messages.login_failed_log, request.post_vars)
                     session.error = messages.invalid_login
+                    # Check if the Failed Login Count is greater than 0 (0 means no lock policy)
+                    self.lock_session(existing)
+      
                     if inline:
                         # If inline, stay on the same page
                         next_url = URL(args=request.args,
@@ -1138,11 +1179,16 @@ Thank you"""
             remember = "remember" in req_vars,
             hmac_key = web2py_uuid()
             )
+
         self.user = user
         self.s3_set_roles()
 
         # Set a Cookie to present user with login box by default
         self.set_cookie()
+
+        # If the session or user had been locked, unlock them now
+        self.unlock_session()
+        self.unlock_user(user)
 
         # Read their language from the Profile
         language = user.language
@@ -1635,6 +1681,58 @@ $('form.auth_consent').submit(S3ClearNavigateAwayConfirm);''')
             return True
 
         return False
+
+    # -------------------------------------------------------------------------
+    def send_user_locked_email(self, user):
+        """
+            Send an email to the user when their account is locked
+                - due to excessive failed login attempts
+
+            Args:
+                user: the auth_user record (Row)
+
+            Returns:
+                True if email sent successfully, else False
+        """
+
+        mailer = self.settings.mailer
+        if not mailer or not mailer.settings.server:
+            return False
+        
+        messages = self.messages
+        system_name = current.deployment_settings.get_system_name()
+
+        subject = messages.locked_email_subject % {"system_name": system_name}
+        message = messages.locked_email % {"system_name": system_name}
+        return bool(mailer.send(to = user.email,
+                       subject = subject,
+                       message = message))
+
+    # -------------------------------------------------------------------------
+    def send_user_unlocked_email(self, user):
+        """
+            Send an email to the user when their account is unlocked
+                - after being locked due to excessive failed login attempts
+
+            Args:
+                user: the auth_user record (Row)
+
+            Returns:
+                True if email sent successfully, else False
+        """
+
+        mailer = self.settings.mailer
+        if not mailer or not mailer.settings.server:
+            return False
+
+        messages = self.messages
+        system_name = current.deployment_settings.get_system_name()
+
+        subject = messages.unlocked_email_subject % {"system_name": system_name}
+        message = messages.unlocked_email % {"system_name": system_name}
+        return bool(mailer.send(to = user.email,
+                       subject = subject,
+                       message = message))
 
     # -------------------------------------------------------------------------
     def add_membership(self,
@@ -5588,5 +5686,143 @@ Please go to %(url)s to approve this user."""
             return (table.organisation_id == root_org) | (table.organisation_id == None)
         else:
             return (table.organisation_id == None)
+
+    # -------------------------------------------------------------------------
+    def is_user_locked(self, user):
+        """
+            Check whether the user account is locked
+            Args:
+                user: the user record
+        """
+        if user:
+          if user.locked:
+              # Check if the lock has expired
+              if user.locked_until:
+                  now = datetime.datetime.now(datetime.timezone.utc)
+                  if user.locked_until.replace(tzinfo=datetime.timezone.utc) > now:
+                      return True
+        return False
+
+    # -------------------------------------------------------------------------
+    def lock_user(self, user, locked_until=None):
+        """
+            Lock the user account
+            Args:
+                user: the user record
+                locked_until: datetime until which the account is locked (default: indefinite)
+        """
+        db = current.db
+        table = self.settings.table_user
+        messages = self.messages
+        if user:
+          # Get the Auth Lock settings
+          self.log_event(messages.user_locked_log, user)
+          if not locked_until:
+              locked_until = datetime.datetime.max.replace(tzinfo=datetime.timezone.utc)
+          # Update the User's record
+          user.locked = True
+          user.failed_attempts = 0
+          user.locked_until = locked_until
+          query = (table.id == user.id)
+          db(query).update(locked=True,
+                           failed_attempts=0,
+                           locked_until=locked_until)
+          # Notify the user by email
+          self.send_user_locked_email(user)
+
+    # -------------------------------------------------------------------------
+    def unlock_user(self, user, notify=False):
+        """
+            Unlock the user account
+            Args:
+                user: the user record
+        """
+        db = current.db
+        table = self.settings.table_user
+        if user:
+          # Update the User's record
+          user.locked = False
+          user.failed_attempts = 0
+          user.locked_until = None
+          query = (table.id == user.id)
+          db(query).update(locked=False,
+                           failed_attempts=0,
+                           locked_until=None)
+          if notify:
+              self.send_user_unlocked_email(user)
+
+    # -------------------------------------------------------------------------
+    def is_session_locked(self):
+        """
+            Check whether the session is locked
+        """
+        session = current.session
+        if session.locked:
+            # Check if the lock has expired
+            if session.locked_until:
+                now = datetime.datetime.now(datetime.timezone.utc)
+                if session.locked_until.replace(tzinfo=datetime.timezone.utc) > now:
+                    return True
+        return False
+
+    # -------------------------------------------------------------------------
+    def lock_session(self, user = None):
+        """
+            Lock the session (and possibly the user account) if there have
+            been too many failed login attempts.
+            Args:
+                user: the user record (or None)
+        """
+        session = current.session
+        deployment_settings = current.deployment_settings
+        messages = self.messages
+        # Get the Auth Lock settings
+        failed_login_count = deployment_settings.get_auth_lock_failed_login_count()
+        failed_login_reset = deployment_settings.get_auth_lock_failed_login_reset()
+        failed_login_reset_admin = deployment_settings.get_auth_lock_failed_login_reset_admin()
+
+        # Check if the Failed Login Count is greater than 0 (0 means no lock policy)
+        if failed_login_count > 0:
+            # Track failed login attempts in the session
+            failed_attempts = session.failed_attempts or 0
+            session.failed_attempts = failed_attempts + 1
+            # If there is an existing user
+            if user:
+                # Also track on the user record
+                failed_attempts = user.failed_attempts or 0
+                user.failed_attempts = failed_attempts + 1
+                user.update_record()
+            # Check if we need to lock the session or the user account
+            if session.failed_attempts >= failed_login_count \
+                or (user and user.failed_attempts >= failed_login_count):
+                # Set the Lock Timeout
+                if user and self.has_membership(user_id=user.id, role="ADMIN"):
+                  locked_until = datetime.datetime.now(datetime.timezone.utc) + \
+                                 datetime.timedelta(seconds=failed_login_reset_admin)
+                else:
+                    if failed_login_reset:
+                      locked_until = datetime.datetime.now(datetime.timezone.utc) + \
+                                     datetime.timedelta(seconds=failed_login_reset)
+                    else:
+                      locked_until = datetime.datetime.max.replace(tzinfo=datetime.timezone.utc)
+                # Lock user account if they are not an Admin
+                if user:
+                    self.lock_user(user, locked_until)
+                # Lock the session regardless
+                session.locked = True
+                session.locked_until = locked_until
+                session.failed_attempts = 0
+                session.error = messages.login_attempts_exceeded
+
+    # -------------------------------------------------------------------------
+    def unlock_session(self):
+        """
+            Unlock the session and user account
+        """
+        session = current.session
+        # If the user had been locked, unlock them now
+        session.locked = False
+        session.failed_attempts = 0
+        session.locked_until = None
 
 # END =========================================================================
