@@ -1014,15 +1014,6 @@ def user():
     utable = auth_settings.table_user
 
     arg = request.args(0)
-    if arg == "verify_email":
-        # Ensure we use the user's language
-        key = request.args[-1]
-        query = (utable.registration_key == key)
-        user = db(query).select(utable.language,
-                                limitby=(0, 1)).first()
-        if not user:
-            redirect(auth_settings.verify_email_next)
-        session.s3.language = user.language
 
     auth_settings.on_failed_authorization = URL(f="error")
 
@@ -1115,8 +1106,12 @@ def user():
         # Used when adding organisations from registration form
         return crud_controller(prefix="auth", resourcename="user")
 
+    elif arg == "verify_email":
+        title = response.title = T("Confirm Registration")
+        form = auth.verify_email()
+
     else:
-        # logout or verify_email
+        # logout or other function
         title = ""
         form = auth()
 

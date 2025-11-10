@@ -192,7 +192,7 @@ No action is required."""
         messages.registration_disabled = "Registration Disabled!"
         messages.registration_verifying = "You haven't yet Verified your account - please check your email"
         messages.reset_password = "Click on the link %(url)s to reset your password"
-        messages.verify_email = "Click on the link %(url)s to verify your email"
+        messages.verify_email = "Click on the link %(url)s to verify your email.\n\nYou activation code is: %(code)s"
         messages.verify_email_subject = "%(system_name)s - Verify Email"
         messages.welcome_email_subject = "Welcome to %(system_name)s"
         messages.welcome_email = \
@@ -1570,7 +1570,11 @@ $('form.auth_consent').submit(S3ClearNavigateAwayConfirm);''')
         if settings.captcha != None:
             form[0].insert(-1, DIV("", settings.captcha, ""))
 
-        utable.registration_key.default = key = str(uuid4())
+        # Set default registration key, so new users are prevented
+        # from logging in until approved
+        key = str(uuid4())
+        code = uuid4().hex[-6:].upper()
+        utable.registration_key.default = self.keyhash(key, code)
 
         if form.accepts(request.vars, session, formname="register",
                         onvalidation=onvalidation):
@@ -1599,24 +1603,34 @@ $('form.auth_consent').submit(S3ClearNavigateAwayConfirm);''')
                 self.s3_send_welcome_email(form.vars)
 
             elif settings.registration_requires_verification:
-                # Send the Verification email
+                # Request User Verify their Email
+                # System Details for Verification Email
+                verify_url = URL(c = "default",
+                                 f = "user",
+                                 args = ["verify_email", key],
+                                 scheme = "https" if request.is_https else "http",
+                                 )
+                system = {"system_name": deployment_settings.get_system_name(),
+                          "url": verify_url,
+                          "code": code,
+                          }
+
+                # Try to send the Verification Email
                 if not settings.mailer or \
                    not settings.mailer.settings.server or \
                    not settings.mailer.send(to = form.vars.email,
-                                            subject = messages.verify_email_subject % \
-    {"system_name": deployment_settings.get_system_name()},
-                                            message = messages.verify_email % \
-            {"url": "%s/default/user/verify_email/%s" % \
-                (current.response.s3.base_url, key)}):
+                                            subject = messages.verify_email_subject % system,
+                                            message = messages.verify_email % system,
+                                            ):
                     current.response.error = messages.email_verification_failed
                     return form
+
                 # @ToDo: Deployment Setting?
                 #session.confirmation = messages.email_sent
                 next = URL(c="default", f="message",
                            args = ["verify_email_sent"],
                            vars = {"email": form.vars.email},
                            )
-
             else:
                 # Does the user need to be approved?
                 approved = self.s3_verify_user(form.vars)
@@ -1720,40 +1734,114 @@ $('form.auth_consent').submit(S3ClearNavigateAwayConfirm);''')
     # -------------------------------------------------------------------------
     def verify_email(self, next=DEFAULT, log=DEFAULT):
         """
-            Action when user clicks the link in the verification email
+            Dialog to verify the email address of a user; presents
+            a form to enter the activation code that has been sent
+            with the verification email
+
+            Args:
+                next: the URL to redirect to after processing
+                log: the log message for the event
+
+            Returns:
+                FORM
         """
 
-        settings = self.settings
+        T = current.T
+
         request = current.request
+        response = current.response
+        session = current.session
+
+        settings = current.deployment_settings
 
         # Customise the resource
-        customise = current.deployment_settings.customise_resource("auth_user")
+        customise = settings.customise_resource("auth_user")
         if customise:
             customise(request, "auth_user")
 
-        key = request.args[-1]
-        utable = settings.table_user
-        query = (utable.registration_key == key)
-        user = current.db(query).select(limitby=(0, 1)).first()
-        if not user:
-            redirect(settings.verify_email_next)
+        # Get the registration key
+        if request.env.request_method == "POST":
+            key = request.post_vars.registration_key
+        elif len(request.args) > 1:
+            key = request.args[-1]
+        else:
+            key = None
+        if not key:
+            session.error = T("Missing registration key")
+            redirect(URL(c="default", f="index"))
 
-        if log == DEFAULT:
-            log = self.messages.verify_email_log
-        if next == DEFAULT:
-            next = settings.verify_email_next
+        formfields = [Field("activation_code",
+                            label = T("Please enter your Activation Code"),
+                            requires = IS_NOT_EMPTY(),
+                            ),
+                      ]
 
-        approved = self.s3_verify_user(user)
+        # Construct the form
+        response.form_label_separator = ""
+        form = SQLFORM.factory(table_name = "auth_user",
+                               record = None,
+                               hidden = {"_next": request.vars._next,
+                                         "registration_key": key,
+                                         },
+                               separator = ":",
+                               showid = False,
+                               submit_button = T("Submit"),
+                               formstyle = settings.get_ui_formstyle(),
+                               #buttons = buttons,
+                               *formfields)
 
-        if approved:
-            # Log them in
-            user = Storage(utable._filter_fields(user, id=True))
-            self.login_user(user)
+        if form.accepts(request.vars,
+                        session,
+                        formname = "register_confirm",
+                        ):
 
-        if log:
-            self.log_event(log, user)
+            auth_settings = self.settings
 
-        redirect(next)
+            # Get registration key from URL
+            code = form.vars.activation_code
+
+            # Find the pending user account
+            utable = auth_settings.table_user
+            query = (utable.registration_key == self.keyhash(key, code))
+            user = current.db(query).select(limitby=(0, 1)).first()
+            if not user:
+                session.error = T("Registration not found")
+                redirect(auth_settings.verify_email_next)
+
+            if log == DEFAULT:
+                log = self.messages.verify_email_log
+            if next == DEFAULT:
+                next = auth_settings.verify_email_next
+
+            approved = self.s3_verify_user(user)
+            if approved:
+                # Log them in
+                user = Storage(utable._filter_fields(user, id=True))
+                self.login_user(user)
+            if log:
+                self.log_event(log, user)
+
+            redirect(next)
+
+        return form
+
+    # -------------------------------------------------------------------------
+    @staticmethod
+    def keyhash(key, code):
+        """
+            Generate a hash of the activation code using
+            the registration key
+
+            Args:
+                key: the registration key
+                code: the activation code
+
+            Returns:
+                the hash as string
+        """
+
+        crypt = CRYPT(key=key, digest_alg="sha512", salt=None)
+        return str(crypt(code.upper())[0])
 
     # -------------------------------------------------------------------------
     def profile(self,
