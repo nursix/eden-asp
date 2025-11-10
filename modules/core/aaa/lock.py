@@ -1,7 +1,7 @@
 """
     Locking of user accounts
 
-    Copyright: (c) 2010-2022 Sahana Software Foundation
+    Copyright: (c) 2025 Sahana Software Foundation
 
     Permission is hereby granted, free of charge, to any person
     obtaining a copy of this software and associated documentation
@@ -29,10 +29,12 @@ import datetime
 
 from gluon import current
 
+LOCKED = "failed"
+
 # =============================================================================
 class AccountLockingMixin:
+    """ Auth mixin to handle locking of accounts """
 
-    # -------------------------------------------------------------------------
     def is_user_locked(self, user):
         """
             Checks whether a user account is (still) locked
@@ -44,7 +46,7 @@ class AccountLockingMixin:
                 boolean
         """
 
-        if not user or not user.locked:
+        if not user or user.registration_key != LOCKED:
             return False
 
         return not user.locked_until or user.locked_until > current.request.utcnow
@@ -79,7 +81,8 @@ class AccountLockingMixin:
         # Check if the Failed Login Count is greater than 0 (0 means no lock policy)
         if user and max_failed_logins:
 
-            prev = user.locked
+            prev = user.registration_key == LOCKED
+            locking = False
 
             failed_attempts = (user.failed_attempts or 0) + 1
             update = {"failed_attempts": failed_attempts}
@@ -97,7 +100,8 @@ class AccountLockingMixin:
                 else:
                     locked_until = None
 
-                update["locked"] = True
+                locking = not prev
+                update["registration_key"] = LOCKED
                 update["locked_until"] = locked_until
 
                 if failed_attempts > max_failed_logins + 3:
@@ -107,12 +111,12 @@ class AccountLockingMixin:
                     session.error = messages.login_attempts_exceeded
                     update["failed_attempts"] = max_failed_logins
             else:
-                update["locked"] = False
+                update["registration_key"] = None
                 update["locked_until"] = None
 
             user.update_record(**update)
 
-            if user.locked and not prev:
+            if locking:
                 # Log the event
                 self.log_event(self.messages.user_locked_log, user)
                 # Notify the user by email
@@ -128,7 +132,10 @@ class AccountLockingMixin:
         """
 
         if user:
-            update = {"locked": False,
+            key = user.registration_key
+            if key == LOCKED:
+                key = None
+            update = {"registration_key": key,
                       "failed_attempts": 0,
                       "locked_until": None,
                       }

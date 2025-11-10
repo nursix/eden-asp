@@ -45,6 +45,7 @@ def user():
     s3_has_role = auth.s3_has_role
 
     UNAPPROVED = request.get_vars.get("unapproved")
+    DISABLED = ("disabled", "blocked", "failed")
 
     # Check for ADMIN first since ADMINs have all roles
     ADMIN = False
@@ -189,7 +190,7 @@ def user():
 
         if UNAPPROVED:
             registration_key = FS("registration_key")
-            query = (registration_key != "disabled") & \
+            query = (~(registration_key.belongs(DISABLED))) & \
                     (registration_key != None) & \
                     (registration_key != "")
             r.resource.add_filter(query)
@@ -267,7 +268,7 @@ def user():
 
                 # Only show the disable button if the user is not currently disabled
                 table = r.table
-                query = (table.registration_key == "disabled") & \
+                query = (table.registration_key.belongs(DISABLED)) & \
                         (table.deleted == False)
                 rows = db(query).select(table.id)
                 disabled = [str(row.id) for row in rows]
@@ -299,7 +300,7 @@ def user():
                                        }
                                    )
                 # Only show the approve button if the user is currently pending
-                query = (table.registration_key != "disabled") & \
+                query = (~(table.registration_key.belongs(DISABLED))) & \
                         (table.registration_key != None) & \
                         (table.registration_key != "")
                 rows = db(query).select(table.id)

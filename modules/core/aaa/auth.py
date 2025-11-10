@@ -34,7 +34,7 @@ import time
 
 from uuid import uuid4
 
-from gluon import current, redirect, HTTP, CRYPT, DAL, SQLFORM, URL, \
+from gluon import current, redirect, CRYPT, DAL, SQLFORM, URL, \
                   A, DIV, INPUT, LABEL, SPAN, XML, \
                   IS_EMAIL, IS_EMPTY_OR, IS_EXPR, IS_IN_DB, IS_IN_SET, \
                   IS_LOWER, IS_NOT_EMPTY, IS_NOT_IN_DB
@@ -516,6 +516,7 @@ Thank you"""
         """
             Logs user in
                 - extended to understand session.s3.roles
+                - extended to handle login failures
         """
 
         self.ignore_min_password_length()
@@ -528,18 +529,22 @@ Thank you"""
 
         query = (utable[userfield] == username)
         user = current.db(query).select(limitby=(0, 1)).first()
-        password = utable[passfield].validate(password)[0]
-        if user:
-            if self.is_user_locked(user):
-                raise HTTP(423, self.messages.login_attempts_exceeded)
-            if not user.registration_key and user[passfield] == password:
+
+        if user and not user.registration_key:
+            password = utable[passfield].validate(password)[0]
+            if user[passfield] == password:
                 user = Storage(utable._filter_fields(user, id=True))
                 current.session.auth = Storage(user = user,
                                                last_visit = current.request.now,
-                                               expiration = settings.expiration)
+                                               expiration = settings.expiration,
+                                               )
+                self.unlock_user(user)
                 self.user = user
                 self.s3_set_roles()
                 return user
+            else:
+                self.handle_failed_login(user=user)
+
         return False
 
     # -------------------------------------------------------------------------
@@ -734,21 +739,28 @@ Thank you"""
                     # User in db
                     existing = temp_user = user
 
-                    # Check if registration pending or account disabled
+                    # Check if login is permitted
                     if self.is_user_locked(temp_user):
-                        # User is locked due to too many failed login attempts
+                        # Account is locked due to too many failed login attempts
                         self.handle_failed_login(user=temp_user)
                         response.error = messages.login_attempts_exceeded
                         response.error_code = 423
                         return form
-                    elif temp_user.registration_key == "pending":
+
+                    from .lock import LOCKED
+                    registration_key = temp_user.registration_key
+                    if registration_key == "pending":
+                        # Account is verified, but pending approval
                         response.warning = deployment_settings.get_auth_registration_pending()
                         return form
-                    elif temp_user.registration_key in ("disabled", "blocked"):
+                    elif registration_key in ("disabled", "blocked"):
+                        # Account has been disabled|blocked by ADMIN
                         response.error = messages.login_disabled
                         return form
-                    elif not temp_user.registration_key is None and \
-                             temp_user.registration_key.strip():
+                    elif registration_key is not None and \
+                         registration_key != LOCKED and \
+                         registration_key.strip():
+                        # Account has not yet been verified
                         response.warning = messages.registration_verifying
                         return form
 
