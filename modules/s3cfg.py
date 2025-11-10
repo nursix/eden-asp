@@ -563,34 +563,27 @@ class S3Config(Storage):
         """
         return self.auth.get("log_failed_logins", False)
 
-    def get_auth_lock_failed_login_count(self):
+    def get_auth_max_failed_logins(self):
         """
-            Lock failed logins count
+            Maximum number of tolerated failed login attempts to
+            a user account before the account is locked
+            - None meaning: no maximum
         """
-        failed_login_count = self.auth.get("lock_failed_login_count", None)
-        if isinstance(failed_login_count, int) and failed_login_count > 0:
-            return failed_login_count
+        max_failed_logins = self.auth.get("max_failed_logins", None)
+        if isinstance(max_failed_logins, int) and max_failed_logins > 0:
+            return max_failed_logins
         return None
 
-    def get_auth_lock_failed_login_reset(self):
+    def get_auth_failed_login_lock_timeout(self):
         """
-            Lock failed logins reset duration in seconds
-            - defaults to Indefinite (manual unlock only)
+            Timeout for the lock after an account has been locked due to
+            too many login attempts
+            - None meaning: locking is permanent, manual reset required
         """
-        failed_login_reset = self.auth.get("lock_failed_login_reset", None)
-        if isinstance(failed_login_reset, int) and failed_login_reset > 0:
-            return failed_login_reset
+        lock_timeout = self.auth.get("failed_login_lock_timeout", 300)
+        if isinstance(lock_timeout, int) and lock_timeout > 0:
+            return lock_timeout
         return None
-
-    def get_auth_lock_failed_login_reset_admin(self) -> int:
-        """
-            Lock failed logins reset duration in seconds for Admin users
-            - defaults to 5 minutes
-        """
-        failed_login_reset = self.auth.get("lock_failed_login_reset", int(0))
-        if isinstance(failed_login_reset, int) and failed_login_reset > 0:
-            return failed_login_reset
-        return 300
 
     def get_auth_password_changes(self):
         """

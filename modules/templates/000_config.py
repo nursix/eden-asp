@@ -82,12 +82,10 @@ settings.base.debug = False
 #settings.L10n.languages_readonly = False
 
 # Authentication settings
-# Should failed login attempts lock the user account?
-# - set to None to disable account locking
-#settings.auth.lock_failed_login_count = None
-# After how many minutes should the failed login counter be reset?
-# - set to None to disable automatic reset
-#settings.auth.lock_failed_login_reset = None
+# Maxmimum number of failed login attempts before an account is locked
+#settings.auth.max_login_attempts = 3
+# Timeout (seconds) for locking an account after max failed logins
+#settings.auth.failed_login_lock_timeout = 300
 
 # This setting should be changed _before_ registering the 1st user
 # - should happen automatically if installing using supported scripts
