@@ -1,0 +1,7 @@
+{{extend "layout.html"}}
+<div id='home'>
+{{try:}}{{=H2(title)}}{{except:}}{{pass}}
+ <div class='form-container'>
+ {{=form}}
+ </div>
+</div>

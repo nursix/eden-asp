@@ -29,7 +29,6 @@ __all__ = ("AuthS3",
            )
 
 import binascii
-import datetime
 import json
 import time
 
@@ -51,11 +50,12 @@ from ..model import MetaFields, CommentsField
 from ..tools import IS_ISO639_2_LANGUAGE_CODE, S3Represent, S3Tracker, \
                     s3_addrow, s3_mark_required, s3_str
 
+from .lock import AccountLockingMixin
 from .permissions import S3Permission
 from .consent import ConsentTracking
 
 # =============================================================================
-class AuthS3(Auth):
+class AuthS3(AccountLockingMixin, Auth):
     """
         S3 extensions of the gluon.tools.Auth class
 
@@ -192,7 +192,7 @@ No action is required."""
         messages.registration_disabled = "Registration Disabled!"
         messages.registration_verifying = "You haven't yet Verified your account - please check your email"
         messages.reset_password = "Click on the link %(url)s to reset your password"
-        messages.verify_email = "Click on the link %(url)s to verify your email"
+        messages.verify_email = "Click on the link %(url)s to verify your email.\n\nYou activation code is: %(code)s"
         messages.verify_email_subject = "%(system_name)s - Verify Email"
         messages.welcome_email_subject = "Welcome to %(system_name)s"
         messages.welcome_email = \
@@ -314,7 +314,8 @@ Thank you"""
                       default="",
                       readable=False, writable=False),
                 Field("locked", "boolean",
-                      default=False),
+                      default=False,
+                      readable=False, writable=False),
                 Field("failed_attempts", "integer",
                       default=0,
                       readable=False, writable=False),
@@ -515,6 +516,7 @@ Thank you"""
         """
             Logs user in
                 - extended to understand session.s3.roles
+                - extended to handle login failures
         """
 
         self.ignore_min_password_length()
@@ -527,16 +529,22 @@ Thank you"""
 
         query = (utable[userfield] == username)
         user = current.db(query).select(limitby=(0, 1)).first()
-        password = utable[passfield].validate(password)[0]
-        if user:
-            if not user.registration_key and user[passfield] == password:
+
+        if user and not user.registration_key:
+            password = utable[passfield].validate(password)[0]
+            if user[passfield] == password:
                 user = Storage(utable._filter_fields(user, id=True))
                 current.session.auth = Storage(user = user,
                                                last_visit = current.request.now,
-                                               expiration = settings.expiration)
+                                               expiration = settings.expiration,
+                                               )
+                self.unlock_user(user)
                 self.user = user
                 self.s3_set_roles()
                 return user
+            else:
+                self.handle_failed_login(user=user)
+
         return False
 
     # -------------------------------------------------------------------------
@@ -600,9 +608,6 @@ Thank you"""
             log = messages.login_log
 
         user = None # default
-
-        # Get the Auth Lock settings
-        failed_login_count = deployment_settings.get_auth_lock_failed_login_count()
 
         response.title = T("Login")
 
@@ -727,14 +732,6 @@ Thank you"""
 
                 # Check for username in db
                 existing = None
-
-                # Check if the session is locked and still within the lock period
-                if self.is_session_locked():
-                    # Session is locked
-                    response.error = messages.login_attempts_exceeded
-                    response.error_code = 423
-                    return form
-
                 query = (utable[userfield] == form.vars[userfield])
                 user = db(query).select(limitby=(0, 1)).first()
 
@@ -742,22 +739,28 @@ Thank you"""
                     # User in db
                     existing = temp_user = user
 
-                    # Check if the user is locked and still within the lock period
+                    # Check if login is permitted
                     if self.is_user_locked(temp_user):
-                        # User is locked
+                        # Account is locked due to too many failed login attempts
+                        self.handle_failed_login(user=temp_user)
                         response.error = messages.login_attempts_exceeded
                         response.error_code = 423
                         return form
 
-                    # Check if registration pending or account disabled
-                    if temp_user.registration_key == "pending":
+                    from .lock import LOCKED
+                    registration_key = temp_user.registration_key
+                    if registration_key == "pending":
+                        # Account is verified, but pending approval
                         response.warning = deployment_settings.get_auth_registration_pending()
                         return form
-                    elif temp_user.registration_key in ("disabled", "blocked"):
+                    elif registration_key in ("disabled", "blocked"):
+                        # Account has been disabled|blocked by ADMIN
                         response.error = messages.login_disabled
                         return form
-                    elif not temp_user.registration_key is None and \
-                             temp_user.registration_key.strip():
+                    elif registration_key is not None and \
+                         registration_key != LOCKED and \
+                         registration_key.strip():
+                        # Account has not yet been verified
                         response.warning = messages.registration_verifying
                         return form
 
@@ -809,9 +812,11 @@ Thank you"""
                     if existing or settings.log_all_failed_logins:
                         self.log_event(messages.login_failed_log, request.post_vars)
                     session.error = messages.invalid_login
-                    # Check if the Failed Login Count is greater than 0 (0 means no lock policy)
-                    self.lock_session(existing)
-      
+
+                    # Handle failed login attempts
+                    if existing:
+                        self.handle_failed_login(user=existing)
+
                     if inline:
                         # If inline, stay on the same page
                         next_url = URL(args=request.args,
@@ -1186,8 +1191,7 @@ Thank you"""
         # Set a Cookie to present user with login box by default
         self.set_cookie()
 
-        # If the session or user had been locked, unlock them now
-        self.unlock_session()
+        # If the user had been locked, unlock them now
         self.unlock_user(user)
 
         # Read their language from the Profile
@@ -1578,7 +1582,11 @@ $('form.auth_consent').submit(S3ClearNavigateAwayConfirm);''')
         if settings.captcha != None:
             form[0].insert(-1, DIV("", settings.captcha, ""))
 
-        utable.registration_key.default = key = str(uuid4())
+        # Set default registration key, so new users are prevented
+        # from logging in until approved
+        key = str(uuid4())
+        code = uuid4().hex[-6:].upper()
+        utable.registration_key.default = self.keyhash(key, code)
 
         if form.accepts(request.vars, session, formname="register",
                         onvalidation=onvalidation):
@@ -1607,24 +1615,34 @@ $('form.auth_consent').submit(S3ClearNavigateAwayConfirm);''')
                 self.s3_send_welcome_email(form.vars)
 
             elif settings.registration_requires_verification:
-                # Send the Verification email
+                # Request User Verify their Email
+                # System Details for Verification Email
+                verify_url = URL(c = "default",
+                                 f = "user",
+                                 args = ["verify_email", key],
+                                 scheme = "https" if request.is_https else "http",
+                                 )
+                system = {"system_name": deployment_settings.get_system_name(),
+                          "url": verify_url,
+                          "code": code,
+                          }
+
+                # Try to send the Verification Email
                 if not settings.mailer or \
                    not settings.mailer.settings.server or \
                    not settings.mailer.send(to = form.vars.email,
-                                            subject = messages.verify_email_subject % \
-    {"system_name": deployment_settings.get_system_name()},
-                                            message = messages.verify_email % \
-            {"url": "%s/default/user/verify_email/%s" % \
-                (current.response.s3.base_url, key)}):
+                                            subject = messages.verify_email_subject % system,
+                                            message = messages.verify_email % system,
+                                            ):
                     current.response.error = messages.email_verification_failed
                     return form
+
                 # @ToDo: Deployment Setting?
                 #session.confirmation = messages.email_sent
                 next = URL(c="default", f="message",
                            args = ["verify_email_sent"],
                            vars = {"email": form.vars.email},
                            )
-
             else:
                 # Does the user need to be approved?
                 approved = self.s3_verify_user(form.vars)
@@ -1683,58 +1701,6 @@ $('form.auth_consent').submit(S3ClearNavigateAwayConfirm);''')
         return False
 
     # -------------------------------------------------------------------------
-    def send_user_locked_email(self, user):
-        """
-            Send an email to the user when their account is locked
-                - due to excessive failed login attempts
-
-            Args:
-                user: the auth_user record (Row)
-
-            Returns:
-                True if email sent successfully, else False
-        """
-
-        mailer = self.settings.mailer
-        if not mailer or not mailer.settings.server:
-            return False
-        
-        messages = self.messages
-        system_name = current.deployment_settings.get_system_name()
-
-        subject = messages.locked_email_subject % {"system_name": system_name}
-        message = messages.locked_email % {"system_name": system_name}
-        return bool(mailer.send(to = user.email,
-                       subject = subject,
-                       message = message))
-
-    # -------------------------------------------------------------------------
-    def send_user_unlocked_email(self, user):
-        """
-            Send an email to the user when their account is unlocked
-                - after being locked due to excessive failed login attempts
-
-            Args:
-                user: the auth_user record (Row)
-
-            Returns:
-                True if email sent successfully, else False
-        """
-
-        mailer = self.settings.mailer
-        if not mailer or not mailer.settings.server:
-            return False
-
-        messages = self.messages
-        system_name = current.deployment_settings.get_system_name()
-
-        subject = messages.unlocked_email_subject % {"system_name": system_name}
-        message = messages.unlocked_email % {"system_name": system_name}
-        return bool(mailer.send(to = user.email,
-                       subject = subject,
-                       message = message))
-
-    # -------------------------------------------------------------------------
     def add_membership(self,
                        group_id = None,
                        user_id = None,
@@ -1780,40 +1746,114 @@ $('form.auth_consent').submit(S3ClearNavigateAwayConfirm);''')
     # -------------------------------------------------------------------------
     def verify_email(self, next=DEFAULT, log=DEFAULT):
         """
-            Action when user clicks the link in the verification email
+            Dialog to verify the email address of a user; presents
+            a form to enter the activation code that has been sent
+            with the verification email
+
+            Args:
+                next: the URL to redirect to after processing
+                log: the log message for the event
+
+            Returns:
+                FORM
         """
 
-        settings = self.settings
+        T = current.T
+
         request = current.request
+        response = current.response
+        session = current.session
+
+        settings = current.deployment_settings
 
         # Customise the resource
-        customise = current.deployment_settings.customise_resource("auth_user")
+        customise = settings.customise_resource("auth_user")
         if customise:
             customise(request, "auth_user")
 
-        key = request.args[-1]
-        utable = settings.table_user
-        query = (utable.registration_key == key)
-        user = current.db(query).select(limitby=(0, 1)).first()
-        if not user:
-            redirect(settings.verify_email_next)
+        # Get the registration key
+        if request.env.request_method == "POST":
+            key = request.post_vars.registration_key
+        elif len(request.args) > 1:
+            key = request.args[-1]
+        else:
+            key = None
+        if not key:
+            session.error = T("Missing registration key")
+            redirect(URL(c="default", f="index"))
 
-        if log == DEFAULT:
-            log = self.messages.verify_email_log
-        if next == DEFAULT:
-            next = settings.verify_email_next
+        formfields = [Field("activation_code",
+                            label = T("Please enter your Activation Code"),
+                            requires = IS_NOT_EMPTY(),
+                            ),
+                      ]
 
-        approved = self.s3_verify_user(user)
+        # Construct the form
+        response.form_label_separator = ""
+        form = SQLFORM.factory(table_name = "auth_user",
+                               record = None,
+                               hidden = {"_next": request.vars._next,
+                                         "registration_key": key,
+                                         },
+                               separator = ":",
+                               showid = False,
+                               submit_button = T("Submit"),
+                               formstyle = settings.get_ui_formstyle(),
+                               #buttons = buttons,
+                               *formfields)
 
-        if approved:
-            # Log them in
-            user = Storage(utable._filter_fields(user, id=True))
-            self.login_user(user)
+        if form.accepts(request.vars,
+                        session,
+                        formname = "register_confirm",
+                        ):
 
-        if log:
-            self.log_event(log, user)
+            auth_settings = self.settings
 
-        redirect(next)
+            # Get registration key from URL
+            code = form.vars.activation_code
+
+            # Find the pending user account
+            utable = auth_settings.table_user
+            query = (utable.registration_key == self.keyhash(key, code))
+            user = current.db(query).select(limitby=(0, 1)).first()
+            if not user:
+                session.error = T("Registration not found")
+                redirect(auth_settings.verify_email_next)
+
+            if log == DEFAULT:
+                log = self.messages.verify_email_log
+            if next == DEFAULT:
+                next = auth_settings.verify_email_next
+
+            approved = self.s3_verify_user(user)
+            if approved:
+                # Log them in
+                user = Storage(utable._filter_fields(user, id=True))
+                self.login_user(user)
+            if log:
+                self.log_event(log, user)
+
+            redirect(next)
+
+        return form
+
+    # -------------------------------------------------------------------------
+    @staticmethod
+    def keyhash(key, code):
+        """
+            Generate a hash of the activation code using
+            the registration key
+
+            Args:
+                key: the registration key
+                code: the activation code
+
+            Returns:
+                the hash as string
+        """
+
+        crypt = CRYPT(key=key, digest_alg="sha512", salt=None)
+        return str(crypt(code.upper())[0])
 
     # -------------------------------------------------------------------------
     def profile(self,
@@ -5686,143 +5726,5 @@ Please go to %(url)s to approve this user."""
             return (table.organisation_id == root_org) | (table.organisation_id == None)
         else:
             return (table.organisation_id == None)
-
-    # -------------------------------------------------------------------------
-    def is_user_locked(self, user):
-        """
-            Check whether the user account is locked
-            Args:
-                user: the user record
-        """
-        if user:
-          if user.locked:
-              # Check if the lock has expired
-              if user.locked_until:
-                  now = datetime.datetime.now(datetime.timezone.utc)
-                  if user.locked_until.replace(tzinfo=datetime.timezone.utc) > now:
-                      return True
-        return False
-
-    # -------------------------------------------------------------------------
-    def lock_user(self, user, locked_until=None):
-        """
-            Lock the user account
-            Args:
-                user: the user record
-                locked_until: datetime until which the account is locked (default: indefinite)
-        """
-        db = current.db
-        table = self.settings.table_user
-        messages = self.messages
-        if user:
-          # Get the Auth Lock settings
-          self.log_event(messages.user_locked_log, user)
-          if not locked_until:
-              locked_until = datetime.datetime.max.replace(tzinfo=datetime.timezone.utc)
-          # Update the User's record
-          user.locked = True
-          user.failed_attempts = 0
-          user.locked_until = locked_until
-          query = (table.id == user.id)
-          db(query).update(locked=True,
-                           failed_attempts=0,
-                           locked_until=locked_until)
-          # Notify the user by email
-          self.send_user_locked_email(user)
-
-    # -------------------------------------------------------------------------
-    def unlock_user(self, user, notify=False):
-        """
-            Unlock the user account
-            Args:
-                user: the user record
-        """
-        db = current.db
-        table = self.settings.table_user
-        if user:
-          # Update the User's record
-          user.locked = False
-          user.failed_attempts = 0
-          user.locked_until = None
-          query = (table.id == user.id)
-          db(query).update(locked=False,
-                           failed_attempts=0,
-                           locked_until=None)
-          if notify:
-              self.send_user_unlocked_email(user)
-
-    # -------------------------------------------------------------------------
-    def is_session_locked(self):
-        """
-            Check whether the session is locked
-        """
-        session = current.session
-        if session.locked:
-            # Check if the lock has expired
-            if session.locked_until:
-                now = datetime.datetime.now(datetime.timezone.utc)
-                if session.locked_until.replace(tzinfo=datetime.timezone.utc) > now:
-                    return True
-        return False
-
-    # -------------------------------------------------------------------------
-    def lock_session(self, user = None):
-        """
-            Lock the session (and possibly the user account) if there have
-            been too many failed login attempts.
-            Args:
-                user: the user record (or None)
-        """
-        session = current.session
-        deployment_settings = current.deployment_settings
-        messages = self.messages
-        # Get the Auth Lock settings
-        failed_login_count = deployment_settings.get_auth_lock_failed_login_count()
-        failed_login_reset = deployment_settings.get_auth_lock_failed_login_reset()
-        failed_login_reset_admin = deployment_settings.get_auth_lock_failed_login_reset_admin()
-
-        # Check if the Failed Login Count is greater than 0 (0 means no lock policy)
-        if failed_login_count > 0:
-            # Track failed login attempts in the session
-            failed_attempts = session.failed_attempts or 0
-            session.failed_attempts = failed_attempts + 1
-            # If there is an existing user
-            if user:
-                # Also track on the user record
-                failed_attempts = user.failed_attempts or 0
-                user.failed_attempts = failed_attempts + 1
-                user.update_record()
-            # Check if we need to lock the session or the user account
-            if session.failed_attempts >= failed_login_count \
-                or (user and user.failed_attempts >= failed_login_count):
-                # Set the Lock Timeout
-                if user and self.has_membership(user_id=user.id, role="ADMIN"):
-                  locked_until = datetime.datetime.now(datetime.timezone.utc) + \
-                                 datetime.timedelta(seconds=failed_login_reset_admin)
-                else:
-                    if failed_login_reset:
-                      locked_until = datetime.datetime.now(datetime.timezone.utc) + \
-                                     datetime.timedelta(seconds=failed_login_reset)
-                    else:
-                      locked_until = datetime.datetime.max.replace(tzinfo=datetime.timezone.utc)
-                # Lock user account if they are not an Admin
-                if user:
-                    self.lock_user(user, locked_until)
-                # Lock the session regardless
-                session.locked = True
-                session.locked_until = locked_until
-                session.failed_attempts = 0
-                session.error = messages.login_attempts_exceeded
-
-    # -------------------------------------------------------------------------
-    def unlock_session(self):
-        """
-            Unlock the session and user account
-        """
-        session = current.session
-        # If the user had been locked, unlock them now
-        session.locked = False
-        session.failed_attempts = 0
-        session.locked_until = None
 
 # END =========================================================================

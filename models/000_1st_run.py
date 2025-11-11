@@ -80,4 +80,7 @@ current.MAX_FILENAME_LENGTH = 255 # Defined early for use by S3Config.
 import s3cfg
 current.deployment_settings = deployment_settings = settings = s3cfg.S3Config()
 
+if current.session.invalid:
+    raise HTTP(423, "Invalid Session")
+
 # END =========================================================================

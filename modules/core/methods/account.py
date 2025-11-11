@@ -48,13 +48,13 @@ class ManageUserAccount(CRUDMethod):
         self.next = URL(args=[], vars={})
 
         if method == "disable":
-            output = self.disable_user(r, **args)
+            self.disable_user(r, **args)
         elif method == "enable":
-            output = self.enable_user(r, **args)
+            self.enable_user(r, **args)
         elif method == "approve":
-            output = self.approve_user(r, **args)
+            self.approve_user(r, **args)
         elif method == "link":
-            output = self.link_user(r, **args)
+            self.link_user(r, **args)
         else:
             r.error(405, current.ERROR.BAD_METHOD)
 
@@ -62,7 +62,7 @@ class ManageUserAccount(CRUDMethod):
         if r.http != "POST":
             redirect(self.next)
 
-        return output
+        return current.xml.json_message()
 
     # -------------------------------------------------------------------------
     def disable_user(self, r, **args):
@@ -96,28 +96,29 @@ class ManageUserAccount(CRUDMethod):
 
         # Confirm
         session.confirmation = T("User Account has been Disabled")
-        return None
 
     # -------------------------------------------------------------------------
     def enable_user(self, r, **args):
-        """ Re-enable a disabled user account """
+        """ Re-enable a disabled|blocked|failed user account """
 
         T = current.T
         auth = current.auth
 
         # Check user account
         user = r.record
-        if user.registration_key != "disabled":
+        if user.registration_key not in ("disabled", "blocked", "failed"):
             r.error(400, T("User Account not Disabled"), next=self.next)
 
-        # Enable user account
-        user.update_record(registration_key=None)
+        # Enable/unlock user account
+        user.update_record(registration_key = None,
+                           failed_attempts = 0,
+                           locked_until = None,
+                           )
 
         # Log event
         auth.log_event(auth.messages.user_enabled_log, {"user_id": user.id})
 
         current.session.confirmation = T("User Account has been Re-enabled")
-        return None
 
     # -------------------------------------------------------------------------
     def approve_user(self, r, **args):
@@ -141,7 +142,6 @@ class ManageUserAccount(CRUDMethod):
         auth.log_event(auth.messages.user_enabled_log, {"user_id": user.id})
 
         current.session.confirmation = T("User Account has been Approved")
-        return None
 
     # -------------------------------------------------------------------------
     def link_user(self, r, **args):
@@ -153,6 +153,5 @@ class ManageUserAccount(CRUDMethod):
         current.auth.s3_link_user(r.record)
 
         current.session.confirmation = T("User has been (re)linked to Person and Human Resource record")
-        return None
 
 # END =========================================================================
