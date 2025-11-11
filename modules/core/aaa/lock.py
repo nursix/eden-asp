@@ -123,34 +123,48 @@ class AccountLockingMixin:
                 self.send_user_locked_email(user)
 
     # -------------------------------------------------------------------------
-    def unlock_user(self, user, notify=False):
+    def unlock_user(self, user, log=None, notify=False):
         """
             Unlocks a previously locked user account
 
             Args:
                 user: the user record
+                log: the message to write to the auth_event log
+                notify: notify the user about the unlocking
+
+            Note:
+                Logging and notification should only happen if
+                the unlocking is an explicit action by a user,
+                but not if it happens as an implied rule of a
+                successful login
         """
 
         if user:
-            key = user.registration_key
-            if key == LOCKED:
-                key = None
-            update = {"registration_key": key,
-                      "failed_attempts": 0,
-                      "locked_until": None,
-                      }
 
-            table = self.settings.table_user
-            current.db(table.id == user.id).update(**update)
+            update = {}
 
-            user.update(update)
+            if user.registration_key == LOCKED:
+                update["registration_key"] = None
+            else:
+                log = notify = False
+            if "failed_attempts" not in user or user.failed_attempts:
+                update["failed_attempts"] = 0
+            if "locked_until" not in user or user.locked_until:
+                update["locked_until"] = None
 
-            # TODO Log the event
-            #self.log_event(self.messages.user_unlocked_log, user)
+            if update:
+                table = self.settings.table_user
+                current.db(table.id == user.id).update(**update)
 
-            # Notify the user by email
-            if notify and user.locked:
-                self.send_user_unlocked_email(user)
+                user.update(update)
+
+                # Log the event
+                if log:
+                    self.log_event(log, user)
+
+                # Notify the user by email
+                if notify:
+                    self.send_user_unlocked_email(user)
 
     # -------------------------------------------------------------------------
     def send_user_locked_email(self, user):
