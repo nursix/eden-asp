@@ -89,9 +89,18 @@ class AccountLockingMixin:
 
             if failed_attempts >= max_failed_logins:
                 # Mandatory lock-timeout for ADMIN accounts
+                # Check directly in database since user is not logged in yet
+                db = current.db
                 ADMIN = self.get_system_roles().ADMIN
-                if not lock_timeout and \
-                   self.has_membership(user_id=user.id, role=ADMIN):
+             
+
+                mtable = db.auth_membership
+                query = (mtable.user_id == user.id) & \
+                        (mtable.group_id == ADMIN) & \
+                        (mtable.deleted == False)
+                is_admin = db(query).select(mtable.id, limitby=(0, 1)).first() is not None
+
+                if not lock_timeout and is_admin:
                     lock_timeout = 300 # seconds
                 # Determine lock-timeout
                 if lock_timeout:
