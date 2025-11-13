@@ -682,7 +682,7 @@ def tropo():
         pass
 
 # =============================================================================
-@auth.s3_requires_membership(1)
+@auth.requires_membership(1)
 def sms_outbound_gateway():
     """ SMS Outbound Gateway selection for the messaging framework """
 
@@ -1158,7 +1158,7 @@ def twilio_channel():
     return crud_controller()
 
 # -----------------------------------------------------------------------------
-@auth.s3_requires_membership(1)
+@auth.requires_membership(1)
 def sms_modem_channel():
     """
         RESTful CRUD controller for modem channels
@@ -1203,7 +1203,7 @@ def sms_modem_channel():
     return crud_controller()
 
 #------------------------------------------------------------------------------
-@auth.s3_requires_membership(1)
+@auth.requires_membership(1)
 def sms_smtp_channel():
     """
         RESTful CRUD controller for SMTP to SMS Outbound channels
@@ -1245,7 +1245,7 @@ def sms_smtp_channel():
     return crud_controller()
 
 #------------------------------------------------------------------------------
-@auth.s3_requires_membership(1)
+@auth.requires_membership(1)
 def sms_webapi_channel():
     """
         RESTful CRUD controller for Web API channels
@@ -1299,7 +1299,7 @@ def sms_webapi_channel():
     return crud_controller()
 
 # -----------------------------------------------------------------------------
-@auth.s3_requires_membership(1)
+@auth.requires_membership(1)
 def tropo_channel():
     """
         RESTful CRUD controller for Tropo channels
@@ -1331,7 +1331,7 @@ def tropo_channel():
     return crud_controller()
 
 # -----------------------------------------------------------------------------
-@auth.s3_requires_membership(1)
+@auth.requires_membership(1)
 def twitter_channel():
     """
         RESTful CRUD controller for Twitter channels
@@ -2071,7 +2071,7 @@ def process_twitter_outbox():
 # =============================================================================
 # Enabled only for testing:
 #
-@auth.s3_requires_membership(1)
+@auth.requires_membership(1)
 def facebook_post():
     """ Post to Facebook """
 
@@ -2152,7 +2152,7 @@ def facebook_post():
 # =============================================================================
 # Enabled only for testing:
 #
-@auth.s3_requires_membership(1)
+@auth.requires_membership(1)
 def twitter_post():
     """ Post to Twitter """
 
@@ -2233,7 +2233,7 @@ def twitter_post():
 # =============================================================================
 # Enabled only for testing:
 #
-@auth.s3_requires_membership(1)
+@auth.requires_membership(1)
 def tag():
     """ RESTful CRUD controller """
 

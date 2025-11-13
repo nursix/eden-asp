@@ -116,9 +116,9 @@ class AuthS3(AccountLockingMixin, Auth):
             - s3_has_permission
             - s3_accessible_query
 
-        - S3 variants of web2py authorization methods:
-            - s3_has_membership
-            - s3_requires_membership
+        - S3 overrides of web2py authorization methods:
+            - has_membership (with deleted flag support)
+            - requires_membership
 
         - S3 record ownership methods:
             - s3_make_session_owner
@@ -4944,42 +4944,59 @@ Please go to %(url)s to approve this user."""
     # -------------------------------------------------------------------------
     # S3 Variants of web2py Authorization Methods
     # -------------------------------------------------------------------------
-    def s3_has_membership(self, group_id=None, user_id=None, role=None):
+    def has_membership(self, group_id=None, user_id=None, role=None):
         """
             Checks if user is member of group_id or role
 
-            Extends Web2Py's requires_membership() to add new functionality:
+            Extends Web2Py's has_membership() to add:
+                - Respect for the deleted flag in auth_membership
                 - Custom Flash style
-                - Uses s3_has_role()
+
+            Args:
+                group_id: the group ID to check membership for
+                user_id: the user ID to check (defaults to current user)
+                role: the role name (alternative to group_id)
+
+            Returns:
+                True if the user is a member of the group, False otherwise
         """
 
         # Allow override
         if self.override:
             return True
 
+        # Determine user_id
+        if not user_id and self.user:
+            user_id = self.user.id
+
+        # Resolve group_id from role if needed
         group_id = group_id or self.id_group(role)
         try:
             group_id = int(group_id)
         except:
-            group_id = self.id_group(group_id) # interpret group_id as a role
+            group_id = self.id_group(group_id)  # interpret group_id as a role
 
-        has_role = self.s3_has_role(group_id)
+        # Check membership in database with deleted flag
+        r = False
+        if group_id and user_id:
+            membership = self.table_membership()
+            query = (membership.user_id == user_id) & \
+                    (membership.group_id == group_id) & \
+                    (membership.deleted == False)
+            if self.db(query).select(membership.id, limitby=(0, 1)).first():
+                r = True
 
+        # Log the check
         log = self.messages.has_membership_log
         if log:
-            if not user_id and self.user:
-                user_id = self.user.id
             self.log_event(log, {"user_id": user_id,
                                  "group_id": group_id,
-                                 "check": has_role,
+                                 "check": r,
                                  })
-        return has_role
-
-    # Override original method
-    has_membership = s3_has_membership
+        return r
 
     # -------------------------------------------------------------------------
-    def s3_requires_membership(self, role):
+    def requires_membership(self, role):
         """
             Decorator that prevents access to action if not logged in or
             if user logged in is not a member of group_id. If role is
@@ -5009,9 +5026,6 @@ Please go to %(url)s to approve this user."""
             return f
 
         return decorator
-
-    # Override original method
-    requires_membership = s3_requires_membership
 
     # -------------------------------------------------------------------------
     # Record Ownership
