@@ -4970,6 +4970,7 @@ Please go to %(url)s to approve this user."""
             user_id = self.user.id
 
         # Resolve group_id from role if needed
+        # TODO support group UIDs (e.g. "ADMIN" instead of 1)
         group_id = group_id or self.id_group(role)
         try:
             group_id = int(group_id)
@@ -4977,23 +4978,23 @@ Please go to %(url)s to approve this user."""
             group_id = self.id_group(group_id)  # interpret group_id as a role
 
         # Check membership in database with deleted flag
-        r = False
+        ret = False
         if group_id and user_id:
             membership = self.table_membership()
             query = (membership.user_id == user_id) & \
                     (membership.group_id == group_id) & \
                     (membership.deleted == False)
             if self.db(query).select(membership.id, limitby=(0, 1)).first():
-                r = True
+                ret = True
 
         # Log the check
         log = self.messages.has_membership_log
         if log:
             self.log_event(log, {"user_id": user_id,
                                  "group_id": group_id,
-                                 "check": r,
+                                 "check": ret,
                                  })
-        return r
+        return ret
 
     # -------------------------------------------------------------------------
     def requires_membership(self, role):
