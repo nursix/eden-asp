@@ -17,7 +17,7 @@ def index():
     return dict(module_name=module_name)
 
 # -----------------------------------------------------------------------------
-@auth.s3_requires_membership(1)
+@auth.requires_membership(1)
 def icategory():
     """
         Incident Categories, RESTful controller
