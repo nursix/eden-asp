@@ -110,7 +110,7 @@ class PatientSummary(CRUDMethod):
         output = patient.pdf()
 
         # Generate individual filename
-        filename = "patient-summary-%s-%s" % (
+        filename = "visit-summary-%s-%s" % (
                         r.record.id,
                         current.calendar.format_datetime(current.request.utcnow,
                                                          dtfmt = "%Y%m%d%H%M",
@@ -578,7 +578,7 @@ class PatientSummaryTemplate(BaseDocTemplate):
                          rightMargin = margins[1],
                          bottomMargin = margins[2],
                          leftMargin = margins[3],
-                         title = "Patient Summary",
+                         title = "Visit Summary",
                          author = unit_name,
                          creator = system_name,
                          )
@@ -735,7 +735,7 @@ class PatientSummaryTemplate(BaseDocTemplate):
         # Patient data
         x = self.leftMargin
         y = h - self.topMargin - 4*cm
-        x = box(x, y, 100, label=T("Pt.#"), text=visit.get("refno"))
+        x = box(x, y, 100, label=T("Visit #"), text=visit.get("refno"))
         if person:
             x = box(x, y, rw(x)-180, label=T("Patient"), text=person.get("name"))
             x = box(x, y, 60, label=T("Gender"), text=person.get("gender"))

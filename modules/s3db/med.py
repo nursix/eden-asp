@@ -379,7 +379,7 @@ class MedUnitModel(DataModel):
 
 # =============================================================================
 class MedPatientModel(DataModel):
-    """ Patient (Treatment Occasion) Data Model """
+    """ Patient (Visit) Data Model """
 
     names = ("med_patient",
              "med_patient_id",
@@ -440,10 +440,9 @@ class MedPatientModel(DataModel):
 
         # ---------------------------------------------------------------------
         # Patient
-        # - occasion when a person receives medical care (=is a patient)
-        # - there can be multiple (successive) patient records for a person,
-        #   but only one (active) at a time
-        # TODO method to export entire patient record as PDF
+        # - occasion when a person receives medical care (=visit)
+        # - there can be multiple (successive) visits for a person,
+        #   but only one (active) visit at a time
         #
         tablename = "med_patient"
         define_table(tablename,
@@ -455,7 +454,7 @@ class MedPatientModel(DataModel):
                      self.med_area_id(),
 
                      Field("refno",
-                           label = T("Pt.#"),
+                           label = T("Visit #"),
                            writable = False,
                            ),
                      # The patient
@@ -619,16 +618,16 @@ class MedPatientModel(DataModel):
 
         # CRUD Strings
         crud_strings[tablename] = Storage(
-            label_create = T("Create Patient"),
-            title_display = T("Patient"),
-            title_list = T("Patients"),
-            title_update = T("Edit Patient"),
-            label_list_button = T("List Patients"),
-            label_delete_button = T("Delete Patient"),
-            msg_record_created = T("Patient added"),
-            msg_record_modified = T("Patient updated"),
-            msg_record_deleted = T("Patient deleted"),
-            msg_list_empty = T("No Patients currently registered"),
+            label_create = T("Add Visit"),
+            title_display = T("Visit"),
+            title_list = T("Visits"),
+            title_update = T("Edit Visit"),
+            label_list_button = T("List Visits"),
+            label_delete_button = T("Delete Visit"),
+            msg_record_created = T("Visit added"),
+            msg_record_modified = T("Visit updated"),
+            msg_record_deleted = T("Visit deleted"),
+            msg_list_empty = T("No Visits currently registered"),
             )
 
         # ---------------------------------------------------------------------
@@ -649,7 +648,7 @@ class MedPatientModel(DataModel):
     def patient_onvalidation(form):
         """
             Patient form validation:
-            - there must be only one open patient record per person
+            - there must be only one current visit per person
         """
 
         T = current.T
@@ -682,7 +681,7 @@ class MedPatientModel(DataModel):
                 query &= (table.deleted == False)
                 row = db(query).select(table.id, limitby=(0, 1)).first()
                 if row:
-                    error = T("Person already has an ongoing patient registration")
+                    error = T("There is already an ongoing visit for this patient")
                     for fn in ("person_id", "status", "reason"):
                         if fn in form.vars:
                             form.errors[fn] = error
@@ -2723,7 +2722,7 @@ class med_DocEntityRepresent(S3Represent):
                  ):
         """
             Args:
-                patient_label: label for patient records (default: "Treatment Occasion")
+                patient_label: label for patient records (default: "Visit")
                 show_link: show representation as clickable link
         """
 
@@ -2736,7 +2735,7 @@ class med_DocEntityRepresent(S3Represent):
         if patient_label:
             self.patient_label = patient_label
         else:
-            self.patient_label = T("Treatment Occasion")
+            self.patient_label = T("Visit")
 
     # -------------------------------------------------------------------------
     def lookup_rows(self, key, values, fields=None):
@@ -3241,10 +3240,10 @@ def med_patient_header(record):
     else:
         area = ""
 
-    # Patient Number
+    # Visit Number
     if record.refno:
         refno = SPAN(record.refno,
-                     _title = T("Pt.#"),
+                     _title = T("Visit #"),
                      _class = "med-refno",
                      )
     else:
@@ -3347,7 +3346,7 @@ def med_rheader(r, tabs=None):
                         (T("Background"), "anamnesis"),
                         (T("Vaccinations"), "vaccination"),
                         (T("Medication"), "medication"),
-                        (T("Treatment Occasions"), "patient"),
+                        (T("Visits"), "patient"),
                         (T("Vital Signs"), "vitals", highlight),
                         (T("Status"), "med_status", highlight),
                         (T("Treatment"), "treatment", highlight),
@@ -3435,7 +3434,7 @@ def med_rheader(r, tabs=None):
                     areas_label = T("Rooms")
                 tabs = [(T("Basic Details"), None),
                         (areas_label, "area"),
-                        (T("Current Patients"), "patient"),
+                        (T("Current Visits"), "patient"),
                         ]
 
             rheader_fields = [["organisation_id"],

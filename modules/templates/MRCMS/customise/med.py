@@ -7,7 +7,6 @@
 import datetime
 
 from gluon import current, A
-from gluon.storage import Storage
 
 from core import CustomForm, FS, ICON
 
@@ -20,8 +19,6 @@ def configure_med_case_file(r):
     db = current.db
     s3db = current.s3db
     auth = current.auth
-
-    s3 = current.response.s3
 
     record = r.record
     resource = r.resource
@@ -122,7 +119,7 @@ def configure_med_case_file(r):
         else:
             priority = hazards = hazards_advice = comments = invalid = None
 
-        crud_form = CustomForm(# ------- Treatment Occasion ---------
+        crud_form = CustomForm(# ------- Visit ----------------------
                                "unit_id",
                                "date",
                                "refno",
@@ -144,7 +141,7 @@ def configure_med_case_file(r):
                                invalid,
                                )
 
-        subheadings = {"unit_id": T("Treatment Occasion"),
+        subheadings = {"unit_id": T("Visit"),
                        "hazards": T("Hazards Advice"),
                        "epicrisis_situation": T("Progress"),
                        "comments": T("Administrative"),
@@ -172,20 +169,6 @@ def configure_med_case_file(r):
                             deletable = False,
                             open_read_first = True,
                             )
-
-        # Adapt CRUD strings to perspective
-        s3.crud_strings["med_patient"] = Storage(
-            label_create = T("Add Treatment Occasion"),
-            title_display = T("Treatment Occasion"),
-            title_list = T("Treatment Occasions"),
-            title_update = T("Edit Treatment Occasion"),
-            label_list_button = T("List Treatment Occasions"),
-            # label_delete_button = T("Delete Treatment Occasion"),
-            msg_record_created = T("Treatment Occasion added"),
-            msg_record_modified = T("Treatment Occasion updated"),
-            # msg_record_deleted = T("Treatment Occasion deleted"),
-            msg_list_empty = T("No Treatment Occasions currently registered"),
-            )
 
     elif component_name == "vitals":
         # Require active patient file for adding new record
