@@ -220,7 +220,7 @@ def configure_med_case_file(r):
         component.table.patient_id.default = current_patient_id
 
         list_fields = ["date",
-                       (T("Occasion"), "patient_id"),
+                       (T("Visit"), "patient_id"),
                        "details",
                        "status",
                        "start_date",
