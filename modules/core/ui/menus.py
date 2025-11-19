@@ -1146,9 +1146,9 @@ class OptionsMenu:
         ADMIN = current.session.s3.system_roles.ADMIN
 
         return M(c="med")(
-                    M("Current Patients", f="patient")(
+                    M("Current Visits", f="patient")(
                         M("Create", m="create"),
-                        M("Former Patients", f="patient", vars={"closed": "only"}),
+                        M("Concluded Visits", f="patient", vars={"closed": "only"}),
                         ),
                     # M("Persons", f="person"),
                     M("Units", f="unit")(

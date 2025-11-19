@@ -413,14 +413,14 @@ class OptionsMenu(default.OptionsMenu):
         if is_case_reader:
             menu = M()(
                         M("Current Cases", c="med", f="person"),
-                        M("Patients", c="med", f="patient")(
+                        M("Visits", c="med", f="patient")(
                             M("Create", m="create"),
-                            M("Former Patients", vars={"closed": "only"}),
+                            M("Concluded Visits", vars={"closed": "only"}),
                             ),
                         )
         else:
             menu = M()(
-                        M("Patients", c="med", f="patient")(
+                        M("Visits", c="med", f="patient")(
                             M("Create", m="create"),
                             M("Case Files", f="person"),
                             ),

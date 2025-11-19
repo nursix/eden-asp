@@ -123,7 +123,7 @@ def dvr_rheader(r, tabs=None):
                         tabs.extend([(T("Background"), "anamnesis"),
                                      (T("Vaccinations"), "vaccination"),
                                      (T("Medication"), "medication"),
-                                     (T("Treatment Occasions"), "patient"),
+                                     (T("Visits"), "patient"),
                                      (T("Vital Signs"), "vitals", highlight),
                                      (T("Status"), "med_status", highlight),
                                      (T("Treatment"), "treatment", highlight),

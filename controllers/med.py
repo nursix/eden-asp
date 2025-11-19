@@ -113,7 +113,7 @@ def area():
 
 # =============================================================================
 def patient():
-    """ Patients - CRUD Controller """
+    """ Visits - CRUD Controller """
 
     user = current.auth.user
     user_id = user.id if user else None
@@ -151,14 +151,14 @@ def patient():
                 open_status = ("ARRIVED", "TREATMENT")
                 if closed == "only":
                     query &= ~(FS("status").belongs(open_status))
-                    list_title = T("Former Patients")
+                    list_title = T("Concluded Visits")
                 elif closed not in ("1", "include"):
                     query &= FS("status").belongs(open_status)
-                    list_title = T("Current Patients")
+                    list_title = T("Current Visits")
                 else:
-                    list_title = T("Patients")
+                    list_title = T("Visits")
             else:
-                list_title = T("Invalid Patient Records")
+                list_title = T("Invalid Visits")
 
             resource.add_filter(query)
             s3.crud_strings["med_patient"]["title_list"] = list_title
@@ -455,20 +455,6 @@ def person():
                                   insertable = not patient_id,
                                   deletable = False,
                                   )
-
-            # Adapt CRUD strings to perspective
-            s3.crud_strings["med_patient"] = Storage(
-                label_create = T("Add Treatment Occasion"),
-                title_display = T("Treatment Occasion"),
-                title_list = T("Treatment Occasions"),
-                title_update = T("Edit Treatment Occasion"),
-                label_list_button = T("List Treatment Occasions"),
-                # label_delete_button = T("Delete Treatment Occasion"),
-                msg_record_created = T("Treatment Occasion added"),
-                msg_record_modified = T("Treatment Occasion updated"),
-                # msg_record_deleted = T("Treatment Occasion deleted"),
-                msg_list_empty = T("No Treatment Occasions currently registered"),
-                )
 
         elif component_name == "vitals":
             # Require active patient file for adding new record
