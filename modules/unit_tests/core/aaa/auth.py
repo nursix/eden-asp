@@ -291,7 +291,7 @@ class SetRolesTests(unittest.TestCase):
             current.db.rollback()
 
 # =============================================================================
-class HasRoleTests(unittest.TestCase):
+class HasMembershipTests(unittest.TestCase):
 
     def setUp(self):
 
@@ -2545,7 +2545,7 @@ if __name__ == "__main__":
     run_suite(
         AuthUtilsTests,
         SetRolesTests,
-        HasRoleTests,
+        HasMembershipTests,
         RoleAssignmentTests,
         RecordOwnershipTests,
         RecordApprovalTests,
