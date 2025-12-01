@@ -4968,6 +4968,11 @@ Please go to %(url)s to approve this user."""
         # Determine user_id
         if not user_id and self.user:
             user_id = self.user.id
+        elif user_id:
+            # Validate the user_id: invalid user_id must not pass has_membership test
+            utable = self.table_user()
+            if not self.db(utable.id==user_id).select(utable.id, limitby=(0, 1)).first():
+                return False
 
         # Resolve group_id from role if needed
         # TODO support group UIDs (e.g. "ADMIN" instead of 1)
@@ -4977,9 +4982,16 @@ Please go to %(url)s to approve this user."""
         except:
             group_id = self.id_group(group_id)  # interpret group_id as a role
 
-        # Check membership in database with deleted flag
         ret = False
-        if group_id and user_id:
+
+        sr = self.get_system_roles()
+        if group_id == sr.ANONYMOUS:
+            # All users are members of the ANONYMOUS group
+            ret = True
+        elif group_id == sr.AUTHENTICATED and user_id:
+            # All registered users are members of the AUTHENTICATED group
+            ret = True
+        elif group_id and user_id:
             membership = self.table_membership()
             query = (membership.user_id == user_id) & \
                     (membership.group_id == group_id) & \
