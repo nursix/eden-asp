@@ -25,7 +25,9 @@
     OTHER DEALINGS IN THE SOFTWARE.
 """
 
-__all__ = ("WaterModel",)
+__all__ = ("WaterModel",
+           "WaterWellModel",
+           )
 
 from gluon import *
 from gluon.storage import Storage
@@ -33,11 +35,44 @@ from ..core import *
 from core.ui.layouts import PopupLink
 
 # =============================================================================
+class WaterWellModel(DataModel):
+
+    names = (#"water_well_type",
+             "water_well",
+             #"water_well_status",
+             )
+
+    def model(self):
+
+        T = current.T
+        db = current.db
+
+        crud_strings = current.response.s3.crud_strings
+        define_table = self.define_table
+        location_id = self.gis_location_id
+
+        # -----------------------------------------------------------------------------
+        # Well
+        #
+        tablename = "water_well"
+        define_table(tablename,
+                     Field("name",
+                           label = T("Name"),
+                           requires = IS_NOT_EMPTY(),
+                           ),
+                     location_id(
+                        widget = LocationSelector(catalog_layers = True,
+                                                  points = True,
+                                                  )
+                        ),
+                     CommentsField(),
+                     )
+
+# =============================================================================
 class WaterModel(DataModel):
     """
         Water Sources
     """
-
     names = ("water_zone_type",
              "water_zone",
              "water_river",

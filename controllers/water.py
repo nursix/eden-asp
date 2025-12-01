@@ -15,6 +15,12 @@ def index():
     return s3db.cms_index(module)
 
 # -----------------------------------------------------------------------------
+def well():
+    """ Water Wells: CRUD Controller """
+
+    return crud_controller()
+
+# -----------------------------------------------------------------------------
 def debris_basin():
     """ Debris Basins, RESTful controller """
 
