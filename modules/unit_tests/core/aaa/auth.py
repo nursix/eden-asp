@@ -291,6 +291,225 @@ class SetRolesTests(unittest.TestCase):
             current.db.rollback()
 
 # =============================================================================
+class HasMembershipTests(unittest.TestCase):
+
+    def setUp(self):
+
+        db = current.db
+        auth = current.auth
+        auth.s3_impersonate(None)
+
+        gtable = auth.settings.table_group
+        query = gtable.uuid.belongs(("TESTROLE1", "TESTROLE2"))
+        db(query).delete()
+
+        utable = auth.settings.table_user
+        query = utable.email.belongs(("test1@example.com", "test2@example.com"))
+        db(query).delete()
+
+        assign = False
+
+        # Create two test user accounts
+        if not hasattr(self, "user_ids"):
+            assign = True
+            users = (("Test1", "test1@example.com"),
+                     ("Test2", "test2@example.com"),
+                     )
+            user_ids = {}
+            for user in users:
+                user_ids[user[1]] = utable.insert(first_name=user[0], email=user[1])
+            self.user_ids = user_ids
+
+        # Create two test roles
+        if not hasattr(self, "role_ids"):
+            assign = True
+            role_ids = {
+                "TESTROLE1": auth.s3_create_role("Example Role 1", uid="TESTROLE1"),
+                "TESTROLE2": auth.s3_create_role("Example Role 2", uid="TESTROLE2"),
+                }
+            self.role_ids = role_ids
+
+        # Assign each user one of these roles
+        if assign:
+            auth.s3_assign_role(user_ids["test1@example.com"],
+                                role_ids["TESTROLE1"],
+                                )
+            auth.s3_assign_role(user_ids["test2@example.com"],
+                                role_ids["TESTROLE2"],
+                                )
+
+    @classmethod
+    def tearDownClass(cls):
+
+        auth = current.auth
+        auth.s3_impersonate(None)
+
+        gtable = auth.settings.table_group
+        query = gtable.uuid.belongs(("TESTROLE1", "TESTROLE2"))
+        current.db(query).delete()
+
+        utable = auth.settings.table_user
+        query = utable.email.belongs(("test1@example.com", "test2@example.com"))
+        current.db(query).delete()
+
+    # -------------------------------------------------------------------------
+    def testInvalidGroupID(self):
+
+        has_membership = current.auth.has_membership
+        self.assertFalse(has_membership(group_id=-1),
+                         "Membership test for nonexistent group must not succeed",
+                         )
+
+    def testNoGroupID(self):
+
+        has_membership = current.auth.has_membership
+        self.assertFalse(has_membership(group_id=None),
+                         "Membership test for no group must not succeed",
+                         )
+
+    # -------------------------------------------------------------------------
+    def testLoggedInHasRoleNoUserID(self):
+
+        auth = current.auth
+        auth.s3_impersonate("test2@example.com")
+        sr = auth.get_system_roles()
+
+        has_membership = auth.has_membership
+
+        self.assertTrue(has_membership(group_id=sr.ANONYMOUS),
+                        "All users are member of the anonymous group",
+                        )
+        self.assertTrue(has_membership(group_id=sr.AUTHENTICATED),
+                        "All logged-in users are member in the authenticated group",
+                         )
+
+        role = self.role_ids["TESTROLE1"]
+        self.assertFalse(has_membership(group_id=role))
+        role = self.role_ids["TESTROLE2"]
+        self.assertTrue(has_membership(group_id=role))
+
+    # -------------------------------------------------------------------------
+    def testLoggedInHasRoleValidUserID(self):
+
+        auth = current.auth
+        auth.s3_impersonate("test1@example.com")
+        sr = auth.get_system_roles()
+
+        user_id = self.user_ids["test2@example.com"]
+        has_membership = auth.has_membership
+
+        self.assertTrue(has_membership(group_id=sr.ANONYMOUS, user_id=user_id),
+                        "All users are member of the anonymous group")
+        self.assertTrue(has_membership(group_id=sr.AUTHENTICATED, user_id=user_id),
+                        "All valid users are member of the authenticated group",
+                         )
+
+        role = self.role_ids["TESTROLE1"]
+        self.assertFalse(has_membership(group_id=role, user_id=user_id),
+                         "Role confirmed for logged-in user instead of specified user ID")
+        role = self.role_ids["TESTROLE2"]
+        self.assertTrue(has_membership(group_id=role, user_id=user_id),
+                        "Role not confirmed for specified user ID")
+
+    # -------------------------------------------------------------------------
+    def testLoggedInHasRoleInvalidUserID(self):
+
+        auth = current.auth
+        auth.s3_impersonate("test1@example.com")
+        sr = auth.get_system_roles()
+
+        user_id = -1
+        has_membership = auth.has_membership
+
+        self.assertFalse(has_membership(group_id=sr.ANONYMOUS, user_id=user_id),
+                         "Invalid user ID must not return any membership",
+                         )
+        self.assertFalse(has_membership(group_id=sr.AUTHENTICATED, user_id=user_id),
+                         "Invalid user ID must not return any membership",
+                         )
+
+        role = self.role_ids["TESTROLE1"]
+        self.assertFalse(has_membership(group_id=role, user_id=user_id),
+                         "Invalid user ID must not return any membership",
+                         )
+        role = self.role_ids["TESTROLE2"]
+        self.assertFalse(has_membership(group_id=role, user_id=user_id),
+                         "Invalid user ID must not return any membership",
+                         )
+
+    # -------------------------------------------------------------------------
+    def testAnonymousHasRoleNoUserID(self):
+
+        auth = current.auth
+        auth.s3_impersonate(None)
+        sr = auth.get_system_roles()
+
+        has_membership = auth.has_membership
+
+        self.assertTrue(has_membership(group_id=sr.ANONYMOUS),
+                        "All users are member of the anonymous group",
+                        )
+        self.assertFalse(has_membership(group_id=sr.AUTHENTICATED),
+                         "Anonymous users cannot be member in the authenticated group",
+                         )
+
+        role = self.role_ids["TESTROLE1"]
+        self.assertFalse(has_membership(group_id=role),
+                         "Anonymous users have no roles other than the anonymous role",
+                         )
+        role = self.role_ids["TESTROLE2"]
+        self.assertFalse(has_membership(group_id=role),
+                         "Anonymous users have no roles other than the anonymous role",
+                         )
+
+    # -------------------------------------------------------------------------
+    def testAnonymousHasRoleValidUserID(self):
+
+        auth = current.auth
+        auth.s3_impersonate(None)
+        sr = auth.get_system_roles()
+
+        user_id = self.user_ids["test1@example.com"]
+        has_membership = auth.has_membership
+
+        self.assertTrue(has_membership(group_id=sr.ANONYMOUS, user_id=user_id),
+                        "All users are member of the anonymous group")
+        self.assertTrue(has_membership(group_id=sr.AUTHENTICATED, user_id=user_id),
+                        "All valid users are member of the authenticated group",
+                         )
+
+        role = self.role_ids["TESTROLE1"]
+        self.assertTrue(has_membership(group_id=role, user_id=user_id))
+        role = self.role_ids["TESTROLE2"]
+        self.assertFalse(has_membership(group_id=role, user_id=user_id))
+
+    # -------------------------------------------------------------------------
+    def testAnonymousHasRoleInvalidUserID(self):
+
+        auth = current.auth
+        auth.s3_impersonate(None)
+        sr = auth.get_system_roles()
+
+        user_id = -1
+        has_membership = auth.has_membership
+
+        self.assertFalse(has_membership(group_id=sr.ANONYMOUS, user_id=user_id),
+                         "Invalid user ID must not return any membership",
+                         )
+        self.assertFalse(has_membership(group_id=sr.AUTHENTICATED, user_id=user_id),
+                         "Invalid user ID must not return any membership",
+                         )
+
+        role = self.role_ids["TESTROLE1"]
+        self.assertFalse(has_membership(group_id=role, user_id=user_id),
+                         "Invalid user ID must not return any membership",
+                         )
+        role = self.role_ids["TESTROLE2"]
+        self.assertFalse(has_membership(group_id=role, user_id=user_id),
+                         "Invalid user ID must not return any membership",
+                         )
+
+# =============================================================================
 class RoleAssignmentTests(unittest.TestCase):
     """ Test role assignments """
 
@@ -2326,6 +2545,7 @@ if __name__ == "__main__":
     run_suite(
         AuthUtilsTests,
         SetRolesTests,
+        HasMembershipTests,
         RoleAssignmentTests,
         RecordOwnershipTests,
         RecordApprovalTests,
