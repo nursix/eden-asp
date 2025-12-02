@@ -1612,6 +1612,10 @@ class OptionsMenu:
         """ Water: Floods, etc """
 
         return M(c="water")(
+                    M("Wells", f="well")(
+                        M("Create", m="create"),
+                        M("Map", m="map"),
+                    ),
                     M("Gauges", f="gauge")(
                         M("Create", m="create"),
                         M("Map", m="map"),

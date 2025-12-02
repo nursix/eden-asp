@@ -1,0 +1,2 @@
+UUID,Name,Region Country,Default Country,Zoom,Lat,Lon,Projection,LatMin,LatMax,LonMin,LonMax,Marker,Geocoder
+SITE_DEFAULT,Default,,LK,10,7.47029038581928,80.7499328097172,900913,5,10,79,82,marker_red,True
