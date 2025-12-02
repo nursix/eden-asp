@@ -43,9 +43,11 @@ class MainMenu(default.MainMenu):
         auth = current.auth
         settings = current.deployment_settings
 
-        menu = [MM("Requests", c="req", f="req"),
-                MM("Inventory", c="inv", f="warehouse"),
+        menu = [MM("Beneficiaries", c="dvr", f="person"),
+                MM("Shelters", c="cr", f="shelter"),
                 MM("Water Sources", c="water", f="index"),
+                MM("Requests", c="req", f="req"),
+                MM("Inventory", c="inv", f="warehouse"),
                 MM("Organizations", c="org", f="organisation"),
                 ]
 
