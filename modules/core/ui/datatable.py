@@ -30,7 +30,7 @@ __all__ = ("DataTable",
 
 import re
 
-from gluon import current, URL, \
+from gluon import current, URL, xmlescape, \
                   A, BUTTON, DIV, FORM, INPUT, LABEL, SPAN, \
                   TABLE, TBODY, TD, TH, THEAD, TR
 
@@ -617,7 +617,7 @@ class DataTable:
                 if colname == "BULK":
                     append(str(bulk_checkbox(row[dbid])))
                 else:
-                    append(s3_str(row[colname]))
+                    append(s3_str(xmlescape(row[colname])))
             addrow(details)
 
         output = {"recordsTotal": totalrows,
