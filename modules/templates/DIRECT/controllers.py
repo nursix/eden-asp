@@ -1,5 +1,5 @@
 """
-    Custom controllers for FRCP
+    Custom controllers for DIRECT
 
     License: MIT
 """

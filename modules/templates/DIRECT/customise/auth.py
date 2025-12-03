@@ -1,5 +1,5 @@
 """
-    AUTH module customisations for FRCP
+    AUTH module customisations for DIRECT
 
     License: MIT
 """
