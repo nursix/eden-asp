@@ -2001,7 +2001,7 @@ def fema():
 # =============================================================================
 def need():
     """
-        RESTful CRUD Controller for Needs
+        Needs: CRUD Controller
     """
 
     def prep(r):

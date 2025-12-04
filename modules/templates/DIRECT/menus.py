@@ -40,14 +40,12 @@ class MainMenu(default.MainMenu):
     def menu_modules(cls):
         """ Modules Menu """
 
-        auth = current.auth
-        settings = current.deployment_settings
-
-        menu = [MM("Beneficiaries", c="dvr", f="person"),
+        menu = [MM("Needs", c="req", f="need"),
+                #MM("Beneficiaries", c="dvr", f="person"),
                 MM("Shelters", c="cr", f="shelter"),
-                MM("Water Sources", c="water", f="index"),
-                MM("Requests", c="req", f="req"),
-                MM("Inventory", c="inv", f="warehouse"),
+                #MM("Water Sources", c="water", f="index"),
+                #MM("Inventory", c="inv", f="warehouse"),
+                MM("Assets", c="asset", f="asset"),
                 MM("Organizations", c="org", f="organisation"),
                 ]
 
@@ -157,7 +155,8 @@ class OptionsMenu(default.OptionsMenu):
     """ Custom Controller Menus """
 
     # -------------------------------------------------------------------------
-    def admin(self):
+    @staticmethod
+    def admin():
         """ ADMIN menu """
 
         if not current.auth.s3_has_role("ADMIN"):
@@ -201,38 +200,13 @@ class OptionsMenu(default.OptionsMenu):
     def org():
         """ ORG / Organization Registry """
 
-        org_menu = M("Organizations", f="organisation")
-
+        T = current.T
         auth = current.auth
 
-        ORG_GROUP_ADMIN = auth.get_system_roles().ORG_GROUP_ADMIN
-        has_role = auth.s3_has_role
-
-        if has_role(ORG_GROUP_ADMIN):
-            gtable = current.s3db.org_group
-            query = (gtable.deleted == False)
-            realms = auth.user.realms[ORG_GROUP_ADMIN] \
-                     if not has_role("ADMIN") else None
-            if realms is not None:
-                query = (gtable.pe_id.belongs(realms)) & query
-            groups = current.db(query).select(gtable.id,
-                                              gtable.name,
-                                              orderby = gtable.name,
-                                              )
-            for group in groups:
-                org_menu(M(group.name, f="organisation",
-                           vars = {"g": group.id}, translate = False,
-                           ))
-
-        org_menu(
-            M("My Organizations", vars={"mine": 1}, restrict="ORG_ADMIN"),
-            M("Create Organization", m="create", restrict="ORG_GROUP_ADMIN"),
-            )
+        ADMIN = current.session.s3.system_roles.ADMIN
 
         # Newsletter menu
         author = auth.s3_has_permission("create", "cms_newsletter", c="cms", f="newsletter")
-        T = current.T
-
         inbox_label = T("Inbox") if author else T("Newsletters")
         unread = current.s3db.cms_unread_newsletters()
         if unread:
@@ -241,51 +215,38 @@ class OptionsMenu(default.OptionsMenu):
             cms_menu = M("Newsletters", c="cms", f="read_newsletter")(
                             M(inbox_label, f="read_newsletter", translate=False),
                             M("Compose and Send", f="newsletter", p="create"),
-                        )
+                            )
         else:
             cms_menu = M(inbox_label, c="cms", f="read_newsletter", translate=False)
 
-        return M(c=("org", "hrm", "cms", "audit"))(
-                    org_menu,
-                    M("Audit", c="audit", link=False, restrict="AUDITOR")(
-                        M("Overview", f="organisation"),
+        return M(c=("org", "hrm", "act"))(
+                    M("Organizations", c="org", f="organisation")(
+                        M("Create", m="create"),
                         ),
-                    M("Test Stations", f="facility", link=False, restrict="ORG_GROUP_ADMIN")(
-                        M("Test Stations to review", vars = {"$$review": "1"}),
-                        M("Unapproved##actionable", vars = {"$$pending": "1"}),
-                        M("Defunct", vars = {"$$obsolete": "1"}),
-                        M("All Test Stations", vars={"$$all": "1"}),
+                    M("Organization Groups", f="group")(
+                        M("Create", m="create"),
                         ),
-                    M("Statistics", link=False, restrict="ORG_GROUP_ADMIN")(
-                        M("Organizations", f="organisation", m="report"),
-                        M("Facilities", f="facility", m="report"),
-                        ),
-                    M("Staff", c="hrm", f=("staff", "person"),
-                      restrict=("ORG_ADMIN", "ORG_GROUP_ADMIN"),
-                      ),
+                    M("Activities", c="act", f="activity"),
+                    M("Staff", c="hrm", f="staff"),
                     cms_menu,
-                    #M("Newsletters", c="cms", f="read_newsletter")(
-                        #M("Inbox", f="read_newsletter",
-                          #check = lambda this: this.following()[0].check_permission(),
-                          #),
-                        #M("Compose and Send", f="newsletter", p="create"),
-                        #),
-                    M("Administration", restrict=("ADMIN"))(
-                        M("Facility Types", f="facility_type"),
-                        M("Organization Types", f="organisation_type"),
-                        M("Services", f="service"),
-                        M("Service Modes", f="service_mode"),
-                        M("Booking Modes", f="booking_mode"),
+                    M("Administration", link=False, restrict=[ADMIN])(
+                        M("Organization Types", c="org", f="organisation_type"),
+                        M("Activity Types", c="act", f="activity_type"),
                         M("Job Titles", c="hrm", f="job_title"),
                         ),
                     )
 
     # -------------------------------------------------------------------------
-    @classmethod
-    def supply(cls):
-        """ SUPPLY / Supply Chain Management """
+    @staticmethod
+    def req():
+        """ REQ / Needs Management """
 
-        return cls.inv()
+        return M(c="req")(
+                    M("Needs", f="need")(
+                        M("Register", m="create"),
+                        M("Map", m="map"),
+                        ),
+                    )
 
     # -------------------------------------------------------------------------
     @staticmethod
