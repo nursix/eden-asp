@@ -1,31 +1,77 @@
 """
-    DOC module customisations for RLPPTM
+    DOC module customisations for DIRECT
 
     License: MIT
 """
 
-from gluon import current, IS_EMPTY_OR, IS_IN_SET
+from gluon import current, IS_NOT_EMPTY
 
-from core import get_form_record_id, WorkflowOptions
+from core import represent_file
 
 # -------------------------------------------------------------------------
-# Status for uploaded documents
-DOC_STATUS = WorkflowOptions(("NEW", "New", "lightblue"),
-                             ("EVIDENCE", "Audit Evidence", "red"),
-                             ("RELEASED", "Released", "lightgreen"),
-                             selectable = ("NEW", "EVIDENCE", "RELEASED"),
-                             represent = "status",
-                             none = "NEW",
-                             )
+def doc_image_resource(r, tablename):
+
+    T = current.T
+
+    s3db = current.s3db
+    table = s3db.doc_image
+
+    # Disable author-field
+    field = table.person_id
+    field.readable = field.writable = False
+
+    # Hide URL field
+    field = table.url
+    field.readable = field.writable = False
+
+    # Custom label for name-field, make mandatory
+    field = table.name
+    field.label = T("Title")
+    field.requires = [IS_NOT_EMPTY(), field.requires]
+
+    # Set default organisation_id
+    doc_set_default_organisation(r, table=table)
+
+# -------------------------------------------------------------------------
+def document_onaccept(form):
+
+    try:
+        record_id = form.vars.id
+    except AttributeError:
+        return
+
+    db = current.db
+    #s3db = current.s3db
+
+    table = db.doc_document
+    row = db(table.id == record_id).select(table.id,
+                                           table.name,
+                                           table.file,
+                                           limitby=(0, 1),
+                                           ).first()
+    if row and not row.name and row.file:
+        # Use the original file name as title
+        prop = table.file.retrieve_file_properties(row.file)
+        name = prop.get("filename")
+        if name:
+            row.update_record(name=name)
 
 # -------------------------------------------------------------------------
 def doc_document_resource(r, tablename):
 
-    T = current.T
-
-    db = current.db
     s3db = current.s3db
     table = s3db.doc_document
+
+    T = current.T
+
+    s3 = current.response.s3
+
+    if r.component_name == "template":
+        #table.is_template.default = True
+        s3.crud_strings["doc_document"].label_create = T("Add Document Template")
+    else:
+        #table.is_template.default = False
+        s3.crud_strings["doc_document"].label_create = T("Add Document")
 
     # Custom label for date-field, default not writable
     field = table.date
@@ -36,165 +82,69 @@ def doc_document_resource(r, tablename):
     field = table.url
     field.readable = field.writable = False
 
-    # Custom label for name-field
+    # Custom label for name-field, make mandatory
     field = table.name
     field.label = T("Title")
+    field.requires = [IS_NOT_EMPTY(), field.requires]
+
+    # Represent as symbol+size rather than file name
+    field = table.file
+    field.represent = represent_file()
 
     # Set default organisation_id
-    doc_set_default_organisation(r)
+    doc_set_default_organisation(r, table=table)
 
-    # Add custom onaccept
-    s3db.add_custom_callback("doc_document", "onaccept", doc_document_onaccept)
-    s3db.add_custom_callback("doc_document", "ondelete", doc_document_ondelete)
+    # List fields
+    list_fields = ["name",
+                   "file",
+                   "date",
+                   "comments",
+                   ]
+    s3db.configure("doc_document",
+                   list_fields = list_fields,
+                   )
 
-    if r.controller == "org" or r.function == "organisation":
-
-        # Configure status-field
-        field = table.status
-        if current.auth.s3_has_role("AUDITOR"):
-            field.readable = field.writable = True
-            field.requires = IS_IN_SET(DOC_STATUS.selectable(True),
-                                       zero = None,
-                                       sort = False,
-                                       )
-            field.represent = DOC_STATUS.represent
-            status = "status"
-        else:
-            field.readable = field.writable = False
-            status = None
-
-        # Configure site_id-field
-        if r.name == "organisation" and r.record and r.component_name == "document":
-
-            if r.component_id:
-                query = (table.id == r.component_id) & \
-                        (table.deleted == False)
-                row = db(query).select(table.doc_id, limitby=(0, 1)).first()
-            else:
-                row = None
-
-            if row and row.doc_id:
-                selectable = None
-            else:
-                ftable = s3db.org_facility
-                query = (ftable.organisation_id == r.id) & \
-                        (ftable.deleted == False)
-                sites = db(query).select(ftable.site_id, ftable.name)
-                selectable = {site.site_id: site.name for site in sites}
-
-            field = table.site_id
-            if selectable:
-                field.readable = field.writable = True
-                field.label = T("Facility")
-                field.represent = s3db.org_SiteRepresent(show_type=False)
-                field.requires = IS_EMPTY_OR(IS_IN_SET(selectable))
-            else:
-                field.readable = field.writable = False
-
-        # List fields
-        list_fields = ["name",
-                       "file",
-                       "date",
-                       "site_id",
-                       status,
-                       "comments",
-                       ]
-        s3db.configure("doc_document",
-                       list_fields = list_fields,
-                       )
+    # Custom onaccept to make sure the document has a title
+    s3db.add_custom_callback("doc_document",
+                             "onaccept",
+                             document_onaccept,
+                             )
 
 # -------------------------------------------------------------------------
-def doc_document_onaccept(form):
-    """
-        Custom onaccept routine for documents:
-            - alter ownership according to status
-            - update document availability in the audit status of the org
-    """
+def doc_document_controller(**attr):
 
-    record_id = get_form_record_id(form)
-    if not record_id:
-        return
+    current.deployment_settings.ui.export_formats = None
 
-    db = current.db
-    s3db = current.s3db
-
-    table = s3db.doc_document
-
-    row = db(table.id == record_id).select(table.id,
-                                           table.doc_id,
-                                           table.organisation_id,
-                                           table.site_id,
-                                           table.status,
-                                           table.created_by,
-                                           table.owned_by_user,
-                                           limitby = (0, 1),
-                                           ).first()
-    if row:
-        update = {}
-
-        # Alter ownership according to evidence status
-        if row.status == "EVIDENCE":
-            AUDITOR = current.auth.get_role_id("AUDITOR")
-            update = {"owned_by_user": None,
-                      "owned_by_group": AUDITOR,
+    attr["dtargs"] = {"dt_text_maximum_len": 36,
+                      "dt_text_condense_len": 36,
                       }
-        else:
-            ORG_ADMIN = current.auth.get_system_roles().ORG_ADMIN
-            if not row.owned_by_user:
-                update["owned_by_user"] = table.created_by
-            update["owned_by_group"] = ORG_ADMIN
 
-        # If the document is super-linked to a facility,
-        # use that facility for site_id (unconditionally)
-        if row.doc_id:
-            ftable = s3db.org_facility
-            query = (ftable.doc_id == row.doc_id) & \
-                    (ftable.deleted == False)
-            facility = db(query).select(ftable.site_id,
-                                        limitby = (0, 1),
-                                        ).first()
-            if facility:
-                update["site_id"] = facility.site_id
-
-        if update:
-            row.update_record(**update)
-
-        # Update the audit status of the organisation
-        if row.organisation_id:
-            from ..models.org import TestProvider
-            TestProvider(row.organisation_id).update_audit_status()
+    return attr
 
 # -------------------------------------------------------------------------
-def doc_document_ondelete(row):
+def doc_set_default_organisation(r, table=None):
     """
-        Custom ondelete routine for documents:
-            - update document availability in the audit status of the org
-    """
-
-    if row.organisation_id:
-        from ..models.org import TestProvider
-        TestProvider(row.organisation_id).update_audit_status()
-
-# -------------------------------------------------------------------------
-def doc_set_default_organisation(r):
-    """
-        Sets the correct default organisation_id for doc_document from
-        the upload context (e.g. organisation or facility)
+        Sets the correct default organisation_id for documents/images from
+        the upload context (e.g. activity, shelter, organisation)
 
         Args:
             r - the current CRUDRequest
     """
 
-    table = current.s3db.doc_document
+    if table is None:
+        table = current.s3db.doc_document
 
     organisation_id = None
-    if r.controller == "org":
-        record = r.record
-        if record:
-            if r.tablename == "org_organisation":
-                organisation_id = record.id
-            elif r.tablename == "org_facility":
-                organisation_id = record.organisation_id
+
+    record = r.record
+    if record:
+        fields = {"act_activity": "organisation_id",
+                  "cr_shelter": "organisation_id",
+                  "org_organisation": "id",
+                  }
+        fieldname = fields.get(r.resource.tablename)
+        if fieldname:
+            organisation_id = record[fieldname]
 
     if organisation_id:
         table.organisation_id.default = organisation_id

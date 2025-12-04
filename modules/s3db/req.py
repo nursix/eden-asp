@@ -1059,6 +1059,7 @@ class RequestModel(DataModel):
                            ]
         else:
             # Not Supported - redirect to normal PDF
+            pdf_componentname = list_fields = None
             redirect(URL(args = current.request.args[0],
                          extension = "pdf"))
 
@@ -1159,7 +1160,7 @@ class RequestModel(DataModel):
         send_email = current.msg.send_by_pe_id
         subject_T = T("Request submitted for Approval")
         message_T = T("A new Request, %(reference)s, has been submitted for Approval by %(person)s for delivery to %(site)s by %(date_required)s. Please review at: %(url)s")
-        for language in languages:
+        for language, users in languages.items():
             T.force(language)
             session_s3.language = language # for date_represent
             subject = "%s: %s" % (s3_str(subject_T), req_ref)
@@ -1169,7 +1170,6 @@ class RequestModel(DataModel):
                                            "site": site_name,
                                            "url": url,
                                            }
-            users = languages[language]
             for pe_id in users:
                 send_email(pe_id,
                            subject = subject,
@@ -1288,12 +1288,13 @@ class RequestModel(DataModel):
 
             # Lookup Names & PE IDs
             sites = {}
-            for instance_type in sites_by_type:
-                itable = s3db.table(instance_type)
-                instances = db(itable.site_id.belongs(sites_by_type[instance_type])).select(itable.name,
-                                                                                            itable.pe_id,
-                                                                                            itable.site_id,
-                                                                                            )
+            for itype, itype_site_ids in sites_by_type.items():
+                itable = s3db.table(itype)
+                instances = db(itable.site_id.belongs(itype_site_ids)).select(
+                                        itable.name,
+                                        itable.pe_id,
+                                        itable.site_id,
+                                        )
                 for row in instances:
                     sites[row.site_id] = {"name": row.name,
                                           "pe_id": row.pe_id,
@@ -1325,9 +1326,8 @@ class RequestModel(DataModel):
                                                           rtable.pe_id,
                                                           )
 
-            for site_id in sites:
+            for site in sites.values():
 
-                site = sites[site_id]
                 site_name = site["name"]
                 pe_id = site["pe_id"]
 
@@ -1409,7 +1409,7 @@ class RequestModel(DataModel):
                     if language not in languages:
                         languages[language] = []
                     languages[language].append(row["pr_person_user.pe_id"])
-                for language in languages:
+                for language, users in languages.items():
                     T.force(language)
                     session_s3.language = language # for date_represent
                     subject = "%s: %s" % (s3_str(subject_T), req_ref)
@@ -1418,7 +1418,6 @@ class RequestModel(DataModel):
                                                    "site": site_name,
                                                    "url": url,
                                                    }
-                    users = languages[language]
                     for pe_id in users:
                         send_email(pe_id,
                                    subject = subject,
@@ -1733,7 +1732,7 @@ class RequestApproverModel(DataModel):
         # ---------------------------------------------------------------------
         # Pass names back to global scope (s3.*)
         #
-        return None
+        # return None
 
 # =============================================================================
 class RequestItemModel(DataModel):
@@ -2472,7 +2471,7 @@ class RequestRecurringModel(DataModel):
         # ---------------------------------------------------------------------
         # Pass names back to global scope (s3.*)
         #
-        return None
+        # return None
 
 # =============================================================================
 class RequestNeedsModel(DataModel):
@@ -2504,17 +2503,29 @@ class RequestNeedsModel(DataModel):
         tablename = "req_need"
         self.define_table(tablename,
                           self.super_link("doc_id", "doc_entity"),
-                          self.gis_location_id(), # Can be hidden, e.g. if using Sites (can then sync this onaccept)
-                          DateTimeField(default = "now",
-                                        widget = "date",
+
+                          # Date/Time
+                          DateTimeField(default="now",
                                         ),
-                          DateTimeField("end_date",
-                                        label = T("End Date"),
-                                        # Enable in Templates if-required
-                                        readable = False,
-                                        writable = False,
-                                        ),
-                          req_priority()(),
+
+                          # Requester/reporter
+                          self.org_organisation_id(),
+                          Field("contact_name",
+                                length = 64,
+                                label = T("Contact Person"),
+                                requires = IS_LENGTH(64),
+                                ),
+                          Field("contact_phone",
+                                length = 64,
+                                label = T("Phone #"),
+                                requires = IS_EMPTY_OR(IS_PHONE_NUMBER_SINGLE()),
+                                ),
+
+                          # Target
+                          # TODO site_id
+                          self.gis_location_id(),
+
+                          # Details
                           Field("name", notnull = True,
                                 length = 64,
                                 label = T("Summary of Needs"),
@@ -2526,15 +2537,25 @@ class RequestNeedsModel(DataModel):
                                         label = T("Description"),
                                         comment = None,
                                         ),
+
+                          # Management categories
+                          req_priority()(),
                           req_status()("status",
                                        label = T("Fulfilment Status"),
                                        ),
+                          DateTimeField("end_date",
+                                        label = T("End Date"),
+                                        # Enable in Templates if-required
+                                        readable = False,
+                                        writable = False,
+                                        ),
+
                           CommentsField(),
                           )
 
         # CRUD strings
         current.response.s3.crud_strings[tablename] = Storage(
-            label_create = T("Add Needs"),
+            label_create = T("Register Needs"),
             title_list = T("Needs"),
             title_display = T("Needs"),
             title_update = T("Edit Needs"),
@@ -2663,7 +2684,7 @@ class RequestNeedsActivityModel(DataModel):
         # ---------------------------------------------------------------------
         # Pass names back to global scope (s3.*)
         #
-        return None
+        # return None
 
 # =============================================================================
 class RequestNeedsContactModel(DataModel):
@@ -2702,7 +2723,7 @@ class RequestNeedsContactModel(DataModel):
         # ---------------------------------------------------------------------
         # Pass names back to global scope (s3.*)
         #
-        return None
+        # return None
 
 # =============================================================================
 class RequestNeedsDemographicsModel(DataModel):
@@ -2799,7 +2820,7 @@ class RequestNeedsDemographicsModel(DataModel):
         # ---------------------------------------------------------------------
         # Pass names back to global scope (s3.*)
         #
-        return None
+        # return None
 
 # =============================================================================
 class RequestNeedsItemsModel(DataModel):
@@ -2897,7 +2918,7 @@ $.filterOptionsS3({
         # ---------------------------------------------------------------------
         # Pass names back to global scope (s3.*)
         #
-        return None
+        # return None
 
 # =============================================================================
 class RequestNeedsSkillsModel(DataModel):
@@ -2970,7 +2991,7 @@ class RequestNeedsSkillsModel(DataModel):
         # ---------------------------------------------------------------------
         # Pass names back to global scope (s3.*)
         #
-        return None
+        # return None
 
 # =============================================================================
 class RequestNeedsOrganisationModel(DataModel):
@@ -3015,7 +3036,7 @@ class RequestNeedsOrganisationModel(DataModel):
         # ---------------------------------------------------------------------
         # Pass names back to global scope (s3.*)
         #
-        return None
+        # return None
 
 # =============================================================================
 class RequestNeedsPersonModel(DataModel):
@@ -3083,7 +3104,7 @@ class RequestNeedsPersonModel(DataModel):
         # ---------------------------------------------------------------------
         # Pass names back to global scope (s3.*)
         #
-        return None
+        # return None
 
 # =============================================================================
 class RequestNeedsSectorModel(DataModel):
@@ -3118,7 +3139,7 @@ class RequestNeedsSectorModel(DataModel):
         # ---------------------------------------------------------------------
         # Pass names back to global scope (s3.*)
         #
-        return None
+        # return None
 
 # =============================================================================
 class RequestNeedsSiteModel(DataModel):
@@ -3161,7 +3182,7 @@ class RequestNeedsSiteModel(DataModel):
         # ---------------------------------------------------------------------
         # Pass names back to global scope (s3.*)
         #
-        return None
+        # return None
 
 # =============================================================================
 class RequestNeedsTagModel(DataModel):
@@ -3210,8 +3231,10 @@ class RequestNeedsTagModel(DataModel):
                                                  ),
                        )
 
+        # ---------------------------------------------------------------------
         # Pass names back to global scope (s3.*)
-        return None
+        #
+        # return None
 
 # =============================================================================
 class RequestTagModel(DataModel):
@@ -3253,8 +3276,10 @@ class RequestTagModel(DataModel):
                                                  ),
                        )
 
+        # ---------------------------------------------------------------------
         # Pass names back to global scope (s3.*)
-        return None
+        #
+        # return None
 
 # =============================================================================
 class RequestOrderItemModel(DataModel):
@@ -3325,7 +3350,7 @@ class RequestOrderItemModel(DataModel):
         # ---------------------------------------------------------------------
         # Pass names back to global scope (s3.*)
         #
-        return None
+        # return None
 
 # =============================================================================
 class RequestProjectModel(DataModel):
@@ -3357,7 +3382,7 @@ class RequestProjectModel(DataModel):
         # ---------------------------------------------------------------------
         # Pass names back to global scope (s3.*)
         #
-        return None
+        # return None
 
 # =============================================================================
 class RequestTaskModel(DataModel):
@@ -3391,7 +3416,7 @@ class RequestTaskModel(DataModel):
         # ---------------------------------------------------------------------
         # Pass names back to global scope (s3.*)
         #
-        return None
+        # return None
 
 # =============================================================================
 class RequestRequesterCategoryModel(DataModel):
@@ -3430,7 +3455,7 @@ class RequestRequesterCategoryModel(DataModel):
         # ---------------------------------------------------------------------
         # Pass names back to global scope (s3.*)
         #
-        return None
+        # return None
 
 # =============================================================================
 class CommitModel(DataModel):
@@ -3933,7 +3958,7 @@ class CommitPersonModel(DataModel):
         # ---------------------------------------------------------------------
         # Pass names back to global scope (s3.*)
         #
-        return None
+        # return None
 
     # -------------------------------------------------------------------------
     @staticmethod
@@ -4018,7 +4043,7 @@ class CommitSkillModel(DataModel):
         # ---------------------------------------------------------------------
         # Pass names back to global scope (s3.*)
         #
-        return None
+        # return None
 
     # -------------------------------------------------------------------------
     @staticmethod
@@ -4557,11 +4582,14 @@ def req_rheader(r, check_page=False):
             # Hide these if no Items/Skills on one of these requests yet
             auth = current.auth
             user = auth.user
-            organisation_id = user.organisation_id if user else None
+            if user:
+                organisation_id = user.organisation_id
+                user_site_id = user.site_id
+            else:
+                organisation_id = user_site_id = None
 
             req_id = record.id
             if items:
-                user_site_id = user.site_id if user else None
                 ritable = s3db.req_req_item
                 possibly_complete = db(ritable.req_id == req_id).select(ritable.id,
                                                                         limitby = (0, 1)
@@ -5286,13 +5314,13 @@ class req_CheckMethod(CRUDMethod):
                     if quantity_outstanding:
                         len_skills = len(skills)
                         matches = []
-                        for p in people:
+                        for hr_id, skill_ids in people.items():
                             smatches = 0
                             for s in skills:
-                                if s in people[p]:
+                                if s in skill_ids:
                                     smatches += 1
                             if smatches == len_skills:
-                                matches.append(p)
+                                matches.append(hr_id)
                         org_quantity = len(matches)
                         if org_quantity != 0:
                             no_match = False

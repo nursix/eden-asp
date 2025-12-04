@@ -320,7 +320,7 @@ class OptionsMenu:
                     M("Event Log", c="admin", f="event"),
                     M("Error Tickets", c="admin", f="errors"),
                     M("Scheduler", c="admin", f="task"),
-                    M("Settings", c="admin", f="setting"),
+                    # M("Settings", c="admin", f="setting"),
                     M("Synchronization", c="sync", f="index")(
                         M("Settings", f="config", args=[1], m="update"),
                         M("Repositories", f="repository"),

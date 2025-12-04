@@ -223,13 +223,8 @@ def config(settings):
     settings.customise_hrm_human_resource_controller = hrm_human_resource_controller
 
     # -------------------------------------------------------------------------
-    from .customise.pr import pr_address_resource, \
-                              pr_contact_resource, \
-                              pr_person_controller, \
+    from .customise.pr import pr_person_controller, \
                               pr_person_resource
-
-    settings.customise_pr_address_resource = pr_address_resource
-    settings.customise_pr_contact_resource = pr_contact_resource
 
     settings.customise_pr_person_controller = pr_person_controller
     settings.customise_pr_person_resource = pr_person_resource
