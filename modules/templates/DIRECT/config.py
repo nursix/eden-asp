@@ -304,6 +304,12 @@ def config(settings):
             restricted = True,
             module_type = 10,
         )),
+        ("asset", Storage(
+            name_nice = T("Assets"),
+            #description = "Recording and Assigning Assets",
+            restricted = True,
+            module_type = 5,
+        )),
         ("cr", Storage(
             name_nice = T("Shelters"),
             #description = "Tracks the location, capacity and breakdown of victims in Shelters",

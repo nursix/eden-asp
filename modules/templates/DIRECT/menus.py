@@ -45,6 +45,7 @@ class MainMenu(default.MainMenu):
                 MM("Shelters", c="cr", f="shelter"),
                 #MM("Water Sources", c="water", f="index"),
                 #MM("Inventory", c="inv", f="warehouse"),
+                MM("Assets", c="asset", f="asset"),
                 MM("Organizations", c="org", f="organisation"),
                 ]
 
