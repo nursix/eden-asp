@@ -1,5 +1,5 @@
 """
-    Custom Menus for FRCP
+    Custom Menus for DIRECT
 
     License: MIT
 """

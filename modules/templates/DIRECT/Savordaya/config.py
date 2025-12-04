@@ -1,5 +1,5 @@
 """
-    FRCP/Savordaya: sub-template for Savordaya / Sri Lanka
+    DIRECT/Savordaya: sub-template for Savordaya / Sri Lanka
 
     License: MIT
 """
@@ -14,12 +14,12 @@ def config(settings):
 
     T = current.T
 
-    settings.base.system_name = "Flood Response Coordination"
-    settings.base.system_name_short = "Savordaya Flood Response"
+    settings.base.system_name = "Disaster Response Coordination"
+    settings.base.system_name_short = "Savordaya DIRECT"
 
     # PrePopulate data
-    settings.base.prepopulate += ("FRCP/Savordaya",)
-    settings.base.prepopulate_demo.append("FRCP/Savordaya/Demo")
+    settings.base.prepopulate += ("DIRECT/Savordaya",)
+    settings.base.prepopulate_demo.append("DIRECT/Savordaya/Demo")
 
     # Restrict the Location Selector to just certain countries
     # NB This can also be over-ridden for specific contexts later

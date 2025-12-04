@@ -1,5 +1,5 @@
 """
-    FRCP: Template for Flood Response Coordination
+    DIRECT: Disaster Response Coordination Tool
 
     License: MIT
 """
@@ -14,22 +14,22 @@ def config(settings):
 
     T = current.T
 
-    settings.base.system_name = "Flood Response Coordination Portal"
-    settings.base.system_name_short = "Flood Response Coordination"
+    settings.base.system_name = "Disaster Response Coordination"
+    settings.base.system_name_short = "Sahana DIRECT"
 
     # PrePopulate data
-    settings.base.prepopulate += ("FRCP",)
-    settings.base.prepopulate_demo.append("FRCP/Demo")
+    settings.base.prepopulate += ("DIRECT",)
+    settings.base.prepopulate_demo.append("DIRECT/Demo")
 
     # Theme (folder to use for views/layout.html)
     #settings.base.theme = "default"
-    settings.base.theme_layouts = "FRCP"
+    settings.base.theme_layouts = "DIRECT"
 
     # Custom XSLT transformation stylesheets
     # settings.base.xml_formats = {"wws": "RLPPTM"}
 
     # Custom models/controllers
-    settings.base.models = "templates.FRCP.models"
+    settings.base.models = "templates.DIRECT.models"
     settings.base.rest_controllers = {}
 
     # Custom Logo

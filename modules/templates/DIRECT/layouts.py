@@ -1,5 +1,5 @@
 """
-    Menu layouts for FRCP
+    Menu layouts for DIRECT
 
     License: MIT
 """
