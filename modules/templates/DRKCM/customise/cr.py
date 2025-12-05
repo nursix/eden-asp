@@ -69,7 +69,6 @@ def cr_shelter_population():
     stable = s3db.dvr_case_status
     join = stable.on(stable.id == ctable.status_id)
     left = dtable.on((dtable.person_id == ctable.person_id) & \
-                     ((dtable.case_id == None) | (dtable.case_id == ctable.id)) & \
                      (dtable.deleted == False))
     today = current.request.utcnow.date()
     query = (ctable.site_id != None) & \
