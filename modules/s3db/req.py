@@ -2498,17 +2498,15 @@ class RequestNeedsModel(DataModel):
         db = current.db
 
         # ---------------------------------------------------------------------
-        # Needs
+        # Needs Assessment
         #
         tablename = "req_need"
         self.define_table(tablename,
                           self.super_link("doc_id", "doc_entity"),
-
-                          # Date/Time
                           DateTimeField(default="now",
                                         ),
 
-                          # Requester/reporter
+                          # Reporting Organisation
                           self.org_organisation_id(),
                           Field("contact_name",
                                 length = 64,
@@ -2521,7 +2519,11 @@ class RequestNeedsModel(DataModel):
                                 requires = IS_EMPTY_OR(IS_PHONE_NUMBER_SINGLE()),
                                 ),
 
-                          # Target
+                          # TODO Original Response Organisation
+
+                          # TODO Current Response Organisation
+
+                          # Target Location
                           # TODO site_id
                           self.gis_location_id(),
 
@@ -2543,6 +2545,7 @@ class RequestNeedsModel(DataModel):
                           req_status()("status",
                                        label = T("Fulfilment Status"),
                                        ),
+                          # TODO forwarded on
                           DateTimeField("end_date",
                                         label = T("End Date"),
                                         # Enable in Templates if-required
@@ -2609,6 +2612,7 @@ class RequestNeedsModel(DataModel):
                             req_need_item = "need_id",
                             req_need_person = "need_id",
                             req_need_skill = "need_id",
+                            req_need_service = "need_id",
                             req_need_tag = {"name": "tag",
                                             "joinby": "need_id",
                                             },
@@ -3132,6 +3136,42 @@ class RequestNeedsSectorModel(DataModel):
         self.configure(tablename,
                        deduplicate = S3Duplicate(primary=("need_id",
                                                           "sector_id",
+                                                          ),
+                                                 ),
+                       )
+
+        # ---------------------------------------------------------------------
+        # Pass names back to global scope (s3.*)
+        #
+        # return None
+
+# =============================================================================
+class RequestNeedsServiceModel(DataModel):
+    """ Needs assessments: services required """
+
+    names = ("req_need_service",
+             )
+
+    def model(self):
+
+        # ---------------------------------------------------------------------
+        # Services required
+        #
+        tablename = "req_need_service"
+        self.define_table(tablename,
+                          self.req_need_id(empty = False),
+                          self.org_service_id(empty = False),
+                          # TODO priority
+                          # TODO time frame
+                          # TODO number of people
+                          # TODO workflow status
+                          # TODO fulfillment status
+                          CommentsField(),
+                          )
+
+        self.configure(tablename,
+                       deduplicate = S3Duplicate(primary=("need_id",
+                                                          "service_id",
                                                           ),
                                                  ),
                        )
