@@ -171,6 +171,10 @@ def config(settings):
     settings.req.items_ask_purpose = False
     settings.req.prompt_match = False
 
+    from .customise.req import req_need_controller
+
+    settings.customise_req_need_controller = req_need_controller
+
     # -------------------------------------------------------------------------
     settings.inv.track_pack_values = False
     settings.inv.send_show_org = False

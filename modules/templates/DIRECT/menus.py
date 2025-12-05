@@ -243,8 +243,8 @@ class OptionsMenu(default.OptionsMenu):
         """ REQ / Needs Management """
 
         return M(c="req")(
-                    M("Needs", f="need")(
-                        M("Register", m="create"),
+                    M("Needs Assessments", f="need")(
+                        M("Create", m="create"),
                         M("Map", m="map"),
                         ),
                     )

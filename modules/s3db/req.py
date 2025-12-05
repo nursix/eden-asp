@@ -39,6 +39,7 @@ __all__ = ("RequestModel",
            "RequestNeedsOrganisationModel",
            "RequestNeedsPersonModel",
            "RequestNeedsSectorModel",
+           "RequestNeedsServiceModel",
            "RequestNeedsSiteModel",
            "RequestNeedsTagModel",
            "RequestOrderItemModel",
@@ -103,7 +104,9 @@ def req_priority_opts():
 #    return DIV(IMG(_src= src))
 
 def req_priority():
+
     priority_opts = req_priority_opts()
+
     return FieldTemplate("priority", "integer",
                          default = 2,
                          label = current.T("Priority"),
@@ -111,6 +114,33 @@ def req_priority():
                          #represent = req_priority_represent,
                          represent = represent_option(priority_opts),
                          requires = IS_EMPTY_OR(IS_IN_SET(priority_opts)),
+                         )
+
+# =============================================================================
+def need_priority_opts():
+    T = current.T
+    return (("PRIO1", T("Immediate")),
+            ("PRIO2", T("Urgent")),
+            ("PRIO3", T("Not Urgent")),
+            ("PRION", T("Plannable")),
+            )
+
+def need_priority():
+
+    priority_opts = need_priority_opts()
+
+    represent = S3PriorityRepresent(priority_opts,
+                                    {"PRIO1": "red",
+                                     "PRIO2": "amber",
+                                     "PRIO3": "green",
+                                     "PRION": "blue",
+                                     }).represent
+
+    return FieldTemplate("priority",
+                         default = "PRIO3",
+                         label = current.T("Priority"),
+                         represent = represent,
+                         requires = IS_IN_SET(priority_opts),
                          )
 
 # =============================================================================
@@ -2475,18 +2505,7 @@ class RequestRecurringModel(DataModel):
 
 # =============================================================================
 class RequestNeedsModel(DataModel):
-    """
-        Simple Requests Management System
-        - Starts as Simple free text Needs
-        - Extensible via Key-Value Tags
-        - Extensible with Items
-        - Extensible with Skills
-        Use cases:
-        - SHARE: local governments express needs to be met by NGOs (/Private Sector/Public in future)
-        - Organisations can request Money or Time from remote volunteers
-        - Sites can request Time from local volunteers or accept drop-off for Goods
-        - Projects can request x (tbc: MapPH usecase)
-    """
+    """ Needs Assessments """
 
     names = ("req_need",
              "req_need_id",
@@ -2503,11 +2522,15 @@ class RequestNeedsModel(DataModel):
         tablename = "req_need"
         self.define_table(tablename,
                           self.super_link("doc_id", "doc_entity"),
-                          DateTimeField(default="now",
-                                        ),
 
-                          # Reporting Organisation
-                          self.org_organisation_id(),
+                          # Origin of Assessment
+                          self.org_organisation_id(
+                              "contact_organisation_id",
+                              label = T("Reporting Organization"),
+                              # Enable in template if required:
+                              readable = False,
+                              writable = False,
+                              ),
                           Field("contact_name",
                                 length = 64,
                                 label = T("Contact Person"),
@@ -2519,15 +2542,13 @@ class RequestNeedsModel(DataModel):
                                 requires = IS_EMPTY_OR(IS_PHONE_NUMBER_SINGLE()),
                                 ),
 
-                          # TODO Original Response Organisation
-
-                          # TODO Current Response Organisation
-
-                          # Target Location
+                          # Context
+                          # TODO event_id (for multi-event management)
                           # TODO site_id
                           self.gis_location_id(),
 
                           # Details
+                          DateTimeField(default="now"),
                           Field("name", notnull = True,
                                 length = 64,
                                 label = T("Summary of Needs"),
@@ -2540,12 +2561,22 @@ class RequestNeedsModel(DataModel):
                                         comment = None,
                                         ),
 
-                          # Management categories
-                          req_priority()(),
+                          # Management
+                          self.org_organisation_id(
+                                label = T("Responding Organization"),
+                                comment = None,
+                                ),
+                          Field("verified", "boolean",
+                                default = False,
+                                label = T("Verified"),
+                                # Enable in template if required:
+                                readable = False,
+                                writable = False,
+                                ),
+                          need_priority()(),
                           req_status()("status",
                                        label = T("Fulfilment Status"),
                                        ),
-                          # TODO forwarded on
                           DateTimeField("end_date",
                                         label = T("End Date"),
                                         # Enable in Templates if-required
@@ -2558,17 +2589,17 @@ class RequestNeedsModel(DataModel):
 
         # CRUD strings
         current.response.s3.crud_strings[tablename] = Storage(
-            label_create = T("Register Needs"),
-            title_list = T("Needs"),
-            title_display = T("Needs"),
-            title_update = T("Edit Needs"),
-            title_upload = T("Import Needs"),
-            label_list_button = T("List Needs"),
-            label_delete_button = T("Delete Needs"),
-            msg_record_created = T("Needs added"),
-            msg_record_modified = T("Needs updated"),
-            msg_record_deleted = T("Needs deleted"),
-            msg_list_empty = T("No Needs currently registered"),
+            label_create = T("Create Assessment"),
+            title_list = T("Needs Assessments"),
+            title_display = T("Needs Assessment"),
+            title_update = T("Edit Assessment"),
+            title_upload = T("Import Assessments"),
+            label_list_button = T("List Assessments"),
+            label_delete_button = T("Delete Assessment"),
+            msg_record_created = T("Needs Assessment added"),
+            msg_record_modified = T("Needs Assessment updated"),
+            msg_record_deleted = T("Needs Assessment deleted"),
+            msg_list_empty = T("No Needs Assessments currently registered"),
             )
 
         self.configure(tablename,
@@ -3154,21 +3185,47 @@ class RequestNeedsServiceModel(DataModel):
 
     def model(self):
 
+        T = current.T
+
+        # ---------------------------------------------------------------------
+        task_status = WorkflowOptions(("new", T("New"), "blue"),
+                                      ("assigned", T("Assigned"), "amber"),
+                                      ("progress", T("In Progress"), "amber"),
+                                      ("complete", T("Completed"), "green"),
+                                      ("aborted", T("Aborted"), "red"),
+                                      ("blocked", T("Not Actionable"), "red"),
+                                      ("obsolete", T("Obsolete"), "grey"),
+                                      none = "new",
+                                      )
+
         # ---------------------------------------------------------------------
         # Services required
         #
         tablename = "req_need_service"
         self.define_table(tablename,
                           self.req_need_id(empty = False),
-                          self.org_service_id(empty = False),
-                          # TODO priority
-                          # TODO time frame
-                          # TODO number of people
-                          # TODO workflow status
-                          # TODO fulfillment status
+                          need_priority()(),
+                          self.org_service_id(
+                              empty = False,
+                              label = T("Type of Service Required"),
+                              ),
+                          CommentsField("details",
+                                        label = T("Details"),
+                                        ),
+                          Field("status",
+                                label = T("Status"),
+                                default = "new",
+                                requires = IS_IN_SET(task_status.selectable(),
+                                                     zero = None,
+                                                     sort = False,
+                                                     ),
+                                represent = task_status.represent,
+                                ),
+                          # TODO status history
                           CommentsField(),
                           )
 
+        # TODO onaccept to update need status, and track changes
         self.configure(tablename,
                        deduplicate = S3Duplicate(primary=("need_id",
                                                           "service_id",

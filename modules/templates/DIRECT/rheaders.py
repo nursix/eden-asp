@@ -89,4 +89,45 @@ def hr_rheader(r, tabs=None):
 
     return rheader
 
+# -----------------------------------------------------------------------------
+def req_rheader(r, tabs=None):
+    """ Custom rheaders for REQ """
+
+    if r.representation != "html":
+        # Resource headers only used in interactive views
+        return None
+
+    tablename, record = s3_rheader_resource(r)
+    if tablename != r.tablename:
+        resource = current.s3db.resource(tablename, id=record.id)
+    else:
+        resource = r.resource
+
+    rheader = None
+    rheader_fields = []
+
+    if record:
+
+        T = current.T
+
+        if tablename == "req_need":
+
+            tabs = [(T("Overview"), None),
+                    (T("Assistance"), "need_service"),
+                    (T("Supplies"), "need_item"),
+                    # (T("Equipment"), "need_asset"),
+                    ]
+
+            rheader_fields = [["date", "location_id", "author_organisation_id"],
+                              ["priority", ("", None), "author_contact_name"],
+                              ["status", ("", None), "author_contact_phone"]
+                              ]
+
+            rheader_title = "name"
+
+            rheader = S3ResourceHeader(rheader_fields, tabs, title=rheader_title)
+            rheader = rheader(r, table=resource.table, record=record)
+
+    return rheader
+
 # END =========================================================================

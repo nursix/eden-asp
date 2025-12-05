@@ -319,6 +319,9 @@
 //
 .workflow-options {
     white-space: pre;
+    &.workflow-blue {
+        color: #0563a1;
+    }
     &.workflow-grey {
         color: #555;
     }
