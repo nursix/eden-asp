@@ -231,8 +231,9 @@ class OptionsMenu(default.OptionsMenu):
                     cms_menu,
                     M("Administration", link=False, restrict=[ADMIN])(
                         M("Organization Types", c="org", f="organisation_type"),
-                        M("Activity Types", c="act", f="activity_type"),
-                        M("Job Titles", c="hrm", f="job_title"),
+                        M("Services", "org", f="service"),
+                        # M("Activity Types", c="act", f="activity_type"),
+                        # M("Job Titles", c="hrm", f="job_title"),
                         ),
                     )
 
