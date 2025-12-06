@@ -1,2 +1,3 @@
 First Name,Last Name,Email,Password,Role,Organisation,Language
-Admin,Savordaya,savordaya@example.com,eden,"ORG_GROUP_ADMIN/0,ORG_ADMIN",Savordaya,en
+Admin,EOC,eoc_admin@example.com,eden,"ORG_ADMIN,RESPONSE_COORDINATOR",Savordaya EOC,en
+Admin,Kandy,kandy_admin@example.com,eden,"ORG_ADMIN,RESPONSE_COORDINATOR",Kandy District Office,en

@@ -511,70 +511,74 @@ button.toggle-text {
   white-space: pre;
 }
 /* line 322, ../scss/theme/_represent.scss */
+.workflow-options.workflow-blue {
+  color: #0563a1;
+}
+/* line 325, ../scss/theme/_represent.scss */
 .workflow-options.workflow-grey {
   color: #555;
 }
-/* line 325, ../scss/theme/_represent.scss */
+/* line 328, ../scss/theme/_represent.scss */
 .workflow-options.workflow-red {
   color: #c42626;
 }
-/* line 328, ../scss/theme/_represent.scss */
+/* line 331, ../scss/theme/_represent.scss */
 .workflow-options.workflow-amber {
   color: #ec8d27;
 }
-/* line 331, ../scss/theme/_represent.scss */
+/* line 334, ../scss/theme/_represent.scss */
 .workflow-options.workflow-green {
   color: green;
 }
-/* line 334, ../scss/theme/_represent.scss */
+/* line 337, ../scss/theme/_represent.scss */
 .workflow-options.workflow-advice {
   border: 1px solid #c42626;
   background-color: #ffdede;
   padding: 0.3rem 0.7rem;
 }
-/* line 339, ../scss/theme/_represent.scss */
+/* line 342, ../scss/theme/_represent.scss */
 .workflow-options .fa {
   margin-right: 0.2rem;
 }
-/* line 341, ../scss/theme/_represent.scss */
+/* line 344, ../scss/theme/_represent.scss */
 [dir=rtl] .workflow-options .fa {
   margin-right: 0;
   margin-left: 0.2rem;
 }
-/* line 346, ../scss/theme/_represent.scss */
+/* line 349, ../scss/theme/_represent.scss */
 .controls .workflow-options {
   margin-left: 0.5rem;
 }
-/* line 348, ../scss/theme/_represent.scss */
+/* line 351, ../scss/theme/_represent.scss */
 [dir=rtl] .controls .workflow-options {
   margin-left: 0;
   margin-right: 0.5rem;
 }
 
-/* line 358, ../scss/theme/_represent.scss */
+/* line 361, ../scss/theme/_represent.scss */
 .issue-date {
   display: block;
   font-size: 0.75rem;
   color: #666;
 }
 
-/* line 363, ../scss/theme/_represent.scss */
+/* line 366, ../scss/theme/_represent.scss */
 .issue-full {
   border: 1px solid #ccc;
   background-color: #fdf7de;
   padding: 0.5rem 0.75rem;
 }
-/* line 367, ../scss/theme/_represent.scss */
+/* line 370, ../scss/theme/_represent.scss */
 .issue-full h4 {
   font-size: 1rem;
 }
-/* line 370, ../scss/theme/_represent.scss */
+/* line 373, ../scss/theme/_represent.scss */
 .issue-full .issue-description {
   font-size: 0.85rem;
   font-style: italic;
 }
 
-/* line 380, ../scss/theme/_represent.scss */
+/* line 383, ../scss/theme/_represent.scss */
 .hazard-neg, .hazard-pos {
   display: inline-block;
   width: 20px;
@@ -586,38 +590,38 @@ button.toggle-text {
   background-position: center;
 }
 
-/* line 391, ../scss/theme/_represent.scss */
+/* line 394, ../scss/theme/_represent.scss */
 .hazard-bio.hazard-pos {
   background-image: url(../../img/hazard/bio.png);
 }
 
-/* line 394, ../scss/theme/_represent.scss */
+/* line 397, ../scss/theme/_represent.scss */
 .hazard-tox.hazard-pos {
   background-image: url(../../img/hazard/tox.png);
 }
 
-/* line 397, ../scss/theme/_represent.scss */
+/* line 400, ../scss/theme/_represent.scss */
 .hazard-rad.hazard-pos {
   background-image: url(../../img/hazard/rad.png);
 }
 
-/* line 402, ../scss/theme/_represent.scss */
+/* line 405, ../scss/theme/_represent.scss */
 .med-reason, .med-reason-historical {
   font-size: 0.8rem;
 }
 
-/* line 405, ../scss/theme/_represent.scss */
+/* line 408, ../scss/theme/_represent.scss */
 .med-reason {
   color: #840088;
 }
 
-/* line 408, ../scss/theme/_represent.scss */
+/* line 411, ../scss/theme/_represent.scss */
 .med-reason-historical {
   color: #444;
   font-style: italic;
 }
 
-/* line 412, ../scss/theme/_represent.scss */
+/* line 415, ../scss/theme/_represent.scss */
 .med-area {
   font-size: 0.8rem;
   padding: 0.2rem 0.4rem;
@@ -627,19 +631,19 @@ button.toggle-text {
   vertical-align: top;
 }
 
-/* line 420, ../scss/theme/_represent.scss */
+/* line 423, ../scss/theme/_represent.scss */
 .med-patient, .med-unregistered {
   font-size: 0.9rem;
   vertical-align: top;
 }
 
-/* line 424, ../scss/theme/_represent.scss */
+/* line 427, ../scss/theme/_represent.scss */
 .med-unregistered {
   font-style: italic;
   color: grey;
 }
 
-/* line 428, ../scss/theme/_represent.scss */
+/* line 431, ../scss/theme/_represent.scss */
 .med-refno {
   font-size: 0.7rem;
   padding: 0.025rem 0.25rem;
@@ -654,14 +658,14 @@ button.toggle-text {
   text-align: center;
 }
 
-/* line 445, ../scss/theme/_represent.scss */
+/* line 448, ../scss/theme/_represent.scss */
 .client-gender-age {
   font-size: 0.7rem;
   vertical-align: top;
   color: #999;
   margin: 0 1rem;
 }
-/* line 449, ../scss/theme/_represent.scss */
+/* line 452, ../scss/theme/_represent.scss */
 .client-gender-age .fa {
   margin: 0 0.2rem;
 }

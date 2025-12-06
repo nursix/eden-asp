@@ -4,24 +4,16 @@ ANONYMOUS,Anonymous,Unauthenticated users,,gis,geocode_r,,READ,,
 ANONYMOUS,Anonymous,Unauthenticated users,,gis,hdata,,READ,,
 ANONYMOUS,Anonymous,Unauthenticated users,,gis,ldata,,READ,,
 ANONYMOUS,Anonymous,Unauthenticated users,,org,facility,,READ,,
-ANONYMOUS,Anonymous,Unauthenticated users,,org,provider,,READ,,
 ANONYMOUS,Anonymous,Unauthenticated users,,org,sites_for_org,,READ,,
 ANONYMOUS,Anonymous,Unauthenticated users,,,,gis_location,READ,,
 ANONYMOUS,Anonymous,Unauthenticated users,,,,org_facility,READ,,
 ANONYMOUS,Anonymous,Unauthenticated users,,,,org_organisation,READ,,
 ANONYMOUS,Anonymous,Unauthenticated users,,,,org_service,READ,,
-ANONYMOUS,Anonymous,Unauthenticated users,,,,org_service_site,READ,,
-ANONYMOUS,Anonymous,Unauthenticated users,,,,org_site_approval,READ,,
 ANONYMOUS,Anonymous,Unauthenticated users,,,,pr_occupation_type,READ,,
 ANONYMOUS,Anonymous,Unauthenticated users,,,,project_project,READ,,
-AUDITOR,Auditor,,,audit,organisation,,CREATE|READ|UPDATE|DELETE,,
-AUDITOR,Auditor,,,,,doc_document,CREATE|READ|UPDATE|DELETE,,
-AUDITOR,Auditor,,,,,org_audit,CREATE|READ|UPDATE|DELETE,,
 AUTHENTICATED,Authenticated,,,gis,location,,CREATE|READ,UPDATE|DELETE,
 AUTHENTICATED,Authenticated,,,pr,contact,,CREATE,READ|UPDATE|DELETE,
 AUTHENTICATED,Authenticated,,,pr,contact_emergency,,CREATE,READ|UPDATE|DELETE,
-AUTHENTICATED,Authenticated,,,,,disease_demographic,READ,,
-AUTHENTICATED,Authenticated,,,,,disease_disease,READ,,
 AUTHENTICATED,Authenticated,,,,,doc_document,CREATE|READ,UPDATE|DELETE,
 AUTHENTICATED,Authenticated,,,,,gis_location,CREATE|READ,UPDATE|DELETE,
 AUTHENTICATED,Authenticated,,,,,hrm_human_resource,NONE,READ|UPDATE,
@@ -39,15 +31,6 @@ AUTHENTICATED,Authenticated,,,,,pr_person,NONE,READ|UPDATE|DELETE,
 AUTHENTICATED,Authenticated,,,,,pr_person_details,CREATE,READ|UPDATE,
 AUTHENTICATED,Authenticated,,,,,pr_person_tag,CREATE,READ|UPDATE|DELETE,
 AUTHENTICATED,Authenticated,,,,,usr_filter,CREATE,READ|UPDATE|DELETE,
-DISEASE_TEST_READER,Disease Test Reader,,,disease,case_diagnostics,,READ,,any
-DISEASE_TEST_READER,Disease Test Reader,,,disease,testing_demographic,,READ,,any
-DISEASE_TEST_READER,Disease Test Reader,,,disease,testing_report,,READ,,any
-DISEASE_TEST_READER,Disease Test Reader,,,disease,,,READ,,
-DISEASE_TEST_READER,Disease Test Reader,,,,,disease_case_diagnostics,READ,,any
-DISEASE_TEST_READER,Disease Test Reader,,,,,disease_testing_demographic,READ,,any
-DISEASE_TEST_READER,Disease Test Reader,,,,,disease_testing_report,READ,,any
-DISEASE_TEST_READER,Disease Test Reader,,,,,org_site,READ,,any
-DISEASE_TEST_READER,Disease Test Reader,,,,,project_project,READ,,any
 MAP_ADMIN,,,true,gis,location,,CREATE|READ|UPDATE|DELETE,,
 NEWSLETTER_AUTHOR,Newsletter Author,,,cms,newsletter,,CREATE|READ|UPDATE|DELETE,,
 NEWSLETTER_AUTHOR,Newsletter Author,,,cms,newsletter,,READ|DELETE,,any
@@ -59,7 +42,6 @@ NEWSLETTER_AUTHOR,Newsletter Author,,,,,usr_filter,,READ,
 ORG_ADMIN,Organisation Admin,,,admin,user,,CREATE|READ|UPDATE|DELETE,,
 ORG_ADMIN,Organisation Admin,,,cms,newsletter_recipient,,UPDATE,,
 ORG_ADMIN,Organisation Admin,,,cms,read_newsletter,,READ,,any
-ORG_ADMIN,Organisation Admin,,,disease,daycare_testing,,CREATE|READ|UPDATE|DELETE,,
 ORG_ADMIN,Organisation Admin,,,hrm,person,,CREATE|READ|UPDATE|DELETE,,
 ORG_ADMIN,Organisation Admin,,,hrm,staff,,CREATE|READ|UPDATE|DELETE,,
 ORG_ADMIN,Organisation Admin,,,inv,recv,,READ|UPDATE,,
@@ -76,31 +58,24 @@ ORG_ADMIN,Organisation Admin,,,supply,item_pack,,READ,,
 ORG_ADMIN,Organisation Admin,,,supply,,,NONE,,
 ORG_ADMIN,Organisation Admin,,,,,cms_newsletter,READ,,any
 ORG_ADMIN,Organisation Admin,,,,,cms_newsletter_recipient,READ,,
-ORG_ADMIN,Organisation Admin,,,,,disease_daycare_testing,CREATE|READ|UPDATE|DELETE,,
 ORG_ADMIN,Organisation Admin,,,,,doc_document,CREATE|READ,UPDATE|DELETE,
 ORG_ADMIN,Organisation Admin,,,,,gis_location,CREATE|READ|UPDATE|DELETE,,
 ORG_ADMIN,Organisation Admin,,,,,hrm_human_resource,CREATE|READ|UPDATE|DELETE,,
 ORG_ADMIN,Organisation Admin,,,,,inv_recv,READ|UPDATE,,
 ORG_ADMIN,Organisation Admin,,,,,inv_send,READ,,
 ORG_ADMIN,Organisation Admin,,,,,inv_warehouse,CREATE|READ|UPDATE|DELETE,,
-ORG_ADMIN,Organisation Admin,,,,,org_commission,READ,,
 ORG_ADMIN,Organisation Admin,,,,,org_facility,CREATE|READ|UPDATE,,
 ORG_ADMIN,Organisation Admin,,,,,org_office,CREATE|READ|UPDATE|DELETE,,
 ORG_ADMIN,Organisation Admin,,,,,org_organisation,READ|UPDATE,,
-ORG_ADMIN,Organisation Admin,,,,,org_representative,READ|UPDATE,,
-ORG_ADMIN,Organisation Admin,,,,,org_service_site,CREATE|READ|UPDATE|DELETE,,
 ORG_ADMIN,Organisation Admin,,,,,org_site,READ,,
-ORG_ADMIN,Organisation Admin,,,,,org_site_approval,READ|UPDATE,,
-ORG_ADMIN,Organisation Admin,,,,,org_verification,READ|UPDATE,,
 ORG_ADMIN,Organisation Admin,,,,,pr_address,CREATE|READ|UPDATE|DELETE,,
 ORG_ADMIN,Organisation Admin,,,,,pr_contact,CREATE|READ|UPDATE|DELETE,,
 ORG_ADMIN,Organisation Admin,,,,,pr_contact,READ,,any
 ORG_ADMIN,Organisation Admin,,,,,pr_contact_emergency,CREATE|READ|UPDATE|DELETE,,
 ORG_ADMIN,Organisation Admin,,,,,pr_person,CREATE|READ|UPDATE|DELETE,,
 ORG_ADMIN,Organisation Admin,,,,,pr_person_details,CREATE|READ|UPDATE|DELETE,,
-ORG_ADMIN,Organisation Admin,,,,,req_req,CREATE|READ|UPDATE|DELETE,,
-ORG_GROUP_ADMIN,Organisation Group Admin,,,disease,daycare_testing,,READ,,any
-ORG_GROUP_ADMIN,Organisation Group Admin,,false,fin,,,READ,,
+ORG_ADMIN,Organisation Admin,,,,,"req_need
+",CREATE|READ|UPDATE|DELETE,,
 ORG_GROUP_ADMIN,Organisation Group Admin,,,hrm,compose,,CREATE|READ|UPDATE|DELETE,,
 ORG_GROUP_ADMIN,Organisation Group Admin,,,hrm,person,,CREATE|READ|UPDATE|DELETE,,
 ORG_GROUP_ADMIN,Organisation Group Admin,,,hrm,staff,,CREATE|READ|UPDATE|DELETE,,
@@ -110,63 +85,21 @@ ORG_GROUP_ADMIN,Organisation Group Admin,,,org,organisation,,CREATE|READ|UPDATE|
 ORG_GROUP_ADMIN,Organisation Group Admin,,,org,,,CREATE|READ|UPDATE|DELETE,,
 ORG_GROUP_ADMIN,Organisation Group Admin,,,pr,contact,,CREATE|READ|UPDATE|DELETE,,
 ORG_GROUP_ADMIN,Organisation Group Admin,,,pr,contact_emergency,,CREATE|READ|UPDATE|DELETE,,
-ORG_GROUP_ADMIN,Organisation Group Admin,,,,,disease_daycare_testing,READ,,any
 ORG_GROUP_ADMIN,Organisation Group Admin,,,,,doc_document,CREATE|READ,UPDATE|DELETE,
-ORG_GROUP_ADMIN,Organisation Group Admin,,,,,fin_voucher,READ,,
-ORG_GROUP_ADMIN,Organisation Group Admin,,,,,fin_voucher_claim,READ,,
-ORG_GROUP_ADMIN,Organisation Group Admin,,,,,fin_voucher_debit,READ,,
 ORG_GROUP_ADMIN,Organisation Group Admin,,,,,hrm_human_resource,CREATE|READ|UPDATE|DELETE,,
 ORG_GROUP_ADMIN,Organisation Group Admin,,,,,inv_warehouse,CREATE|READ|UPDATE|DELETE,,
-ORG_GROUP_ADMIN,Organisation Group Admin,,,,,jnl_issue,CREATE|READ|UPDATE|DELETE,,
-ORG_GROUP_ADMIN,Organisation Group Admin,,,,,jnl_note,CREATE|READ|UPDATE|DELETE,,
-ORG_GROUP_ADMIN,Organisation Group Admin,,,,,org_bsnr,READ,,
-ORG_GROUP_ADMIN,Organisation Group Admin,,,,,org_commission,CREATE|READ|UPDATE|DELETE,,any
 ORG_GROUP_ADMIN,Organisation Group Admin,,,,,org_facility,CREATE|READ|UPDATE|DELETE,,
 ORG_GROUP_ADMIN,Organisation Group Admin,,,,,org_facility_type,CREATE|READ|UPDATE|DELETE,,
 ORG_GROUP_ADMIN,Organisation Group Admin,,,,,org_group,READ|UPDATE,,
 ORG_GROUP_ADMIN,Organisation Group Admin,,,,,org_office,CREATE|READ|UPDATE|DELETE,,
 ORG_GROUP_ADMIN,Organisation Group Admin,,,,,org_organisation,CREATE|READ|UPDATE,,
-ORG_GROUP_ADMIN,Organisation Group Admin,,,,,org_representative,READ|UPDATE,,
-ORG_GROUP_ADMIN,Organisation Group Admin,,,,,org_service_site,CREATE|READ|UPDATE|DELETE,,
 ORG_GROUP_ADMIN,Organisation Group Admin,,,,,org_site,READ,,
-ORG_GROUP_ADMIN,Organisation Group Admin,,,,,org_site_approval,READ|UPDATE,,any
-ORG_GROUP_ADMIN,Organisation Group Admin,,,,,org_site_approval_status,READ,,any
-ORG_GROUP_ADMIN,Organisation Group Admin,,,,,org_verification,READ|UPDATE,,
 ORG_GROUP_ADMIN,Organisation Group Admin,,,,,pr_address,CREATE|READ|UPDATE|DELETE,,
 ORG_GROUP_ADMIN,Organisation Group Admin,,,,,pr_contact,CREATE|READ|UPDATE|DELETE,,
 ORG_GROUP_ADMIN,Organisation Group Admin,,,,,pr_contact_emergency,CREATE|READ|UPDATE|DELETE,,
 ORG_GROUP_ADMIN,Organisation Group Admin,,,,,pr_person,CREATE|READ|UPDATE|DELETE,,
 ORG_GROUP_ADMIN,Organisation Group Admin,,,,,pr_person_details,CREATE|READ|UPDATE|DELETE,,
 ORG_GROUP_ADMIN,Organisation Group Admin,,,,,pr_person_tag,READ,,any
-PROGRAM_ACCOUNTANT,Program Accountant,,,fin,voucher,,NONE,,
-PROGRAM_ACCOUNTANT,Program Accountant,,,fin,voucher_debit,,READ,,any
-PROGRAM_ACCOUNTANT,Program Accountant,,,fin,voucher_invoice,,READ|UPDATE,,
-PROGRAM_ACCOUNTANT,Program Accountant,,,fin,voucher_invoice,,READ,,any
-PROGRAM_ACCOUNTANT,Program Accountant,,,fin,voucher_program,,READ,,any
-PROGRAM_ACCOUNTANT,Program Accountant,,,fin,,,READ,,
-PROGRAM_ACCOUNTANT,Program Accountant,,,,,fin_voucher,READ,,any
-PROGRAM_ACCOUNTANT,Program Accountant,,,,,fin_voucher_debit,READ,,any
-PROGRAM_ACCOUNTANT,Program Accountant,,,,,fin_voucher_invoice,READ|UPDATE,,
-PROGRAM_ACCOUNTANT,Program Accountant,,,,,fin_voucher_program,READ,,any
-PROGRAM_ACCOUNTANT,Program Accountant,,,,,hrm_human_resource,READ,,
-PROGRAM_ACCOUNTANT,Program Accountant,,,,,org_group,READ,,any
-PROGRAM_MANAGER,Program Manager,,,fin,voucher_program,,CREATE|READ|UPDATE,,
-PROGRAM_MANAGER,Program Manager,,,fin,voucher_program,,READ,,any
-PROGRAM_MANAGER,Program Manager,,,fin,,,READ,,
-PROGRAM_MANAGER,Program Manager,,,,,fin_voucher_program,CREATE|READ|UPDATE,,
-PROGRAM_MANAGER,Program Manager,,,,,fin_voucher_transaction,READ,,
-PROGRAM_MANAGER,Program Manager,,,,,org_group,READ,,any
-PROGRAM_MANAGER,Program Manager,,,,,project_project,READ|UPDATE,,
-PROVIDER_ACCOUNTANT,Provider Accountant,,,fin,voucher,,NONE,,
-PROVIDER_ACCOUNTANT,Provider Accountant,,,fin,voucher_claim,,READ|UPDATE,,
-PROVIDER_ACCOUNTANT,Provider Accountant,,,fin,voucher_claim,,READ,,any
-PROVIDER_ACCOUNTANT,Provider Accountant,,,fin,voucher_debit,,READ,,any
-PROVIDER_ACCOUNTANT,Provider Accountant,,,fin,voucher_program,,NONE,,
-PROVIDER_ACCOUNTANT,Provider Accountant,,,fin,,,READ,,
-PROVIDER_ACCOUNTANT,Provider Accountant,,,,,fin_voucher,READ,,any
-PROVIDER_ACCOUNTANT,Provider Accountant,,,,,fin_voucher_claim,READ|UPDATE,,
-PROVIDER_ACCOUNTANT,Provider Accountant,,,,,fin_voucher_debit,READ,,
-PROVIDER_ACCOUNTANT,Provider Accountant,,,,,fin_voucher_program,READ,,any
 SUPPLY_COORDINATOR,Supply Coordinator,,,inv,send,,CREATE|READ|UPDATE|DELETE,,any
 SUPPLY_COORDINATOR,Supply Coordinator,,,inv,send_process,,READ|UPDATE,,any
 SUPPLY_COORDINATOR,Supply Coordinator,,,inv,track_item,,READ,,any
@@ -186,37 +119,7 @@ SUPPLY_COORDINATOR,Supply Coordinator,,,,,org_facility,READ,,any
 SUPPLY_COORDINATOR,Supply Coordinator,,,,,org_organisation,READ|UPDATE,,
 SUPPLY_COORDINATOR,Supply Coordinator,,,,,org_site,READ,,any
 SUPPLY_COORDINATOR,Supply Coordinator,,,,,pr_contact,READ,,any
-SUPPLY_COORDINATOR,Supply Coordinator,,,,,req_req,READ,,any
-SUPPLY_DISTRIBUTOR,Supply Distributor,,,inv,send,,READ,,
-SUPPLY_DISTRIBUTOR,Supply Distributor,,,,,inv_send,READ,,
-SUPPLY_DISTRIBUTOR,Supply Distributor,,,,,org_site,READ,,
-TEST_PROVIDER,Test Provider,,,disease,case_diagnostics,,CREATE|READ|UPDATE|DELETE,,
-TEST_PROVIDER,Test Provider,,,disease,case_diagnostics,,READ,,any
-TEST_PROVIDER,Test Provider,,,disease,testing_report,,CREATE|READ|UPDATE|DELETE,,
-TEST_PROVIDER,Test Provider,,,disease,,,READ,,
-TEST_PROVIDER,Test Provider,,,disease,,,READ,,
-TEST_PROVIDER,Test Provider,,,,,disease_case_diagnostics,CREATE|READ|UPDATE,,
-TEST_PROVIDER,Test Provider,,,,,disease_testing_demographic,CREATE|READ|UPDATE|DELETE,,
-TEST_PROVIDER,Test Provider,,,,,disease_testing_report,CREATE|READ|UPDATE|DELETE,,
-TEST_PROVIDER,Test Provider,,,,,doc_document,CREATE|READ,UPDATE|DELETE,
-TEST_PROVIDER,Test Provider,,,,,org_site,READ,,
-VOUCHER_ISSUER,Voucher Issuer,,,fin,voucher,,READ,,any
-VOUCHER_ISSUER,Voucher Issuer,,,fin,voucher,,CREATE|READ|UPDATE,,
-VOUCHER_ISSUER,Voucher Issuer,,,fin,voucher_debit,,NONE,,
-VOUCHER_ISSUER,Voucher Issuer,,,fin,voucher_program,,NONE,,
-VOUCHER_ISSUER,Voucher Issuer,,,fin,,,READ,,
-VOUCHER_ISSUER,Voucher Issuer,,,,,fin_voucher,CREATE|READ|UPDATE,,
-VOUCHER_ISSUER,Voucher Issuer,,,,,fin_voucher_program,READ,,any
-VOUCHER_PROVIDER,Voucher Provider,,,disease,case_diagnostics,,CREATE|READ|UPDATE|DELETE,,
-VOUCHER_PROVIDER,Voucher Provider,,,disease,case_diagnostics,,READ,,any
-VOUCHER_PROVIDER,Voucher Provider,,,disease,,,READ,,
-VOUCHER_PROVIDER,Voucher Provider,,,fin,voucher,,NONE,,
-VOUCHER_PROVIDER,Voucher Provider,,,fin,voucher_debit,,READ,,any
-VOUCHER_PROVIDER,Voucher Provider,,,fin,voucher_debit,,CREATE|READ|UPDATE,,
-VOUCHER_PROVIDER,Voucher Provider,,,fin,voucher_program,,NONE,,
-VOUCHER_PROVIDER,Voucher Provider,,,fin,,,READ,,
-VOUCHER_PROVIDER,Voucher Provider,,,,,disease_case_diagnostics,CREATE|READ|UPDATE,,
-VOUCHER_PROVIDER,Voucher Provider,,,,,fin_voucher,READ,,any
-VOUCHER_PROVIDER,Voucher Provider,,,,,fin_voucher_debit,CREATE|READ|UPDATE,,
-VOUCHER_PROVIDER,Voucher Provider,,,,,fin_voucher_program,READ,,any
-VOUCHER_PROVIDER,Voucher Provider,,,,,project_project,READ,,any
+SUPPLY_COORDINATOR,Supply Coordinator,,,,,req_need,READ,,any
+RESPONSE_COORDINATOR,Response Manager,,,req,,,READ,,any
+RESPONSE_COORDINATOR,Response Manager,,,req,need,,CREATE|READ|UPDATE|DELETE,,
+RESPONSE_COORDINATOR,Response Manager,,,,,req_need,CREATE|READ|UPDATE|DELETE,,

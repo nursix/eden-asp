@@ -41,12 +41,14 @@ class WorkflowOptions:
              "amber": "fa fa-hourglass",
              "green": "fa fa-check",
              "grey": "fa fa-minus-circle",
+             "blue": "fa fa-circle-o",
              }
 
     css_classes = {"red": "workflow-red",
                    "amber": "workflow-amber",
                    "green": "workflow-green",
                    "grey": "workflow-grey",
+                   "blue": "workflow-blue",
                    }
 
     # -------------------------------------------------------------------------
