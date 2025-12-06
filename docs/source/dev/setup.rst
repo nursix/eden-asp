@@ -59,7 +59,7 @@ To install web2py, clone it directly from GitHub:
 
 .. code-block:: bash
 
-   git clone --recursive https://github.com/web2py/web2py.git ~/web2py
+   git clone https://github.com/web2py/web2py.git ~/web2py
 
 .. tip::
    You can of course choose any other target location than *~/web2py* for
@@ -72,7 +72,7 @@ all submodules) to the supported stable version (currently 2.27.1):
 
    cd ~/web2py
    git reset --hard 49bb23c4
-   git submodule update --recursive
+   git submodule update --init --recursive
 
 Installing Eden
 ---------------
