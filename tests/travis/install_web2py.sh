@@ -19,13 +19,13 @@ WEB2PY_COMMIT=49bb23c4
 
 # Clone web2py under build home (usually /home/travis/build)
 cd ../..
-git clone --recursive https://github.com/web2py/web2py.git
+git clone https://github.com/web2py/web2py.git
 
 # Reset to target version
 cd web2py
 if [ ! -z "$WEB2PY_COMMIT" ]; then
    git reset --hard $WEB2PY_COMMIT
-   git submodule update --recursive
+   git submodule update --init --recursive
 fi
 
 # Patch web2py/PyDAL
