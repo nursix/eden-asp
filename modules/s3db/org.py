@@ -2893,35 +2893,55 @@ class OrgOrganisationTagModel(DataModel):
 
 # =============================================================================
 class OrgOrganisationTeamModel(DataModel):
-    """
-        Link table between Organisations & Teams
-    """
+    """ Model for Teams Management """
 
-    names = ("org_organisation_team",)
+    names = ("org_organisation_team",
+             "org_team_service",
+             )
 
     def model(self):
 
+        group_id = self.pr_group_id
+
+        define_table = self.define_table
+        configure = self.configure
+
         # ---------------------------------------------------------------------
-        # Link table between Organisations & Teams
+        # Team <=> Organisation Link Table
         #
         tablename = "org_organisation_team"
-        self.define_table(tablename,
-                          self.org_organisation_id(empty = False,
-                                                   ondelete = "CASCADE",
-                                                   ),
-                          self.pr_group_id(empty = False,
-                                           ondelete = "CASCADE",
-                                           ),
-                          )
+        define_table(tablename,
+                     self.org_organisation_id(empty = False,
+                                              ondelete = "CASCADE",
+                                              ),
+                     group_id(empty = False,
+                              ondelete = "CASCADE",
+                              ),
+                     )
 
-        self.configure(tablename,
-                       deduplicate = S3Duplicate(primary = ("organisation_id",
-                                                            "group_id",
-                                                            ),
-                                                 ),
-                       onaccept = self.organisation_team_onaccept,
-                       ondelete = self.organisation_team_ondelete,
-                       )
+        configure(tablename,
+                  deduplicate = S3Duplicate(primary = ("organisation_id",
+                                                       "group_id",
+                                                       ),
+                                            ),
+                  onaccept = self.organisation_team_onaccept,
+                  ondelete = self.organisation_team_ondelete,
+                  )
+
+        # ---------------------------------------------------------------------
+        # Services provided by a team (capabilities)
+        #
+        tablename = "org_team_service"
+        define_table(tablename,
+                     group_id(empty=False, ondelete="CASCADE"),
+                     self.org_service_id(empty=False, ondelete="CASCADE"),
+                     )
+
+        # ---------------------------------------------------------------------
+        # TODO Team status
+
+        # ---------------------------------------------------------------------
+        # TODO Team deployments
 
         # ---------------------------------------------------------------------
         # Pass names back to global scope (s3.*)

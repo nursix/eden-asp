@@ -2506,6 +2506,12 @@ class PRGroupModel(DataModel):
                                                 "autodelete": False,
                                                 },
                             org_organisation_team = "group_id",
+                            org_service = {"link": "org_team_service",
+                                           "joinby": "group_id",
+                                           "key": "service_id",
+                                           "actuate": "hide",
+                                           "autodelete": False,
+                                           },
 
                             # Posts
                             cms_post = {"link": "cms_post_team",
