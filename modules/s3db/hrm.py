@@ -8003,6 +8003,7 @@ def hrm_group_controller():
             # Team should be contacted either via the Leader or
             # simply by sending a message to the group as a whole.
             #(T("Contact Data"), "contact"),
+            (T("Assignments"), "need_service"),
             (T("Members"), "group_membership"),
             (T("Documents"), "document"),
             ]

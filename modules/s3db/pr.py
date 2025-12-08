@@ -2490,6 +2490,14 @@ class PRGroupModel(DataModel):
                                               ),
                             event_team = "group_id",
 
+                            # Needs
+                            req_need_service = {"link": "req_need_service_team",
+                                                "joinby": "group_id",
+                                                "key": "need_service_id",
+                                                "actuate": "hide",
+                                                "autodelete": False,
+                                                },
+
                             # Organisations
                             org_organisation = {"link": "org_organisation_team",
                                                 "joinby": "group_id",

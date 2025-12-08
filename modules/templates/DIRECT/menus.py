@@ -358,6 +358,10 @@ class OptionsMenu(default.OptionsMenu):
                         M("Create", m="create"),
                         M("Map", m="map"),
                         ),
+                    M("Assistance", f="need_service")(
+                        M("Manage"),
+                        # M("Map", m="map"), # TODO needs location context
+                        )
                     )
 
     # -------------------------------------------------------------------------

@@ -738,13 +738,6 @@ class OrgOrganisationModel(DataModel):
                        org_service_organisation = "organisation_id",
                        # Assets
                        asset_asset = "organisation_id",
-                       # Needs
-                       req_need = {"name": "needs",
-                                   "link": "req_need_organisation",
-                                   "joinby": "organisation_id",
-                                   "key": "need_id",
-                                   "multiple": False,
-                                   },
                        # Requests
                        #req_req = "donated_by_id",
 
@@ -1136,8 +1129,10 @@ class OrgOrganisationNameModel(DataModel):
                                                  ),
                        )
 
+        # ---------------------------------------------------------------------
         # Pass names back to global scope (s3.*)
-        return None
+        #
+        # return None
 
 # =============================================================================
 class OrgOrganisationBranchModel(DataModel):
@@ -1563,7 +1558,9 @@ class OrgOrganisationGroupModel(DataModel):
                   ondelete = self.group_membership_onaccept,
                   )
 
+        # ---------------------------------------------------------------------
         # Pass names back to global scope (s3.*)
+        #
         return {"org_group_id": group_id,
                 "org_group_represent": group_represent,
                 }
@@ -1697,7 +1694,8 @@ class OrgOrganisationGroupPersonModel(DataModel):
 
         # ---------------------------------------------------------------------
         # Pass names back to global scope (s3.*)
-        return None
+        #
+        # return None
 
 # =============================================================================
 class OrgOrganisationGroupTeamModel(DataModel):
@@ -1733,8 +1731,10 @@ class OrgOrganisationGroupTeamModel(DataModel):
                        onaccept = self.org_group_team_onaccept,
                        )
 
+        # ---------------------------------------------------------------------
         # Pass names back to global scope (s3.*)
-        return None
+        #
+        # return None
 
     # -------------------------------------------------------------------------
     @staticmethod
@@ -1816,8 +1816,10 @@ class OrgOrganisationLocationModel(DataModel):
                                                  ),
                        )
 
+        # ---------------------------------------------------------------------
         # Pass names back to global scope (s3.*)
-        return None
+        #
+        # return None
 
 # =============================================================================
 class OrgOrganisationOrganisationModel(DataModel):
@@ -1864,8 +1866,10 @@ class OrgOrganisationOrganisationModel(DataModel):
                        realm_entity = self.org_organisation_organisation_realm_entity,
                        )
 
+        # ---------------------------------------------------------------------
         # Pass names back to global scope (s3.*)
-        return None
+        #
+        # return None
 
     # -------------------------------------------------------------------------
     @staticmethod
@@ -2048,8 +2052,10 @@ class OrgOrganisationResourceModel(DataModel):
                   super_entity = "stats_data",
                   )
 
+        # ---------------------------------------------------------------------
         # Pass names back to global scope (s3.*)
-        return None
+        #
+        # return None
 
 # =============================================================================
 class OrgOrganisationSectorModel(DataModel):
@@ -2190,7 +2196,9 @@ class OrgOrganisationSectorModel(DataModel):
                                             ),
                   )
 
+        # --------------------------------------------------------------------
         # Pass names back to global scope (s3.*)
+        #
         return {"org_sector_id": sector_id,
                 }
 
@@ -2570,6 +2578,7 @@ class OrgServiceModel(DataModel):
                          "site_id",
                          "service_location_service.service_id",
                          ]
+        default_row = report_fields[0]
         add_report_field = report_fields.append
 
         # Location levels (append to list fields and report axes)
@@ -2877,8 +2886,10 @@ class OrgOrganisationTagModel(DataModel):
                                                  ),
                        )
 
+        # ---------------------------------------------------------------------
         # Pass names back to global scope (s3.*)
-        return None
+        #
+        # return None
 
 # =============================================================================
 class OrgOrganisationTeamModel(DataModel):
@@ -2912,8 +2923,10 @@ class OrgOrganisationTeamModel(DataModel):
                        ondelete = self.organisation_team_ondelete,
                        )
 
+        # ---------------------------------------------------------------------
         # Pass names back to global scope (s3.*)
-        return None
+        #
+        # return None
 
     # -------------------------------------------------------------------------
     @staticmethod
@@ -2982,8 +2995,10 @@ class OrgOrganisationTypeTagModel(DataModel):
                                                  ),
                        )
 
+        # ---------------------------------------------------------------------
         # Pass names back to global scope (s3.*)
-        return None
+        #
+        # return None
 
 # =============================================================================
 class OrgSiteModel(DataModel):
@@ -3187,14 +3202,6 @@ class OrgSiteModel(DataModel):
                        # Format for InlineComponent/filter_widget
                        org_site_org_group = "site_id",
 
-                       # Needs
-                       req_need = {"name": "needs",
-                                   "link": "req_need_site",
-                                   "joinby": "site_id",
-                                   "key": "need_id",
-                                   "multiple": False,
-                                   },
-
                        # Requests
                        req_req = "site_id",
                        req_commit = "site_id",
@@ -3211,7 +3218,9 @@ class OrgSiteModel(DataModel):
                        proc_plan = "site_id",
                        )
 
+        # ---------------------------------------------------------------------
         # Pass names back to global scope (s3.*)
+        #
         return {"org_site_id": site_id,
                 "org_site_represent": org_site_represent,
                 }
@@ -3679,6 +3688,7 @@ class OrgSiteDetailsModel(DataModel):
 
         # ---------------------------------------------------------------------
         # Pass names back to global scope (s3.*)
+        #
         return {"org_site_status_opts": site_status_opts,
                 }
 
@@ -3744,8 +3754,10 @@ class OrgSiteEventModel(DataModel):
                        orderby = "org_site_event.date desc",
                        )
 
+        # ---------------------------------------------------------------------
         # Pass names back to global scope (s3.*)
-        return None
+        #
+        # return None
 
 # =============================================================================
 class OrgSitePresenceModel(DataModel):
@@ -3862,7 +3874,8 @@ class OrgSitePresenceModel(DataModel):
 
         # ---------------------------------------------------------------------
         # Pass names back to global scope (s3.*)
-        return None
+        #
+        # return None
 
     # -------------------------------------------------------------------------
     @staticmethod
@@ -3998,8 +4011,10 @@ class OrgSiteGroupModel(DataModel):
                                             ),
                           )
 
+        # ---------------------------------------------------------------------
         # Pass names back to global scope (s3.*)
-        return None
+        #
+        # return None
 
 # =============================================================================
 class OrgSiteNameModel(DataModel):
@@ -4036,8 +4051,10 @@ class OrgSiteNameModel(DataModel):
                                                  ),
                        )
 
+        # ---------------------------------------------------------------------
         # Pass names back to global scope (s3.*)
-        return None
+        #
+        # return None
 
 # =============================================================================
 class OrgSiteShiftModel(DataModel):
@@ -4078,8 +4095,10 @@ class OrgSiteShiftModel(DataModel):
         #    msg_list_empty = T("No Shifts found for this %(site_label)s") % {"site_label": site_label},
         #    )
 
+        # ---------------------------------------------------------------------
         # Pass names back to global scope (s3.*)
-        return None
+        #
+        # return None
 
 # =============================================================================
 class OrgSiteTagModel(DataModel):
@@ -4126,8 +4145,10 @@ class OrgSiteTagModel(DataModel):
                                                  ),
                        )
 
+        # ---------------------------------------------------------------------
         # Pass names back to global scope (s3.*)
-        return None
+        #
+        # return None
 
 # =============================================================================
 class OrgSiteLocationModel(DataModel):
@@ -4190,8 +4211,10 @@ class OrgSiteLocationModel(DataModel):
                                                  ),
                        )
 
+        # ---------------------------------------------------------------------
         # Pass names back to global scope (s3.*)
-        return None
+        #
+        # return None
 
 # =============================================================================
 class OrgFacilityModel(DataModel):
@@ -4646,7 +4669,9 @@ class OrgFacilityModel(DataModel):
                      facility_type_id(),
                      )
 
+        # ---------------------------------------------------------------------
         # Pass names back to global scope (s3.*)
+        #
         return {"org_facility_type_id": facility_type_id,
                 "org_facility_geojson": self.org_facility_geojson,
                 }
@@ -4935,7 +4960,9 @@ class OrgRoomModel(DataModel):
                        deduplicate = S3Duplicate(),
                        )
 
+        # ---------------------------------------------------------------------
         # Pass names back to global scope (s3.*)
+        #
         return {"org_room_id": room_id,
                 }
 
@@ -5256,7 +5283,9 @@ class OrgOfficeModel(DataModel):
                   #update_realm = True,
                   )
 
+        # ---------------------------------------------------------------------
         # Pass names back to global scope (s3.*)
+        #
         return {"org_office_type_id": office_type_id,
                 }
 
@@ -5312,8 +5341,11 @@ class OrgOfficeTypeTagModel(DataModel):
                                                  ),
                        )
 
+        # ---------------------------------------------------------------------
         # Pass names back to global scope (s3.*)
-        return None
+        #
+        # return None
+
 
 # =============================================================================
 def org_organisation_address(row):
@@ -5751,6 +5783,7 @@ class org_OrganisationRepresent(S3Represent):
         """
 
         show_parent = self.parent
+        parent = None
         if self.translate:
             # Custom Row (with the name_l10n left-joined)
             name = row["org_organisation_name.name_l10n"] or \
@@ -5874,8 +5907,8 @@ class org_SiteRepresent(S3Represent):
         # Get the values
         if rows and self.table:
             values = [row["org_site.site_id"] for row in rows]
-        else:
-            values = [values] if type(values) is not list else values
+        elif not isinstance(values, list):
+            values = [values]
 
         # Lookup the representations
         if values:
@@ -6405,8 +6438,8 @@ class org_SiteCheckInMethod(CRUDMethod):
 
         person_details = cls.person_details(person)
         output = {"d": s3_str(person_details),
-                  "i": True if status.get("check_in_allowed") else False,
-                  "o": True if status.get("check_out_allowed") else False,
+                  "i": bool(status.get("check_in_allowed")),
+                  "o": bool(status.get("check_out_allowed")),
                   "s": status.get("status"),
                   }
 
@@ -7502,7 +7535,7 @@ def org_office_controller():
     # Get default organisation_id
     req_vars = request.vars
     organisation_id = req_vars["organisation_id"]
-    if type(organisation_id) is list:
+    if isinstance(organisation_id, list):
         req_vars["organisation_id"] = organisation_id[0]
     organisation_id = req_vars["organisation_id"] or \
                       current.session.s3.organisation_id or \

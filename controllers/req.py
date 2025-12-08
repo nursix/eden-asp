@@ -1,5 +1,5 @@
 """
-    Request Management
+    Request Management - Controllers
 """
 
 module = request.controller
@@ -8,7 +8,7 @@ resourcename = request.function
 if not settings.has_module(module):
     raise HTTP(404, body="Module disabled: %s" % module)
 
-# -----------------------------------------------------------------------------
+# =============================================================================
 def index():
     """ Customisable module homepage """
 
@@ -23,7 +23,29 @@ def index_alt():
     # Just redirect to the list of Requests
     s3_redirect_default(URL(f="req"))
 
+# =============================================================================
+# Needs Assessments
+#
+def need():
+    """
+        Needs: CRUD Controller
+    """
+
+    def prep(r):
+        if r.component_name == "impact":
+            s3db.stats_impact.location_id.default = r.record.location_id
+        return True
+    s3.prep = prep
+
+    return crud_controller(rheader=s3db.req_rheader)
+
 # -----------------------------------------------------------------------------
+def need_service():
+    """ Services Needed: CRUD Controller """
+
+    return crud_controller(rheader=s3db.req_rheader)
+
+# =============================================================================
 def is_affiliated():
     """
         Check if User is affiliated to an Organisation
@@ -94,20 +116,15 @@ def marker_fn(record):
 
 # -----------------------------------------------------------------------------
 def req():
-    """
-        REST Controller for Request Instances
-    """
+    """ Requests: CRUD Controller """
 
     s3.filter = (s3db.req_req.is_template == False)
 
-    output = req_controller()
-    return output
+    return req_controller()
 
 # -----------------------------------------------------------------------------
 def req_template():
-    """
-        REST Controller for Request Templates
-    """
+    """ Request Templates: CRUD Controller """
 
     # Hide fields which aren't relevant to templates
     # @ToDo: Need to get this done later after being opened by Types?
@@ -183,12 +200,11 @@ def req_template():
             msg_record_deleted = T("Request Template Deleted"),
             msg_list_empty = T("No Request Templates"))
 
-    output = req_controller(template = True)
-    return output
+    return req_controller(template = True)
 
 # -----------------------------------------------------------------------------
 def req_controller(template = False):
-    """ REST Controller """
+    """ Requests/Request Templates: CRUD Controller """
 
     REQ_STATUS_PARTIAL  = 1
     REQ_STATUS_COMPLETE = 2
@@ -941,12 +957,9 @@ $.filterOptionsS3({
 
     return crud_controller("req", "req", rheader=s3db.req_rheader)
 
-# =============================================================================
+# -----------------------------------------------------------------------------
 def req_item():
-    """
-        REST Controller
-        @ToDo: Filter out fulfilled Items?
-    """
+    """ Request Items: CRUD Controller """
 
     # Filter out Template Items
     if request.function != "fema":
@@ -1020,6 +1033,16 @@ def req_item():
             s3.actions = [req_item_inv_item_btn]
 
     return output
+
+# -----------------------------------------------------------------------------
+def approver():
+    """ Request Approvers: CRUDController """
+
+    # We need a more complex control: leave to template
+    #if not auth.s3_has_role("ADMIN"):
+    #    s3.filter = auth.filter_by_root_org(s3db.req_approver)
+
+    return crud_controller()
 
 # -----------------------------------------------------------------------------
 def req_item_packs():
@@ -1172,10 +1195,9 @@ def req_item_inv_item():
 
 # =============================================================================
 def req_skill():
-    """
-        REST Controller
-        @ToDo: Filter out fulfilled Skills?
-    """
+    """ Requested Skills: CRUD Controller """
+
+    # TODO Filter out fulfilled Skills?
 
     # Filter out Template Items
     s3.filter = (FS("req_id$is_template") == False)
@@ -1246,8 +1268,10 @@ def skills_filter(req_id):
                                                         )
 
 # =============================================================================
+# Commitments
+#
 def commit():
-    """ REST Controller """
+    """ Commitments: CRUD Controller """
 
     # Check if user is affiliated to an Organisation
     if not is_affiliated():
@@ -1564,144 +1588,40 @@ def commit_rheader(r):
     return None
 
 # =============================================================================
+# Inventory proxy controllers
+#
 def send():
-    """ RESTful CRUD controller """
+    """ Outgoing shipments: CRUD Controller """
 
-    s3db.configure("inv_send",
-                   listadd = False,
-                   )
+    s3db.configure("inv_send", listadd = False)
 
     return s3db.inv_send_controller()
 
 # ==============================================================================
 def send_commit():
-    """
-        Send a Shipment containing all items in a Commitment
+    """ Send a shipment containing all items in a commitment """
 
-        @ToDo: Rewrite as CRUDMethod
-                - means that permissions are better-controlled
-    """
+    # TODO Rewrite as CRUDMethod
 
     return s3db.req_send_commit()
 
 # -----------------------------------------------------------------------------
 def send_process():
-    """ Process a Shipment """
+    """ Process an outgoing shipment """
+
+    # TODO Rewrite as CRUDMethod
 
     return s3db.inv_send_process()
 
-# =============================================================================
-def commit_item():
-    """ REST Controller """
-
-    def prep(r):
-
-        table = r.table
-
-        # Filter to item commits
-        field = table.commit_id
-        field.requires = IS_EMPTY_OR(IS_ONE_OF(db, "req_commit.id",
-                                               field.represent,
-                                               filterby = "type",
-                                               filter_opts = (1,),
-                                               orderby="req_commit.date",
-                                               sort=True,
-                                               ))
-        return True
-    s3.prep = prep
-
-    return crud_controller()
-
-# =============================================================================
-def commit_req():
-    """
-        Function to commit items for a Request
-        - i.e. copy data from a req into a commitment
-        arg: req_id
-        vars: site_id
-    """
-
-    req_id = request.args[0]
-    site_id = request.vars.get("site_id")
-
-    table = s3db.req_req
-    r_req = db(table.id == req_id).select(table.type,
-                                          limitby=(0, 1)).first()
-
-    # User must have permissions over facility which is sending
-    resourcename, id = s3db.get_instance(s3db.org_site, site_id)
-    if not site_id or not auth.s3_has_permission("update",
-                                                 resourcename,
-                                                 record_id = id,
-                                                 ):
-        session.error = T("You do not have permission to make this commitment.")
-        redirect(URL(c="req", f="req", args=[req_id]))
-
-    # Create a new commit record
-    commit_id = s3db.req_commit.insert(date = request.utcnow,
-                                       req_id = req_id,
-                                       site_id = site_id,
-                                       type = r_req.type
-                                       )
-
-    # Only select items which are in the warehouse
-    ritable = s3db.req_req_item
-    iitable = s3db.inv_inv_item
-    query = (ritable.req_id == req_id) & \
-            (ritable.quantity_fulfil < ritable.quantity) & \
-            (iitable.site_id == site_id) & \
-            (ritable.item_id == iitable.item_id) & \
-            (ritable.deleted == False)  & \
-            (iitable.deleted == False)
-    req_items = db(query).select(ritable.id,
-                                 ritable.quantity,
-                                 ritable.item_pack_id,
-                                 iitable.item_id,
-                                 iitable.quantity,
-                                 iitable.item_pack_id)
-
-    citable = s3db.req_commit_item
-    for req_item in req_items:
-        req_pack_quantity = req_item.req_req_item.pack_quantity()
-        req_item_quantity = req_item.req_req_item.quantity * req_pack_quantity
-
-        inv_item_quantity = req_item.inv_inv_item.quantity * \
-                            req_item.inv_inv_item.pack_quantity()
-
-        if inv_item_quantity > req_item_quantity:
-            commit_item_quantity = req_item_quantity
-        else:
-            commit_item_quantity = inv_item_quantity
-        commit_item_quantity = commit_item_quantity / req_pack_quantity
-
-        if commit_item_quantity:
-            req_item_id = req_item.req_req_item.id
-
-            commit_item = {"commit_id": commit_id,
-                           "req_item_id": req_item_id,
-                           "item_pack_id": req_item.req_req_item.item_pack_id,
-                           "quantity": commit_item_quantity,
-                           }
-
-            commit_item_id = citable.insert(**commit_item)
-            commit_item["id"] = commit_item_id
-
-            s3db.onaccept("req_commit_item", commit_item)
-
-    # Redirect to commit
-    redirect(URL(c="req", f="commit", args=[commit_id, "commit_item"]))
-
-# =============================================================================
 def send_req():
     """
         Function to send items for a Request.
         - i.e. copy data from a req into a send
-        arg: req_id
-        vars: site_id
-
-        @ToDo: Rewrite as CRUDMethod
-                - means that permissions are better-controlled
+        - arg: req_id
+        - vars: site_id
     """
+
+    # TODO Rewrite as CRUDMethod
 
     req_id = request.args[0]
     site_id = request.vars.get("site_id", None)
@@ -1913,6 +1833,110 @@ def send_req():
              )
 
 # =============================================================================
+# Commitments
+#
+def commit_item():
+    """ Committed Items: CRUD Controller """
+
+    def prep(r):
+
+        table = r.table
+
+        # Filter to item commits
+        field = table.commit_id
+        field.requires = IS_EMPTY_OR(IS_ONE_OF(db, "req_commit.id",
+                                               field.represent,
+                                               filterby = "type",
+                                               filter_opts = (1,),
+                                               orderby="req_commit.date",
+                                               sort=True,
+                                               ))
+        return True
+    s3.prep = prep
+
+    return crud_controller()
+
+# -----------------------------------------------------------------------------
+def commit_req():
+    """
+        Function to commit items for a Request
+        - i.e. copy data from a req into a commitment
+        arg: req_id
+        vars: site_id
+    """
+
+    req_id = request.args[0]
+    site_id = request.vars.get("site_id")
+
+    table = s3db.req_req
+    r_req = db(table.id == req_id).select(table.type,
+                                          limitby=(0, 1)).first()
+
+    # User must have permissions over facility which is sending
+    resourcename, id = s3db.get_instance(s3db.org_site, site_id)
+    if not site_id or not auth.s3_has_permission("update",
+                                                 resourcename,
+                                                 record_id = id,
+                                                 ):
+        session.error = T("You do not have permission to make this commitment.")
+        redirect(URL(c="req", f="req", args=[req_id]))
+
+    # Create a new commit record
+    commit_id = s3db.req_commit.insert(date = request.utcnow,
+                                       req_id = req_id,
+                                       site_id = site_id,
+                                       type = r_req.type
+                                       )
+
+    # Only select items which are in the warehouse
+    ritable = s3db.req_req_item
+    iitable = s3db.inv_inv_item
+    query = (ritable.req_id == req_id) & \
+            (ritable.quantity_fulfil < ritable.quantity) & \
+            (iitable.site_id == site_id) & \
+            (ritable.item_id == iitable.item_id) & \
+            (ritable.deleted == False)  & \
+            (iitable.deleted == False)
+    req_items = db(query).select(ritable.id,
+                                 ritable.quantity,
+                                 ritable.item_pack_id,
+                                 iitable.item_id,
+                                 iitable.quantity,
+                                 iitable.item_pack_id)
+
+    citable = s3db.req_commit_item
+    for req_item in req_items:
+        req_pack_quantity = req_item.req_req_item.pack_quantity()
+        req_item_quantity = req_item.req_req_item.quantity * req_pack_quantity
+
+        inv_item_quantity = req_item.inv_inv_item.quantity * \
+                            req_item.inv_inv_item.pack_quantity()
+
+        if inv_item_quantity > req_item_quantity:
+            commit_item_quantity = req_item_quantity
+        else:
+            commit_item_quantity = inv_item_quantity
+        commit_item_quantity = commit_item_quantity / req_pack_quantity
+
+        if commit_item_quantity:
+            req_item_id = req_item.req_req_item.id
+
+            commit_item = {"commit_id": commit_id,
+                           "req_item_id": req_item_id,
+                           "item_pack_id": req_item.req_req_item.item_pack_id,
+                           "quantity": commit_item_quantity,
+                           }
+
+            commit_item_id = citable.insert(**commit_item)
+            commit_item["id"] = commit_item_id
+
+            s3db.onaccept("req_commit_item", commit_item)
+
+    # Redirect to commit
+    redirect(URL(c="req", f="commit", args=[commit_id, "commit_item"]))
+
+# =============================================================================
+# =============================================================================
 def commit_item_json():
     """
         Used by s3.supply.js
@@ -1944,74 +1968,6 @@ def commit_item_json():
     response.headers["Content-Type"] = "application/json"
     return json_str
 
-# =============================================================================
-def approver():
-    """ Approvers Controller """
-
-    # We need a more complex control: leave to template
-    #if not auth.s3_has_role("ADMIN"):
-    #    s3.filter = auth.filter_by_root_org(s3db.req_approver)
-
-    return crud_controller()
-
-# =============================================================================
-def fema():
-    """
-        Custom Report to list all open requests for items that FEMA can supply
-
-        @ToDo: Filter to just Sites that FEMA support
-    """
-
-    ritable = s3db.req_req_item
-    rtable = db.req_req
-    itable = db.supply_item
-    ictable = db.supply_item_category
-    citable = db.supply_catalog_item
-    query = (ictable.name == "FEMA") & \
-            (citable.item_category_id == ictable.id) & \
-            (citable.item_id == itable.id) & \
-            (itable.deleted != True)
-    fema_items = db(query).select(itable.id)
-    fema_item_ids = [item.id for item in fema_items]
-
-    REQ_STATUS_COMPLETE = 2
-    s3.filter = (rtable.deleted != True) & \
-                (rtable.is_template == False) & \
-                (rtable.commit_status != REQ_STATUS_COMPLETE) & \
-                (rtable.transit_status != REQ_STATUS_COMPLETE) & \
-                (rtable.fulfil_status != REQ_STATUS_COMPLETE) & \
-                (ritable.req_id == rtable.id) & \
-                (ritable.quantity > ritable.quantity_commit) & \
-                (ritable.quantity > ritable.quantity_transit) & \
-                (ritable.quantity > ritable.quantity_fulfil) & \
-                (ritable.deleted != True) & \
-                (ritable.item_id.belongs(fema_item_ids))
-
-    # Filter Widgets
-    filter_widgets = [
-        s3base.OptionsFilter("req_id$site_id",
-                             label = T("Facility"),
-                             #cols = 3,
-                             ),
-    ]
-    s3db.configure("req_req_item", filter_widgets = filter_widgets)
-
-    return req_item()
-
-# =============================================================================
-def need():
-    """
-        Needs: CRUD Controller
-    """
-
-    def prep(r):
-        if r.component_name == "impact":
-            s3db.stats_impact.location_id.default = r.record.location_id
-        return True
-    s3.prep = prep
-
-    return crud_controller(rheader=s3db.req_rheader)
-
 # -----------------------------------------------------------------------------
 def order_item():
     """
@@ -2021,19 +1977,8 @@ def order_item():
     return crud_controller()
 
 # -----------------------------------------------------------------------------
-def facility():
-
-    # Open record in this controller after creation
-    s3db.configure("org_facility",
-                   create_next = URL(c="req", f="facility",
-                                     args = ["[id]", "read"]),
-                   )
-
-    return s3db.org_facility_controller()
-
-# -----------------------------------------------------------------------------
 def project_req():
-    """ RESTful CRUD controller for options.s3json lookups """
+    """ CRUD Controller for options.s3json lookups """
 
     if auth.permission.format != "s3json":
         return ""
@@ -2046,5 +1991,16 @@ def project_req():
     s3.prep = prep
 
     return crud_controller()
+
+# =============================================================================
+def facility():
+    """ ORG facility proxy controller """
+
+    # Open record in this controller after creation
+    s3db.configure("org_facility",
+                   create_next = URL(c="req", f="facility", args = ["[id]", "read"]),
+                   )
+
+    return s3db.org_facility_controller()
 
 # END =========================================================================
