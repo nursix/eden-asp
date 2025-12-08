@@ -6,6 +6,8 @@
 
 from gluon import current
 
+from core import LocationSelector
+
 # =============================================================================
 def req_need_resource(r, tablename):
 
@@ -30,6 +32,17 @@ def req_need_controller(**attr):
             table = resource.table
             field = table.contact_organisation_id
             field.readable = field.writable = True
+
+            # field = table.location_id
+            # field.widget = LocationSelector(levels = ("L1", "L2", "L3"),
+            #                         required_levels = ("L1", "L2"),
+            #                         show_address = True,
+            #                         show_postcode = False,
+            #                         address_required = False,
+            #                         postcode_required = False,
+            #                         show_map = True,
+            #                         points = True
+            #                         )
 
             crud_fields = [# --- Contact ---
                            "contact_organisation_id",
