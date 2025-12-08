@@ -41,11 +41,11 @@ class MainMenu(default.MainMenu):
         """ Modules Menu """
 
         menu = [MM("Needs", c="req", f="need"),
-                #MM("Beneficiaries", c="dvr", f="person"),
-                MM("Shelters", c="cr", f="shelter"),
-                #MM("Water Sources", c="water", f="index"),
-                #MM("Inventory", c="inv", f="warehouse"),
                 MM("Assets", c="asset", f="asset"),
+                MM("Supplies", c="inv", f="warehouse"),
+                MM("Shelters", c="cr", f="shelter"),
+                MM("Water Sources", c="water", f="index"),
+                MM("Beneficiaries", c="dvr", f="person"),
                 MM("Organizations", c="org", f="organisation"),
                 ]
 
@@ -180,6 +180,23 @@ class OptionsMenu(default.OptionsMenu):
                 )
 
     # -------------------------------------------------------------------------
+    @staticmethod
+    def asset():
+        """ ASSET Controller """
+
+        ADMIN = current.session.s3.system_roles.ADMIN
+        telephones = lambda i: current.deployment_settings.get_asset_telephones()
+
+        return M(c="asset")(
+                    M("Equipment", f="asset")(
+                        M("Create", m="create"),
+                    ),
+                    M("Administration")(
+                        M("Items", f="item"),
+                        ),
+                )
+
+    # -------------------------------------------------------------------------
     @classmethod
     def cms(cls):
 
@@ -194,6 +211,102 @@ class OptionsMenu(default.OptionsMenu):
         """ HRM / Human Resources Management """
 
         return cls.org()
+
+    # -------------------------------------------------------------------------
+    @staticmethod
+    def inv():
+        """ INV / Inventory """
+
+        ADMIN = current.session.s3.system_roles.ADMIN
+
+        current.s3db.inv_recv_crud_strings()
+        inv_recv_list = current.response.s3.crud_strings.inv_recv.title_list
+
+        settings = current.deployment_settings
+        use_adjust = lambda i: not settings.get_inv_direct_stock_edits()
+        use_commit = lambda i: settings.get_req_use_commit()
+
+        return M()(
+                    M("Warehouses", c="inv", f="warehouse")(
+                        M("Create", m="create"),
+                        M("Import", m="import", p="create"),
+                    ),
+                    M("Warehouse Stock", c="inv", f="inv_item")(
+                        M("Adjust Stock Levels", f="adj", check=use_adjust),
+                        # M("Kitting", f="kitting"),
+                        # M("Import", f="inv_item", m="import", p="create"),
+                    ),
+                    # M("Reports", c="inv", f="inv_item")(
+                    #     M("Warehouse Stock", f="inv_item", m="report"),
+                    #     M("Expiration Report", c="inv", f="track_item",
+                    #       vars={"report": "exp"}),
+                    #     M("Monetization Report", c="inv", f="inv_item",
+                    #       vars={"report": "mon"}),
+                    #     M("Utilization Report", c="inv", f="track_item",
+                    #       vars={"report": "util"}),
+                    #     M("Summary of Incoming Supplies", c="inv", f="track_item",
+                    #       vars={"report": "inc"}),
+                    #     M("Summary of Releases", c="inv", f="track_item",
+                    #       vars={"report": "rel"}),
+                    # ),
+                    M(inv_recv_list, c="inv", f="recv", translate=False)( # Already T()
+                        M("Create", m="create"),
+                    ),
+                    M("Sent Shipments", c="inv", f="send")(
+                        M("Create", m="create"),
+                        M("Search Shipped Items", f="track_item"),
+                    ),
+                    M("Distributions", c="supply", f="distribution")(
+                        M("Create", m="create"),
+                    ),
+                    M("Items", c="supply", f="item")(
+                        M("Create", m="create"),
+                        M("Import", f="catalog_item", m="import", p="create"),
+                    ),
+                    # Catalog Items moved to be next to the Item Categories
+                    #M("Catalog Items", c="supply", f="catalog_item")(
+                       #M("Create", m="create"),
+                    #),
+                    #M("Brands", c="supply", f="brand",
+                    #  restrict=[ADMIN])(
+                    #    M("Create", m="create"),
+                    #),
+
+                    M("Administration", c=("supply", "inv"), link=False)(
+                        M("Catalogs", f="catalog"),
+                        M("Item Categories", f="item_category"),
+                        M("Warehouse Types", c="inv", f="warehouse_type"),
+                        ),
+
+                    # M("Catalogs", c="supply", f="catalog")(
+                    #     M("Create", m="create"),
+                    # ),
+                    # M("Item Categories", c="supply", f="item_category",
+                    #   restrict=[ADMIN])(
+                    #     M("Create", m="create"),
+                    # ),
+                    # M("Suppliers", c="inv", f="supplier")(
+                    #     M("Create", m="create"),
+                    #     M("Import", m="import", p="create"),
+                    # ),
+                    # M("Facilities", c="inv", f="facility")(
+                    #     M("Create", m="create", t="org_facility"),
+                    # ),
+                    # M("Facility Types", c="inv", f="facility_type",
+                    #   restrict=[ADMIN])(
+                    #     M("Create", m="create"),
+                    # ),
+                    M("Warehouse Types", c="inv", f="warehouse_type",
+                      restrict=[ADMIN])(
+                        M("Create", m="create"),
+                    ),
+                    # M("Requests", c="req", f="req")(
+                    #     M("Create", m="create"),
+                    #     M("Requested Items", f="req_item"),
+                    # ),
+                    # M("Commitments", c="req", f="commit", check=use_commit)(
+                    # ),
+                )
 
     # -------------------------------------------------------------------------
     @staticmethod
@@ -223,14 +336,12 @@ class OptionsMenu(default.OptionsMenu):
                     M("Organizations", c="org", f="organisation")(
                         M("Create", m="create"),
                         ),
-                    M("Organization Groups", f="group")(
-                        M("Create", m="create"),
-                        ),
-                    M("Activities", c="act", f="activity"),
                     M("Staff", c="hrm", f="staff"),
+                    M("Teams", c="hrm", f="group"),
                     cms_menu,
                     M("Administration", link=False, restrict=[ADMIN])(
                         M("Organization Types", c="org", f="organisation_type"),
+                        M("Organization Groups", f="group"),
                         M("Services", "org", f="service"),
                         # M("Activity Types", c="act", f="activity_type"),
                         # M("Job Titles", c="hrm", f="job_title"),

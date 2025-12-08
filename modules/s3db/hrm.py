@@ -7883,18 +7883,16 @@ def hrm_group_controller():
                           args=["[id]", "group_membership"])
         teams_orgs = settings.get_hrm_teams_orgs()
         if teams_orgs:
-            if teams_orgs == 1:
-                multiple = False
-            else:
-                multiple = True
+            multiple = teams_orgs == 1
+
             ottable = s3db.org_organisation_team
             label = ottable.organisation_id.label
-            ottable.organisation_id.label = ""
+
             crud_form = CustomForm("name",
                                    "description",
                                    InlineComponent("organisation_team",
                                                    label = label,
-                                                   fields = ["organisation_id"],
+                                                   fields = [("", "organisation_id")],
                                                    multiple = multiple,
                                                    ),
                                    "comments",
@@ -7917,7 +7915,7 @@ def hrm_group_controller():
                               ),
                 ]
 
-            list_fields = ["organisation_team.organisation_id",
+            list_fields = [(T("Organization"), "organisation_team.organisation_id"),
                            "name",
                            "description",
                            "comments",
