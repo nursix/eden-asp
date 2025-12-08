@@ -7883,7 +7883,7 @@ def hrm_group_controller():
                           args=["[id]", "group_membership"])
         teams_orgs = settings.get_hrm_teams_orgs()
         if teams_orgs:
-            multiple = teams_orgs == 1
+            multiple = teams_orgs != 1
 
             ottable = s3db.org_organisation_team
             label = ottable.organisation_id.label
