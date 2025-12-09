@@ -4,9 +4,12 @@
     License: MIT
 """
 
+from collections import OrderedDict
+
 from gluon import current
 
-from core import LocationSelector
+from core import CustomForm, \
+                 DateFilter, LocationFilter, OptionsFilter, TextFilter
 
 # =============================================================================
 def req_need_resource(r, tablename):
@@ -27,24 +30,14 @@ def req_need_controller(**attr):
 
         resource = r.resource
         if not r.component:
-            from core import CustomForm
 
             table = resource.table
             field = table.contact_organisation_id
             field.readable = field.writable = True
 
-            # field = table.location_id
-            # field.widget = LocationSelector(levels = ("L1", "L2", "L3"),
-            #                         required_levels = ("L1", "L2"),
-            #                         show_address = True,
-            #                         show_postcode = False,
-            #                         address_required = False,
-            #                         postcode_required = False,
-            #                         show_map = True,
-            #                         points = True
-            #                         )
-
-            crud_fields = [# --- Contact ---
+            # CRUD Form
+            crud_form = CustomForm(
+                           # --- Contact ---
                            "contact_organisation_id",
                            "contact_name",
                            "contact_phone",
@@ -64,7 +57,7 @@ def req_need_controller(**attr):
                            "status",
 
                            "comments",
-                           ]
+                           )
 
             subheadings = {"author_organisation_id": T("Contact"),
                            "location_id": T("Location"),
@@ -72,6 +65,7 @@ def req_need_controller(**attr):
                            "organisation_id": T("Response Management"),
                            }
 
+            # List fields
             list_fields = ["date",
                            "priority",
                            "refno",
@@ -84,7 +78,44 @@ def req_need_controller(**attr):
                            "comments",
                            ]
 
-            resource.configure(crud_form = CustomForm(*crud_fields),
+            from s3db.req import need_priority_opts, req_status_opts
+
+            # Filters
+            filter_widgets = [TextFilter(["refno",
+                                          "name",
+                                          "description",
+                                          "contact_name",
+                                          "comments",
+                                          ],
+                                         label = T("Search"),
+                                         ),
+                               OptionsFilter("contact_organisation_id",
+                                             ),
+                               LocationFilter("location_id",
+                                              label = T("Location"),
+                                              levels = ["L2", "L3"],
+                                              ),
+                               DateFilter("date",
+                                          hide_time = True,
+                                          hidden = True,
+                                          ),
+                               OptionsFilter("priority",
+                                             options = OrderedDict(need_priority_opts()),
+                                             sort = False,
+                                             cols = 4,
+                                             hidden = True,
+                                             ),
+                               OptionsFilter("status",
+                                             options = OrderedDict(req_status_opts()),
+                                             sort = False,
+                                             cols = 3,
+                                             hidden = True,
+                                             ),
+                              ]
+
+            # Reconfigure resource
+            resource.configure(crud_form = crud_form,
+                               filter_widgets = filter_widgets,
                                subheadings = subheadings,
                                list_fields = list_fields,
                                )

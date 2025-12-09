@@ -275,6 +275,7 @@ class RequestNeedsModel(DataModel):
                           need_priority()(),
                           req_status()("status",
                                        label = T("Fulfilment Status"),
+                                       default = REQ_STATUS_NONE,
                                        ),
                           DateTimeField("end_date",
                                         label = T("End Date"),

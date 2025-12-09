@@ -334,7 +334,8 @@ class CRUDRequest:
         search_mode = self.get_vars.pop("$search", None)
         if search_mode:
             # Apply filter expressions from POST data or session?
-            if self.http == "POST" or search_mode == "session":
+            if self.http == "POST" and search_mode != "session" or \
+               self.http == "GET" and search_mode == "session":
                 self.__search(search_mode)
             # Suppress default filters in this case
             self.suppress_default_filters = True
@@ -364,9 +365,8 @@ class CRUDRequest:
         get_vars = self.get_vars
         content_type = self.env.get("content_type") or ""
 
-        action = get_vars.pop("$action", None)
-
         # Override request method (unless marked as submit-action)
+        action = get_vars.pop("$action", None)
         if mode and action != "submit":
             self.http = "GET"
 
