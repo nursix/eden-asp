@@ -130,6 +130,35 @@ def get_managed_orgs(group=None, cacheable=True):
                                     )
     return [o.id for o in orgs]
 
+# -----------------------------------------------------------------------------
+def permitted_orgs(permission, tablename):
+    """
+        Get the IDs of the organisations for which the user has
+        a certain permission for a certain table
+
+        Args:
+            permission: the permission name
+            tablename: the table name
+
+        Returns:
+            List of organisation IDs
+    """
+
+    db = current.db
+    s3db = current.s3db
+    auth = current.auth
+
+    permissions = auth.permission
+    permitted_realms = permissions.permitted_realms(tablename, permission)
+
+    otable = s3db.org_organisation
+    query = (otable.deleted == False)
+    if permitted_realms is not None:
+        query = (otable.pe_id.belongs(permitted_realms)) & query
+    orgs = db(query).select(otable.id)
+
+    return [o.id for o in orgs]
+
 # =============================================================================
 def get_org_accounts(organisation_id):
     """

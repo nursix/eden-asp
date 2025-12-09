@@ -6,6 +6,49 @@
 
 from gluon import current, IS_NOT_EMPTY
 
+from core import CustomForm, InlineComponent, InlineLink, StringTemplateParser
+
+# -----------------------------------------------------------------------------
+def pr_group_controller(**attr):
+
+    s3 = current.response.s3
+
+    T = current.T
+
+    # Custom prep
+    standard_prep = s3.prep
+    def prep(r):
+        # Call standard prep
+        result = standard_prep(r) if callable(standard_prep) else True
+
+        if r.controller == "hrm":
+            # Teams
+            crud_form = CustomForm("name",
+                                   "description",
+                                   # TODO limit to organisations the user can
+                                   #      create teams for (using helpers/permitted_orgs)
+                                   InlineComponent("organisation_team",
+                                                   label = T("Organization"),
+                                                   fields = [("", "organisation_id")],
+                                                   multiple = False,
+                                                   ),
+                                   InlineLink("service",
+                                              field = "service_id",
+                                              label = T("Capabilities"),
+                                              ),
+                                   # TODO contact name
+                                   # TODO contact phone#
+                                   "comments",
+                                   )
+            r.resource.configure(crud_form=crud_form)
+
+        return result
+    s3.prep = prep
+
+    # TODO Custom rheader exposing status, needs assignments and deployments (hrm/group only)
+
+    return attr
+
 # -----------------------------------------------------------------------------
 def pr_person_resource(r, tablename):
 
@@ -32,8 +75,6 @@ def pr_person_controller(**attr):
     def prep(r):
         # Call standard prep
         result = standard_prep(r) if callable(standard_prep) else True
-
-        from core import CustomForm, StringTemplateParser
 
         # Determine order of name fields
         NAMES = ("first_name", "middle_name", "last_name")

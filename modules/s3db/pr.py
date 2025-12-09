@@ -2490,6 +2490,14 @@ class PRGroupModel(DataModel):
                                               ),
                             event_team = "group_id",
 
+                            # Needs
+                            req_need_service = {"link": "req_need_service_team",
+                                                "joinby": "group_id",
+                                                "key": "need_service_id",
+                                                "actuate": "hide",
+                                                "autodelete": False,
+                                                },
+
                             # Organisations
                             org_organisation = {"link": "org_organisation_team",
                                                 "joinby": "group_id",
@@ -2498,6 +2506,12 @@ class PRGroupModel(DataModel):
                                                 "autodelete": False,
                                                 },
                             org_organisation_team = "group_id",
+                            org_service = {"link": "org_team_service",
+                                           "joinby": "group_id",
+                                           "key": "service_id",
+                                           "actuate": "hide",
+                                           "autodelete": False,
+                                           },
 
                             # Posts
                             cms_post = {"link": "cms_post_team",

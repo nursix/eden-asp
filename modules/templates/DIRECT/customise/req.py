@@ -53,6 +53,7 @@ def req_need_controller(**attr):
                            "location_id",
 
                            # --- Situation ---
+                           "refno",
                            "date",
                            "name",
                            "description",
@@ -73,6 +74,7 @@ def req_need_controller(**attr):
 
             list_fields = ["date",
                            "priority",
+                           "refno",
                            "location_id",
                            "name",
                            "contact_organisation_id",
