@@ -43,6 +43,13 @@ def need():
 def need_service():
     """ Services Needed: CRUD Controller """
 
+    def prep(r):
+        r.resource.configure(insertable=False,
+                             deletable=False,
+                             )
+        return True
+    s3.prep = prep
+
     return crud_controller(rheader=s3db.req_rheader)
 
 # -----------------------------------------------------------------------------
