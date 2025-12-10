@@ -233,18 +233,20 @@ class RequestNeedsModel(DataModel):
                                 length = 64,
                                 label = T("Contact Person"),
                                 requires = IS_LENGTH(64),
+                                represent = lambda v, row=None: v if v else "-",
                                 ),
                           Field("contact_phone",
                                 length = 64,
                                 label = T("Phone #"),
                                 requires = IS_EMPTY_OR(IS_PHONE_NUMBER_SINGLE()),
+                                represent = lambda v, row=None: v if v else "-",
                                 ),
 
                           # Context
                           # TODO event_id (for multi-event management)
-                          # TODO site_id
                           self.gis_location_id(),
-                          # TODO location type / site type
+                          # TODO location name/type
+                          # TODO site_id (default site for item deliveries)
 
                           # Details
                           DateTimeField(default="now"),

@@ -59,7 +59,7 @@ def req_need_controller(**attr):
                            "comments",
                            )
 
-            subheadings = {"author_organisation_id": T("Contact"),
+            subheadings = {"contact_organisation_id": T("Contact"),
                            "location_id": T("Location"),
                            "date": T("Situation"),
                            "organisation_id": T("Response Management"),
@@ -69,11 +69,11 @@ def req_need_controller(**attr):
             list_fields = ["date",
                            "priority",
                            "refno",
-                           "location_id",
                            "name",
-                           "contact_organisation_id",
-                           "contact_name",
-                           "contact_phone",
+                           "location_id",
+                           # "contact_organisation_id",
+                           # "contact_name",
+                           # "contact_phone",
                            "status",
                            "comments",
                            ]
