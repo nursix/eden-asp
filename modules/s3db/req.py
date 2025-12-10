@@ -366,7 +366,7 @@ class RequestNeedsModel(DataModel):
         # Foreign key template
         represent = S3Represent(lookup=tablename, show_link=True)
         need_id = FieldTemplate("need_id", "reference %s" % tablename,
-                                label = T("Need"),
+                                label = T("Assessment"),
                                 ondelete = "CASCADE",
                                 represent = represent,
                                 requires = IS_EMPTY_OR(
@@ -615,7 +615,12 @@ class RequestNeedsServiceModel(DataModel):
         #
         tablename = "req_need_service"
         self.define_table(tablename,
-                          self.req_need_id(empty = False),
+                          self.req_need_id(
+                              empty = False,
+                              writable = False,
+                              ),
+                          # TODO date field
+                          # TODO location_id
                           need_priority()(),
                           self.org_service_id(
                               empty = False,
@@ -637,13 +642,29 @@ class RequestNeedsServiceModel(DataModel):
                           CommentsField(),
                           )
 
+        # List fields
+        # TODO alternative representation of need_id to include
+        #      location name + type as well as title
+        list_fields = ["priority",
+                       "need_id$date",
+                       "need_id",
+                       "need_id$location_id",
+                       "service_id",
+                       "details",
+                       "status",
+                       ]
+
         # TODO onaccept to update need status, and track changes
         self.configure(tablename,
+                       list_fields = list_fields,
                        deduplicate = S3Duplicate(primary=("need_id",
                                                           "service_id",
                                                           ),
                                                  ),
                        )
+
+        # TODO CRUD Strings
+        # TODO rheader including assignments and actions performed
 
         # ---------------------------------------------------------------------
         # Team assigned to specific requirement
