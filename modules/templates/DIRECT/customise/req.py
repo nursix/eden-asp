@@ -43,6 +43,7 @@ def req_need_controller(**attr):
                            "contact_phone",
 
                            # --- Location ---
+                           "location_name",
                            "location_id",
 
                            # --- Situation ---
@@ -60,7 +61,7 @@ def req_need_controller(**attr):
                            )
 
             subheadings = {"contact_organisation_id": T("Contact"),
-                           "location_id": T("Location"),
+                           "location_name": T("Location"),
                            "date": T("Situation"),
                            "organisation_id": T("Response Management"),
                            }
@@ -69,7 +70,7 @@ def req_need_controller(**attr):
             list_fields = ["date",
                            "priority",
                            "refno",
-                           "name",
+                           "location_name",
                            "location_id",
                            # "contact_organisation_id",
                            # "contact_name",
