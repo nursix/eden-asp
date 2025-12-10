@@ -70,30 +70,41 @@
     <xsl:template match="s3xml">
         <!-- S3 Extensions -->
         <xsl:variable name="s3" select="@map"/>
+
         <!-- Skip empty resources -->
         <xsl:variable name="results" select="@results"/>
         <xsl:variable name="start" select="@start"/>
+
         <xsl:if test="$results &gt; 0 and (not($start) or $start &lt; $results)">
             <xsl:variable name="resource" select="concat($prefix, '_', $name)"/>
+            <xsl:variable name="NumberOfFeatures" select="count(./resource[@name=$resource and (map[1][@lon] or map[1][geometry])])"/>
             <xsl:choose>
                 <xsl:when test="$resource='gis_layer_shapefile'">
                     <xsl:apply-templates select="./resource[@name='gis_layer_shapefile']"/>
                 </xsl:when>
-                <xsl:when test="count(./resource[@name=$resource])=1 and (count(./resource[@name=$resource]/map[1]/geometry)=1 or count(./resource[@name=$resource]/map[1]/geometry)=0)">
+                <xsl:when test="$NumberOfFeatures=1">
                     <!-- A single Feature not a Collection -->
                     <xsl:apply-templates select="./resource[@name=$resource]"/>
                 </xsl:when>
                 <xsl:otherwise>
                     <type>FeatureCollection</type>
-                    <!-- S3 Extensions -->
-                    <xsl:if test="$s3">
-                        <s3>
-                            <xsl:value-of select="$s3"/>
-                        </s3>
-                    </xsl:if>
-                    <xsl:for-each select="./resource[@name=$resource]">
-                        <xsl:apply-templates select="."/>
-                    </xsl:for-each>
+                    <xsl:choose>
+                        <xsl:when test="$NumberOfFeatures=0">
+                            <!-- Empty collection -->
+                            <features></features>
+                        </xsl:when>
+                        <xsl:otherwise>
+                            <!-- S3 Extensions -->
+                            <xsl:if test="$s3">
+                                <s3>
+                                    <xsl:value-of select="$s3"/>
+                                </s3>
+                            </xsl:if>
+                            <xsl:for-each select="./resource[@name=$resource]">
+                                <xsl:apply-templates select="."/>
+                            </xsl:for-each>
+                        </xsl:otherwise>
+                    </xsl:choose>
                 </xsl:otherwise>
             </xsl:choose>
         </xsl:if>
@@ -347,7 +358,7 @@
         <xsl:variable name="style" select="./map[1]/style/@value"/>
 
         <xsl:variable name="resource" select="@name"/>
-        <xsl:variable name="NumberOfFeatures" select="count(//resource[@name=$resource])"/>
+        <xsl:variable name="NumberOfFeatures" select="count(//resource[@name=$resource and (map[1][@lon] or map[1][geometry])])"/>
 
         <xsl:choose>
             <xsl:when test="$geometry!='null'">
@@ -436,7 +447,7 @@
                     </xsl:with-param>
                 </xsl:call-template>
             </xsl:when> -->
-            <xsl:when test="./map[1]/@lon!='null'">
+            <xsl:when test="./map[1]/@lon!='null' and ./map[1]/@lon!=''">
                 <!-- @ToDo: Support records with multiple locations
                             via making these also use the map element
                 -->

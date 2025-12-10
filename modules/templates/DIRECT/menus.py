@@ -361,7 +361,7 @@ class OptionsMenu(default.OptionsMenu):
                     M("Assistance", f="need_service")(
                         M("Manage"),
                         # M("Map", m="map"), # TODO needs location context
-                        )
+                        ),
                     )
 
     # -------------------------------------------------------------------------

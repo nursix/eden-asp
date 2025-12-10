@@ -113,14 +113,15 @@ def req_rheader(r, tabs=None):
         if tablename == "req_need":
 
             tabs = [(T("Overview"), None),
-                    (T("Assistance"), "need_service"),
-                    (T("Supplies"), "need_item"),
+                    (T("Assistance Needed"), "need_service"),
+                    (T("Supplies Needed"), "need_item"),
                     # (T("Equipment"), "need_asset"),
+                    (T("Attachments"), "document"),
                     ]
 
-            rheader_fields = [["date", "location_id", "author_organisation_id"],
-                              ["priority", ("", None), "author_contact_name"],
-                              ["status", ("", None), "author_contact_phone"]
+            rheader_fields = [["date", "location_id", "contact_organisation_id"],
+                              ["priority", ("", None), "contact_name"],
+                              ["status", ("", None), "contact_phone"]
                               ]
 
             rheader_title = "name"

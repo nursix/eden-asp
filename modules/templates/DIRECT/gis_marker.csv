@@ -1,3 +1,5 @@
 Name,Height,Width,Image
-marker_red,34,20,"marker_red.png"
-health,40,40,"ersSymbolsV0202/Operations_S1/E_Med_Health_Department_Facility_S1.png"
+marker_red,34,20,marker_red.png
+health,40,40,ersSymbolsV0202/Operations_S1/E_Med_Health_Department_Facility_S1.png
+eoc,40,40,ersSymbolsV0202/Operations_S1/Emergency_Operations_Center_S1_yellow.png
+assessment,27,16,IFRC/Assessment.png
