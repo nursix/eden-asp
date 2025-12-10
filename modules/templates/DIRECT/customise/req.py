@@ -74,6 +74,7 @@ def req_need_controller(**attr):
                            "refno",
                            "site_name",
                            "location_id",
+                           "name",
                            # "contact_organisation_id",
                            # "contact_name",
                            # "contact_phone",

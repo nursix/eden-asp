@@ -287,11 +287,11 @@ class RequestNeedsModel(DataModel):
                      DateTimeField(default="now"),
                      Field("name",
                            length = 128,
-                           label = T("Summary of Needs"),
+                           label = T("Title"),
                            requires = IS_LENGTH(128),
                            ),
                      CommentsField("description",
-                                   label = T("Description"),
+                                   label = T("Situation Summary"),
                                    comment = None,
                                    ),
 
