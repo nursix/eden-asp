@@ -9,7 +9,8 @@ from collections import OrderedDict
 from gluon import current
 
 from core import CustomForm, \
-                 DateFilter, LocationFilter, OptionsFilter, TextFilter
+                 DateFilter, LocationFilter, OptionsFilter, TextFilter, \
+                 get_filter_options
 
 # =============================================================================
 def req_need_resource(r, tablename):
@@ -43,7 +44,8 @@ def req_need_controller(**attr):
                            "contact_phone",
 
                            # --- Location ---
-                           "location_name",
+                           "site_name",
+                           "site_type_id",
                            "location_id",
 
                            # --- Situation ---
@@ -61,7 +63,7 @@ def req_need_controller(**attr):
                            )
 
             subheadings = {"contact_organisation_id": T("Contact"),
-                           "location_name": T("Location"),
+                           "site_name": T("Location"),
                            "date": T("Situation"),
                            "organisation_id": T("Response Management"),
                            }
@@ -70,7 +72,7 @@ def req_need_controller(**attr):
             list_fields = ["date",
                            "priority",
                            "refno",
-                           "location_name",
+                           "site_name",
                            "location_id",
                            # "contact_organisation_id",
                            # "contact_name",
@@ -90,7 +92,9 @@ def req_need_controller(**attr):
                                           ],
                                          label = T("Search"),
                                          ),
-                               OptionsFilter("contact_organisation_id",
+                               OptionsFilter("site_type_id",
+                                             label = T("Site Type"),
+                                             options = lambda: get_filter_options("req_need_site_type"),
                                              ),
                                LocationFilter("location_id",
                                               label = T("Location"),
@@ -104,6 +108,9 @@ def req_need_controller(**attr):
                                              options = OrderedDict(need_priority_opts()),
                                              sort = False,
                                              cols = 4,
+                                             hidden = True,
+                                             ),
+                               OptionsFilter("contact_organisation_id",
                                              hidden = True,
                                              ),
                                OptionsFilter("status",
