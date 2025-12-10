@@ -185,13 +185,12 @@ class OptionsMenu(default.OptionsMenu):
         """ ASSET Controller """
 
         ADMIN = current.session.s3.system_roles.ADMIN
-        telephones = lambda i: current.deployment_settings.get_asset_telephones()
 
         return M(c="asset")(
                     M("Equipment", f="asset")(
                         M("Create", m="create"),
                     ),
-                    M("Administration")(
+                    M("Administration", link=False, restrict=[ADMIN])(
                         M("Items", f="item"),
                         ),
                 )
@@ -224,7 +223,7 @@ class OptionsMenu(default.OptionsMenu):
 
         settings = current.deployment_settings
         use_adjust = lambda i: not settings.get_inv_direct_stock_edits()
-        use_commit = lambda i: settings.get_req_use_commit()
+        # use_commit = lambda i: settings.get_req_use_commit()
 
         return M()(
                     M("Warehouses", c="inv", f="warehouse")(
@@ -353,6 +352,8 @@ class OptionsMenu(default.OptionsMenu):
     def req():
         """ REQ / Needs Management """
 
+        ADMIN = current.session.s3.system_roles.ADMIN
+
         return M(c="req")(
                     M("Needs Assessments", f="need")(
                         M("Create", m="create"),
@@ -361,6 +362,9 @@ class OptionsMenu(default.OptionsMenu):
                     M("Assistance", f="need_service")(
                         M("Manage"),
                         # M("Map", m="map"), # TODO needs location context
+                        ),
+                    M("Administration", link=False, restrict=[ADMIN])(
+                        M("Site Types", f="need_site_type"),
                         ),
                     )
 

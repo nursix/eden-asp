@@ -45,6 +45,12 @@ def need_service():
 
     return crud_controller(rheader=s3db.req_rheader)
 
+# -----------------------------------------------------------------------------
+def need_site_type():
+    """ Site Types: CRUD Controller """
+
+    return crud_controller()
+
 # =============================================================================
 def is_affiliated():
     """
