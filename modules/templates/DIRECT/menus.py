@@ -7,6 +7,8 @@
 from gluon import current, URL, TAG, SPAN
 from core import IS_ISO639_2_LANGUAGE_CODE
 from core.ui.layouts import MM, M, ML, MP, MA
+from s3db import auth
+
 try:
     from .layouts import OM
 except ImportError:
@@ -217,6 +219,8 @@ class OptionsMenu(default.OptionsMenu):
         """ INV / Inventory """
 
         ADMIN = current.session.s3.system_roles.ADMIN
+        ORG_ADMIN = current.session.s3.system_roles.ORG_ADMIN
+        SUPPLY_COORDINATOR = current.session.s3.system_roles.SUPPLY_COORDINATOR
 
         current.s3db.inv_recv_crud_strings()
         inv_recv_list = current.response.s3.crud_strings.inv_recv.title_list
@@ -227,13 +231,13 @@ class OptionsMenu(default.OptionsMenu):
 
         return M()(
                     M("Warehouses", c="inv", f="warehouse")(
-                        M("Create", m="create"),
-                        M("Import", m="import", p="create"),
+                        M("Create", m="create", restrict=[ADMIN, ORG_ADMIN]),
+                        M("Import", m="import", p="create", restrict=[ADMIN, ORG_ADMIN]),
                     ),
                     M("Warehouse Stock", c="inv", f="inv_item")(
-                        M("Adjust Stock Levels", f="adj", check=use_adjust),
+                        M("Adjust Stock Levels", f="adj", check=use_adjust, restrict=[ADMIN, SUPPLY_COORDINATOR]),
                         # M("Kitting", f="kitting"),
-                        # M("Import", f="inv_item", m="import", p="create"),
+                        M("Import", f="inv_item", m="import", p="create", restrict=[ADMIN, SUPPLY_COORDINATOR]),
                     ),
                     # M("Reports", c="inv", f="inv_item")(
                     #     M("Warehouse Stock", f="inv_item", m="report"),
@@ -249,18 +253,18 @@ class OptionsMenu(default.OptionsMenu):
                     #       vars={"report": "rel"}),
                     # ),
                     M(inv_recv_list, c="inv", f="recv", translate=False)( # Already T()
-                        M("Create", m="create"),
+                        M("Create", m="create", restrict=[ADMIN, SUPPLY_COORDINATOR]),
                     ),
                     M("Sent Shipments", c="inv", f="send")(
-                        M("Create", m="create"),
+                        M("Create", m="create", restrict=[ADMIN, SUPPLY_COORDINATOR]),
                         M("Search Shipped Items", f="track_item"),
                     ),
                     M("Distributions", c="supply", f="distribution")(
-                        M("Create", m="create"),
+                        M("Create", m="create", restrict=[ADMIN, SUPPLY_COORDINATOR]),
                     ),
                     M("Items", c="supply", f="item")(
-                        M("Create", m="create"),
-                        M("Import", f="catalog_item", m="import", p="create"),
+                        M("Create", m="create", restrict=[ADMIN, SUPPLY_COORDINATOR]),
+                        M("Import", f="catalog_item", m="import", p="create", restrict=[ADMIN, SUPPLY_COORDINATOR]),
                     ),
                     # Catalog Items moved to be next to the Item Categories
                     #M("Catalog Items", c="supply", f="catalog_item")(
@@ -271,7 +275,7 @@ class OptionsMenu(default.OptionsMenu):
                     #    M("Create", m="create"),
                     #),
 
-                    M("Administration", c=("supply", "inv"), link=False)(
+                    M("Administration", c=("supply", "inv"), restrict=[ADMIN], link=False)(
                         M("Catalogs", f="catalog"),
                         M("Item Categories", f="item_category"),
                         M("Warehouse Types", c="inv", f="warehouse_type"),
@@ -295,10 +299,10 @@ class OptionsMenu(default.OptionsMenu):
                     #   restrict=[ADMIN])(
                     #     M("Create", m="create"),
                     # ),
-                    M("Warehouse Types", c="inv", f="warehouse_type",
-                      restrict=[ADMIN])(
-                        M("Create", m="create"),
-                    ),
+                    #M("Warehouse Types", c="inv", f="warehouse_type",
+                    #  restrict=[ADMIN])(
+                    #    M("Create", m="create"),
+                    #),
                     # M("Requests", c="req", f="req")(
                     #     M("Create", m="create"),
                     #     M("Requested Items", f="req_item"),

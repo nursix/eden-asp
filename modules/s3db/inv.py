@@ -146,7 +146,7 @@ class InvWarehouseModel(DataModel):
 
         root_org = auth.root_org()
         if is_admin:
-            filter_opts = ()
+            filter_opts = (None,)
         elif root_org:
             filter_opts = (root_org, None)
         else:
@@ -161,7 +161,9 @@ class InvWarehouseModel(DataModel):
         define_table(tablename,
                      Field("name", length=128, notnull=True,
                            label = T("Name"),
-                           requires = IS_LENGTH(128),
+                           requires = [IS_NOT_EMPTY(),
+                                       IS_LENGTH(128),
+                                      ],
                            ),
                      organisation_id(default = root_org if org_dependent_wh_types else None,
                                      readable = is_admin if org_dependent_wh_types else False,
@@ -194,7 +196,7 @@ class InvWarehouseModel(DataModel):
                                                         IS_ONE_OF(db, "inv_warehouse_type.id",
                                                                   represent,
                                                                   filterby="organisation_id",
-                                                                  filter_opts=filter_opts,
+                                                                  filter_opts=filter_opts if org_dependent_wh_types else None,
                                                                   sort=True
                                                                   )),
                                           sortby = "name",
@@ -208,7 +210,7 @@ class InvWarehouseModel(DataModel):
 
         configure(tablename,
                   deduplicate = S3Duplicate(primary = ("name",),
-                                            secondary = ("organisation_id",),
+                                            secondary = ("organisation_id",) if org_dependent_wh_types else None,
                                             ),
                   )
 
