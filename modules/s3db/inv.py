@@ -141,21 +141,21 @@ class InvWarehouseModel(DataModel):
 
         organisation_id = self.org_organisation_id
 
-        ADMIN = current.session.s3.system_roles.ADMIN
-        is_admin = auth.s3_has_role(ADMIN)
+        # ADMIN = current.session.s3.system_roles.ADMIN
+        is_admin = auth.s3_has_role('ADMIN')
 
-        root_org = auth.root_org()
-        if is_admin:
-            filter_opts = (None,)
-        elif root_org:
-            filter_opts = (root_org, None)
-        else:
-            filter_opts = (None,)
+        #root_org = auth.root_org()
+        #if is_admin:
+        #    filter_opts = (None,)
+        #elif root_org:
+        #    filter_opts = (root_org, None)
+        #else:
+        #    filter_opts = (None,)
 
         # ---------------------------------------------------------------------
         # Warehouse Types
         #
-        org_dependent_wh_types = settings.get_inv_org_dependent_warehouse_types()
+        # org_dependent_wh_types = settings.get_inv_org_dependent_warehouse_types()
 
         tablename = "inv_warehouse_type"
         define_table(tablename,
@@ -163,12 +163,13 @@ class InvWarehouseModel(DataModel):
                            label = T("Name"),
                            requires = [IS_NOT_EMPTY(),
                                        IS_LENGTH(128),
+                                       IS_NOT_ONE_OF(db, "%s.name" % tablename,),
                                       ],
                            ),
-                     organisation_id(default = root_org if org_dependent_wh_types else None,
-                                     readable = is_admin if org_dependent_wh_types else False,
-                                     writable = is_admin if org_dependent_wh_types else False,
-                                     ),
+                     #organisation_id(default = root_org if org_dependent_wh_types else None,
+                     #                readable = is_admin if org_dependent_wh_types else False,
+                     #                writable = is_admin if org_dependent_wh_types else False,
+                     #                ),
                      CommentsField(),
                      )
 
@@ -195,8 +196,8 @@ class InvWarehouseModel(DataModel):
                                           requires = IS_EMPTY_OR(
                                                         IS_ONE_OF(db, "inv_warehouse_type.id",
                                                                   represent,
-                                                                  filterby="organisation_id",
-                                                                  filter_opts=filter_opts if org_dependent_wh_types else None,
+                                                                  #filterby="organisation_id",
+                                                                  #filter_opts=filter_opts if org_dependent_wh_types else None,
                                                                   sort=True
                                                                   )),
                                           sortby = "name",
@@ -210,7 +211,7 @@ class InvWarehouseModel(DataModel):
 
         configure(tablename,
                   deduplicate = S3Duplicate(primary = ("name",),
-                                            secondary = ("organisation_id",) if org_dependent_wh_types else None,
+                                            # secondary = ("organisation_id",) if org_dependent_wh_types else None,
                                             ),
                   )
 
@@ -224,12 +225,12 @@ class InvWarehouseModel(DataModel):
         # ---------------------------------------------------------------------
         # Warehouses
         #
-        if settings.get_inv_warehouse_code_unique():
-            code_requires = IS_EMPTY_OR([IS_LENGTH(10),
-                                         IS_NOT_IN_DB(db, "inv_warehouse.code"),
-                                         ])
-        else:
-            code_requires = IS_LENGTH(10)
+        # if settings.get_inv_warehouse_code_unique():
+        code_requires = IS_EMPTY_OR([IS_LENGTH(10),
+                                     IS_NOT_IN_DB(db, "%s.code" % tablename),
+                                     ])
+        # else:
+        #    code_requires = IS_LENGTH(10)
 
         tablename = "inv_warehouse"
         define_table(tablename,
