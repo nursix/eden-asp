@@ -227,13 +227,13 @@ class OptionsMenu(default.OptionsMenu):
 
         return M()(
                     M("Warehouses", c="inv", f="warehouse")(
-                        M("Create", m="create", restrict=['ADMIN', 'ORG_ADMIN', 'SUPPLY_COORDINATOR']),
-                        M("Import", m="import", p="create", restrict=['ADMIN', 'ORG_ADMIN', 'SUPPLY_COORDINATOR']),
+                        M("Create", m="create", restrict=["ADMIN", "ORG_ADMIN", "SUPPLY_COORDINATOR"]),
+                        M("Import", m="import", p="create", restrict=["ADMIN", "ORG_ADMIN", "SUPPLY_COORDINATOR"]),
                     ),
                     M("Warehouse Stock", c="inv", f="inv_item")(
-                        M("Adjust Stock Levels", f="adj", check=use_adjust, restrict=['ADMIN', 'ORG_ADMIN', 'SUPPLY_COORDINATOR']),
+                        M("Adjust Stock Levels", f="adj", check=use_adjust, restrict=["ADMIN", "ORG_ADMIN", "SUPPLY_COORDINATOR"]),
                         # M("Kitting", f="kitting"),
-                        M("Import", f="inv_item", m="import", p="create", restrict=['ADMIN', 'ORG_ADMIN', 'SUPPLY_COORDINATOR']),
+                        M("Import", f="inv_item", m="import", p="create", restrict=["ADMIN", "ORG_ADMIN", "SUPPLY_COORDINATOR"]),
                     ),
                     # M("Reports", c="inv", f="inv_item")(
                     #     M("Warehouse Stock", f="inv_item", m="report"),
@@ -249,18 +249,18 @@ class OptionsMenu(default.OptionsMenu):
                     #       vars={"report": "rel"}),
                     # ),
                     M(inv_recv_list, c="inv", f="recv", translate=False)( # Already T()
-                        M("Create", m="create", restrict=['ADMIN', 'ORG_ADMIN', 'SUPPLY_COORDINATOR']),
+                        M("Create", m="create", restrict=["ADMIN", "ORG_ADMIN", "SUPPLY_COORDINATOR"]),
                     ),
                     M("Sent Shipments", c="inv", f="send")(
-                        M("Create", m="create", restrict=['ADMIN', 'ORG_ADMIN', 'SUPPLY_COORDINATOR']),
+                        M("Create", m="create", restrict=["ADMIN", "ORG_ADMIN", "SUPPLY_COORDINATOR"]),
                         M("Search Shipped Items", f="track_item"),
                     ),
                     M("Distributions", c="supply", f="distribution")(
-                        M("Create", m="create", restrict=['ADMIN', 'ORG_ADMIN', 'SUPPLY_COORDINATOR']),
+                        M("Create", m="create", restrict=["ADMIN", "ORG_ADMIN", "SUPPLY_COORDINATOR"]),
                     ),
                     M("Items", c="supply", f="item")(
-                        M("Create", m="create", restrict=['ADMIN', 'ORG_ADMIN', 'SUPPLY_COORDINATOR']),
-                        M("Import", f="catalog_item", m="import", p="create", restrict=['ADMIN', 'ORG_ADMIN', 'SUPPLY_COORDINATOR']),
+                        M("Create", m="create", restrict=["ADMIN", "ORG_ADMIN", "SUPPLY_COORDINATOR"]),
+                        M("Import", f="catalog_item", m="import", p="create", restrict=["ADMIN", "ORG_ADMIN", "SUPPLY_COORDINATOR"]),
                     ),
                     # Catalog Items moved to be next to the Item Categories
                     #M("Catalog Items", c="supply", f="catalog_item")(
@@ -271,7 +271,7 @@ class OptionsMenu(default.OptionsMenu):
                     #    M("Create", m="create"),
                     #),
 
-                    M("Administration", c=("supply", "inv"), restrict=['ADMIN', 'ORG_ADMIN', 'SUPPLY_COORDINATOR'], link=False)(
+                    M("Administration", c=("supply", "inv"), restrict=["ADMIN", "ORG_ADMIN", "SUPPLY_COORDINATOR"], link=False)(
                         M("Catalogs", f="catalog"),
                         M("Item Categories", f="item_category"),
                         M("Warehouse Types", c="inv", f="warehouse_type"),

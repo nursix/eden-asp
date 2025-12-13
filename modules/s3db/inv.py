@@ -142,7 +142,7 @@ class InvWarehouseModel(DataModel):
         organisation_id = self.org_organisation_id
 
         # ADMIN = current.session.s3.system_roles.ADMIN
-        is_admin = auth.s3_has_role('ADMIN')
+        is_admin = auth.s3_has_role("ADMIN")
 
         #root_org = auth.root_org()
         #if is_admin:
@@ -166,10 +166,6 @@ class InvWarehouseModel(DataModel):
                                        IS_NOT_ONE_OF(db, "%s.name" % tablename,),
                                       ],
                            ),
-                     #organisation_id(default = root_org if org_dependent_wh_types else None,
-                     #                readable = is_admin if org_dependent_wh_types else False,
-                     #                writable = is_admin if org_dependent_wh_types else False,
-                     #                ),
                      CommentsField(),
                      )
 
