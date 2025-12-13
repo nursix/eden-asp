@@ -1,5 +1,5 @@
 """
-    DIRECT/Savrodaya: sub-template for Savrodaya / Sri Lanka
+    DIRECT/Sarvodaya: sub-template for Sarvodaya / Sri Lanka
 
     License: MIT
 """
@@ -15,11 +15,11 @@ def config(settings):
     T = current.T
 
     settings.base.system_name = "Disaster Response Coordination"
-    settings.base.system_name_short = "Savrodaya DIRECT"
+    settings.base.system_name_short = "Sarvodaya DIRECT"
 
     # PrePopulate data
-    settings.base.prepopulate += ("DIRECT/Savrodaya",)
-    settings.base.prepopulate_demo.append("DIRECT/Savrodaya/Demo")
+    settings.base.prepopulate += ("DIRECT/Sarvodaya",)
+    settings.base.prepopulate_demo.append("DIRECT/Sarvodaya/Demo")
 
     # Restrict the Location Selector to just certain countries
     # NB This can also be over-ridden for specific contexts later
@@ -75,9 +75,9 @@ def config(settings):
     # -------------------------------------------------------------------------
     # Overrides for custom settings
     #
-    settings.custom.context_org_name = "Savrodaya"
+    settings.custom.context_org_name = "Sarvodaya"
 
-    settings.custom.org_menu_logo = ("Savrodaya", "img", "logo_small.png")
-    settings.custom.homepage_logo = ("Savrodaya", "img", "logo_large.png")
+    settings.custom.org_menu_logo = ("Sarvodaya", "img", "logo_small.png")
+    settings.custom.homepage_logo = ("Sarvodaya", "img", "logo_large.png")
 
 # END =========================================================================
