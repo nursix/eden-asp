@@ -141,16 +141,6 @@ class InvWarehouseModel(DataModel):
 
         organisation_id = self.org_organisation_id
 
-        # ADMIN = current.session.s3.system_roles.ADMIN
-        is_admin = auth.s3_has_role("ADMIN")
-
-        #root_org = auth.root_org()
-        #if is_admin:
-        #    filter_opts = (None,)
-        #elif root_org:
-        #    filter_opts = (root_org, None)
-        #else:
-        #    filter_opts = (None,)
 
         # ---------------------------------------------------------------------
         # Warehouse Types
