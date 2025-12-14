@@ -21,6 +21,9 @@ def config(settings):
     settings.base.prepopulate += ("DIRECT/Sarvodaya",)
     settings.base.prepopulate_demo.append("DIRECT/Sarvodaya/Demo")
 
+    # Using default theme, but with a different shortcut icon
+    settings.base.theme_favicon = "Sarvodaya"
+
     # Restrict the Location Selector to just certain countries
     # NB This can also be over-ridden for specific contexts later
     # e.g. Activities filtered to those of parent Project

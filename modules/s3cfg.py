@@ -369,6 +369,13 @@ class S3Config(Storage):
         else:
             s3.theme_styles = theme_path
 
+        # Path under static/themes/ for favicon.ico
+        iconpath = self.base.get("theme_favicon")
+        if iconpath:
+            s3.theme_favicon = path_to(iconpath.split("."))
+        else:
+            s3.theme_favicon = s3.theme_styles
+
         # Path under modules/templates/ for css.cfg
         config = self.base.get("theme_config")
         if config:
@@ -427,6 +434,19 @@ class S3Config(Storage):
             self.set_theme()
             styles = current.response.s3.theme_styles
         return styles
+
+    def get_theme_favicon(self):
+        """
+            The location of the shortcut icon:
+            - static/themes/[theme_favicon]/favicon.ico
+
+            => defaults to theme
+        """
+        iconpath = current.response.s3.theme_favicon
+        if not iconpath:
+            self.set_theme()
+            iconpath = current.response.s3.theme_favicon
+        return iconpath
 
     def get_theme_config(self):
         """
