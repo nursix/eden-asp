@@ -3382,6 +3382,15 @@ class S3Config(Storage):
                                                  "Date of Birth": "date_of_birth",
                                                  })
 
+    def get_doc_permitted_extensions(self):
+        """
+            Permitted file extensions for upload documents
+            - a string or compiled regex, or a list thereof
+            - e.g. ["pdf", "docx", "xlsx"]
+            - None (default) means all extensions allowed
+        """
+        return self.doc.get("permitted_extensions")
+
     # -------------------------------------------------------------------------
     # DVR Options
     #
