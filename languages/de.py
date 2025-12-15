@@ -3141,6 +3141,7 @@
 'InBox': 'Eingang',
 'Inactive': 'Inaktiv',
 'Inactive/Disappeared': 'Inaktiv/Untergetaucht',
+'Inadmissible File Type': 'Unzulässiger Dateityp',
 'Inari Sami': 'Inarisamisch',
 'Inbound Mail Settings': 'Eingehende Mail-Einstellungen',
 'Inbox': 'Posteingang',

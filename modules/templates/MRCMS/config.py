@@ -262,6 +262,12 @@ def config(settings):
     #
     from .helpers import user_mailmerge_fields, shelter_mailmerge_fields
 
+    settings.doc.permitted_extensions = ("pdf", "doc", "docx", "odt",
+                                         "csv", "xls", "xlsx", "ods",
+                                         "png", "jpg", "jpeg", "bmp", "tiff",
+                                         "txt", "rtf",
+                                         )
+
     settings.doc.mailmerge_fields = {"ID": "pe_label",
                                      "Vorname": "first_name",
                                      "Name": "last_name",

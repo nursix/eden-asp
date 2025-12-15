@@ -129,6 +129,8 @@ class DocumentModel(DataModel):
         define_table = self.define_table
         super_link = self.super_link
 
+        permitted_extensions = current.deployment_settings.get_doc_permitted_extensions()
+
         # ---------------------------------------------------------------------
         # Default document status
         #
@@ -153,6 +155,9 @@ class DocumentModel(DataModel):
                            autodelete = True,
                            length = current.MAX_FILENAME_LENGTH,
                            represent = self.doc_file_represent,
+                           requires = IS_FILE(extension = permitted_extensions,
+                                              error_message = T("Inadmissible File Type"),
+                                              ),
                            # upload folder needs to be visible to the
                            # download() function as well as the upload
                            uploadfolder = os.path.join(folder, "uploads"),
