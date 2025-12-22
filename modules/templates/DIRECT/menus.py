@@ -44,7 +44,7 @@ class MainMenu(default.MainMenu):
 
         menu = [MM("Needs", c="req", f="need"),
                 MM("Assets", c="asset", f="asset"),
-                MM("Supplies", c="inv", f="warehouse"),
+                MM("Inventory", c="inv", f="warehouse"),
                 MM("Shelters", c="cr", f="shelter"),
                 MM("Water Sources", c="water", f="index"),
                 MM("Beneficiaries", c="dvr", f="person"),
@@ -207,6 +207,25 @@ class OptionsMenu(default.OptionsMenu):
         return super().cms()
 
     # -------------------------------------------------------------------------
+    @staticmethod
+    def cr():
+        """ CR / Shelter Registry """
+
+        ADMIN = current.session.s3.system_roles.ADMIN
+
+        return M(c="cr")(
+                    M("Shelter", f="shelter")(
+                        M("Create", m="create"),
+                        M("Map", m="map"),
+                        # M("Report", m="report"),
+                    ),
+                    M("Shelter Settings", restrict=[ADMIN])(
+                        M("Types", f="shelter_type"),
+                        M("Services", f="shelter_service"),
+                    )
+                )
+
+    # -------------------------------------------------------------------------
     @classmethod
     def hrm(cls):
         """ HRM / Human Resources Management """
@@ -228,12 +247,12 @@ class OptionsMenu(default.OptionsMenu):
         return M()(
                     M("Warehouses", c="inv", f="warehouse")(
                         M("Create", m="create", restrict=["ADMIN", "ORG_ADMIN", "SUPPLY_COORDINATOR"]),
-                        M("Import", m="import", p="create", restrict=["ADMIN", "ORG_ADMIN", "SUPPLY_COORDINATOR"]),
+                        # M("Import", m="import", p="create", restrict=["ADMIN", "ORG_ADMIN", "SUPPLY_COORDINATOR"]),
                     ),
                     M("Warehouse Stock", c="inv", f="inv_item")(
                         M("Adjust Stock Levels", f="adj", check=use_adjust, restrict=["ADMIN", "ORG_ADMIN", "SUPPLY_COORDINATOR"]),
                         # M("Kitting", f="kitting"),
-                        M("Import", f="inv_item", m="import", p="create", restrict=["ADMIN", "ORG_ADMIN", "SUPPLY_COORDINATOR"]),
+                        # M("Import", f="inv_item", m="import", p="create", restrict=["ADMIN", "ORG_ADMIN", "SUPPLY_COORDINATOR"]),
                     ),
                     # M("Reports", c="inv", f="inv_item")(
                     #     M("Warehouse Stock", f="inv_item", m="report"),
@@ -260,7 +279,7 @@ class OptionsMenu(default.OptionsMenu):
                     ),
                     M("Items", c="supply", f="item")(
                         M("Create", m="create", restrict=["ADMIN", "ORG_ADMIN", "SUPPLY_COORDINATOR"]),
-                        M("Import", f="catalog_item", m="import", p="create", restrict=["ADMIN", "ORG_ADMIN", "SUPPLY_COORDINATOR"]),
+                        # M("Import", f="catalog_item", m="import", p="create", restrict=["ADMIN", "ORG_ADMIN", "SUPPLY_COORDINATOR"]),
                     ),
                     # Catalog Items moved to be next to the Item Categories
                     #M("Catalog Items", c="supply", f="catalog_item")(
