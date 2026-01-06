@@ -70,12 +70,6 @@ class VehicleModel(DataModel):
                            label = T("Name"),
                            requires = IS_LENGTH(128),
                            ),
-                     #Field("parent", "reference event_event_type", # This form of hierarchy may not work on all Databases
-                     #      label = T("SubType of"),
-                     #      ondelete = "RESTRICT",
-                     #      readable = hierarchical_vehicle_types,
-                     #      writable = hierarchical_vehicle_types,
-                     #      ),
                      Field("vehicle_height", "double",
                            label = T("Vehicle Height (m)"),
                            represent = lambda v: \
@@ -154,9 +148,6 @@ class VehicleModel(DataModel):
                                                                   sort = True,
                                                                   )),
                                         sortby = "code",
-                                        # Allow changing by whether hierarchical or not
-                                        #widget = vehicle_type_widget,
-                                        #comment = vehicle_type_comment,
                                         )
 
         # ---------------------------------------------------------------------
