@@ -78,10 +78,10 @@ def item():
                                    sort = True,
                                    )
 
-        field.comment = PopupLink(f="item_category",
-                                  label=T("Create Item Category"),
-                                  title=T("Item Category"),
-                                  tooltip=T("Only Categories of type 'Asset' will be seen in the dropdown."))
+        #field.comment = PopupLink(f="item_category",
+        #                          label=T("Create Item Category"),
+        #                          title=T("Item Category"),
+        #                          tooltip=T("Only Categories of type 'Asset' will be seen in the dropdown."))
 
     # Defined in the Model for use from Multiple Controllers for unified menus
     return s3db.supply_item_controller()

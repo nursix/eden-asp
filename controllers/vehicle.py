@@ -13,13 +13,18 @@ if not settings.has_module("asset"):
 
 # -----------------------------------------------------------------------------
 def index():
-    """ Module Home Page """
+    """ Module's Home Page """
 
-    module_name = settings.modules[module].get("name_nice")
-    response.title = module_name
+    return s3db.cms_index(module, alt_function="index_alt")
 
-    return {"module_name": module_name,
-            }
+# -----------------------------------------------------------------------------
+def index_alt():
+    """
+        Module homepage for non-Admin users when no CMS content found
+    """
+
+    # Just redirect to the list of Assets
+    s3_redirect_default(URL(f="vehicle"))
 
 # -----------------------------------------------------------------------------
 def create():
@@ -29,72 +34,85 @@ def create():
 # -----------------------------------------------------------------------------
 def vehicle():
     """
-        RESTful CRUD controller
-        Filtered version of the asset_asset resource
+        Vehicles - filtered proxy CRUD controller for assets
     """
 
-    tablename = "asset_asset"
-    table = s3db[tablename]
+    table = s3db.asset_asset
 
-    s3db.configure("vehicle_vehicle",
-                   deletable = False,
-                   )
-
+    # Configure custom methods for assets
     set_method = s3db.set_method
-
     set_method("asset_asset", method="assign",
                action = s3db.hrm_AssignMethod(component="human_resource"))
-
     set_method("asset_asset", method="check-in",
                action = s3base.S3CheckInMethod())
-
     set_method("asset_asset", method="check-out",
                action = s3base.S3CheckOutMethod())
 
-    # Type is Vehicle
+    # Filter by asset type VEHICLE
     VEHICLE = s3db.asset_types["VEHICLE"]
+    s3.filter = FS("type") == VEHICLE
+
+    # Default to asset type VEHICLE
     field = table.type
     field.default = VEHICLE
     field.readable = False
     field.writable = False
 
-    # Only show vehicles
-    s3.filter = (field == VEHICLE)
+    # Configure list fields for vehicle context
+    list_fields = ["item_id$item_category_id",
+                   "item_id",
+                   "number",
+                   "sn",
+                   "organisation_id",
+                   "site_id",
+                   (T("Assigned To"), "assigned_to_id"),
+                   "cond",
+                   "comments",
+                   ]
+    # Adapt CRUD form for vehicle context
+    from core import CustomForm
+    crud_form = CustomForm("organisation_id",
+                           "site_id",
+                           "item_id",
+                           "number",
+                           "sn",
+                           "supply_org_id",
+                           "purchase_date",
+                           "purchase_price",
+                           "purchase_currency",
+                           )
+    subheadings = {"organisation_id": T("Owner / Base"),
+                   "item_id": T("Vehicle Details"),
+                   "supply_org_id": T("Purchase Details"),
+                   }
 
-    # Remove type from list_fields
-    list_fields = s3db.get_config("asset_asset", "list_fields")
-    if "type" in list_fields:
-        list_fields.remove("type")
+    # Adapt redirections
+    create_next = URL(c="vehicle", f="vehicle", args=["[id]"])
 
+    s3db.configure("asset_asset",
+                   crud_form = crud_form,
+                   subheadings = subheadings,
+                   create_next = create_next,
+                   list_fields = list_fields,
+                   )
+
+    # Limit item categories to vehicle types
     field = table.item_id
-    field.label = T("Vehicle Type")
-    field.comment = PopupLink(f="item",
-                              # Use this controller for options.json rather than looking for one called 'asset'
-                              vars=dict(parent="vehicle"),
-                              label=T("Add Vehicle Type"),
-                              info=T("Add a new vehicle type"),
-                              title=T("Vehicle Type"),
-                              tooltip=T("Only Items whose Category are of type 'Vehicle' will be seen in the dropdown."))
-
-    # Use this controller for options.json rather than looking for one called 'asset'
-    table.organisation_id.comment[0].vars = dict(parent="vehicle")
-
-    # Only select from vehicles
-    field.widget = None # We want a simple dropdown
+    field.label = T("Asset Type")
     ctable = s3db.supply_item_category
     itable = s3db.supply_item
-    query = (ctable.is_vehicle == True) & \
-            (itable.item_category_id == ctable.id)
-    field.requires = IS_ONE_OF(db(query),
-                               "supply_item.id",
-                               "%(name)s",
-                               sort=True)
-    # Label changes
-    table.sn.label = T("License Plate")
+    dbset = db((ctable.id == itable.item_category_id) & \
+               (ctable.is_vehicle == True))
+    field.requires = IS_ONE_OF(dbset, "supply_item.id", field.represent, sort=True)
+    field.widget = None # use simple dropdown
+
+    # Adapt other field labels to vehicle context
+    field = table.sn
+    field.label = T("License Plate")
     s3db.asset_log.room_id.label = T("Parking Area")
 
-    # CRUD strings
-    s3.crud_strings[tablename] = Storage(
+    # Adapt CRUD strings to vehicle context
+    s3.crud_strings["asset_asset"] = Storage(
         label_create = T("Add Vehicle"),
         title_display = T("Vehicle Details"),
         title_list = T("Vehicles"),
@@ -107,9 +125,6 @@ def vehicle():
         msg_record_deleted = T("Vehicle deleted"),
         msg_list_empty = T("No Vehicles currently registered"))
 
-    # @ToDo: Tweak the search comment
-
-    # Defined in Model
     return s3db.asset_controller()
 
 # =============================================================================

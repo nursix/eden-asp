@@ -682,6 +682,7 @@ $.filterOptionsS3({
                 db(aitable.asset_id == asset_id).update(location_id = location_id)
 
             # Add a log entry for this
+            # TODO only if base location has been updated
             ltable = db.asset_log
             ltable.insert(asset_id = asset_id,
                           status = ASSET_LOG_SET_BASE,
@@ -713,6 +714,7 @@ $.filterOptionsS3({
         """
 
         request = current.request
+        form_vars = form.vars
 
         # Custom methods to allow form customization for specific cases
         # Original method passed from asset_log_prep()
@@ -721,6 +723,8 @@ $.filterOptionsS3({
             status = ASSET_LOG_SET_BASE
         elif method in ("assignperson", "assignsite", "assignorg"):
             status = ASSET_LOG_ASSIGN
+        elif "status" in form_vars:
+            status = int(form_vars.status)
         else:
             status = None
 
@@ -730,7 +734,6 @@ $.filterOptionsS3({
                 return
             # Import
             db = current.db
-            form_vars = form.vars
             asset_id = form_vars.asset_id
             status = int(form_vars.status)
             new = True
@@ -857,7 +860,7 @@ class AssetHRModel(DataModel):
         # ---------------------------------------------------------------------
         # Pass names back to global scope (s3.*)
         #
-        return None
+        #return None
 
 # =============================================================================
 class AssetTeamModel(DataModel):
@@ -886,7 +889,7 @@ class AssetTeamModel(DataModel):
         # ---------------------------------------------------------------------
         # Pass names back to global scope (s3.*)
         #
-        return None
+        #return None
 
 # =============================================================================
 class AssetTelephoneModel(DataModel):
@@ -954,7 +957,7 @@ class AssetTelephoneModel(DataModel):
         # ---------------------------------------------------------------------
         # Pass names back to global scope (s3.*)
         #
-        return None
+        #return None
 
 # =============================================================================
 def asset_get_current_log(asset_id):
@@ -1317,12 +1320,12 @@ class asset_AssetRepresent(S3Represent):
                  multiple = False,
                  ):
 
-        super(asset_AssetRepresent,
-              self).__init__(lookup="asset_asset",
-                             fields=fields,
-                             show_link=show_link,
-                             translate=translate,
-                             multiple=multiple)
+        super().__init__(lookup = "asset_asset",
+                         fields = fields,
+                         show_link = show_link,
+                         translate = translate,
+                         multiple = multiple,
+                         )
 
     # -------------------------------------------------------------------------
     def lookup_rows(self, key, values, fields=None):

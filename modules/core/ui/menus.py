@@ -1598,8 +1598,8 @@ class OptionsMenu:
         return M(c="vehicle")(
                     M("Vehicles", f="vehicle")(
                         M("Create", m="create"),
-                        M("Import", m="import", p="create"),
-                        M("Map", m="map"),
+                        # M("Import", m="import", p="create"),
+                        # M("Map", m="map"),
                     ),
                     M("Vehicle Types", f="vehicle_type")(
                         M("Create", m="create"),
