@@ -43,7 +43,7 @@ from gluon.storage import Storage
 from gluon.tools import Auth, callback, DEFAULT, replace_id
 from gluon.utils import web2py_uuid
 
-from s3dal import Row, Rows, Query, Field, original_tablename
+from s3dal import Row, Rows, Query, Field, original_tablename, filter_fields
 
 from ..controller import CRUDRequest
 from ..model import MetaFields, CommentsField
@@ -533,7 +533,7 @@ Thank you"""
         if user and not user.registration_key:
             password = utable[passfield].validate(password)[0]
             if user[passfield] == password:
-                user = Storage(utable._filter_fields(user, id=True))
+                user = Storage(filter_fields(utable, user, allow_id=True))
                 current.session.auth = Storage(user = user,
                                                last_visit = current.request.now,
                                                expiration = settings.expiration,
@@ -841,7 +841,7 @@ Thank you"""
                          ]
                 else:
                     settings.register_onaccept = self.s3_register_onaccept
-                user = self.get_or_create_user(utable._filter_fields(cas_user))
+                user = self.get_or_create_user(filter_fields(utable, cas_user))
             elif hasattr(cas, "login_form"):
                 return cas.login_form()
             else:
@@ -853,7 +853,7 @@ Thank you"""
 
         # Process authenticated users
         if user:
-            user = Storage(utable._filter_fields(user, id=True))
+            user = Storage(filter_fields(utable, user, allow_id=True))
             self.login_user(user)
         if log and self.user:
             self.log_event(log, self.user)
@@ -1068,7 +1068,7 @@ Thank you"""
                    })
             session.flash = messages.password_changed
             if settings.login_after_password_change:
-                user = Storage(table_user._filter_fields(user, id=True))
+                user = Storage(filter_fields(table_user, user, allow_id=True))
                 self.login_user(user)
             callback(onaccept, form)
             redirect(next, client_side=settings.client_side)
@@ -1609,7 +1609,7 @@ $('form.auth_consent').submit(S3ClearNavigateAwayConfirm);''')
                 if "language" not in form.vars:
                     # Was missing from login form
                     form.vars.language = T.accepted_language
-                user = Storage(utable._filter_fields(form.vars, id=True))
+                user = Storage(filter_fields(utable, form.vars, allow_id=True))
                 self.login_user(user)
 
                 self.s3_send_welcome_email(form.vars)
@@ -1652,7 +1652,7 @@ $('form.auth_consent').submit(S3ClearNavigateAwayConfirm);''')
                     if "language" not in form.vars:
                         # Was missing from login form
                         form.vars.language = T.accepted_language
-                    user = Storage(utable._filter_fields(form.vars, id=True))
+                    user = Storage(filter_fields(utable, form.vars, allow_id=True))
                     self.login_user(user)
 
             # Set a Cookie to present user with login box by default
@@ -1828,7 +1828,7 @@ $('form.auth_consent').submit(S3ClearNavigateAwayConfirm);''')
             approved = self.s3_verify_user(user)
             if approved:
                 # Log them in
-                user = Storage(utable._filter_fields(user, id=True))
+                user = Storage(filter_fields(utable, user, allow_id=True))
                 self.login_user(user)
             if log:
                 self.log_event(log, user)
@@ -1929,7 +1929,7 @@ $('form.auth_consent').submit(S3ClearNavigateAwayConfirm);''')
                         onvalidation=onvalidation,
                         hideerror=settings.hideerror):
             #self.s3_auth_user_register_onaccept(form.vars.email, self.user.id)
-            self.user.update(utable._filter_fields(form.vars))
+            self.user.update(filter_fields(utable, form.vars))
             session.flash = messages.profile_updated
             if log:
                 self.log_event(log, self.user)
@@ -3875,7 +3875,7 @@ Please go to %(url)s to approve this user."""
             if not user:
                 # Invalid user ID
                 raise ValueError("User not found")
-            user = Storage(utable._filter_fields(user, id=True))
+            user = Storage(filter_fields(utable, user, allow_id=True))
 
         self.user = user
         session = current.session

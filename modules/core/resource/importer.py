@@ -46,7 +46,7 @@ from gluon import current, IS_EMPTY_OR
 from gluon.storage import Storage
 from gluon.tools import callback
 
-from s3dal import Field
+from s3dal import Field, filter_fields
 
 from ..tools import s3_format_datetime, s3_get_foreign_key, \
                     s3_has_foreign_key, s3_str, s3_utc
@@ -1871,7 +1871,7 @@ class ImportItem:
                 job.onconflict(self)
 
         if self.data is not None:
-            data = table._filter_fields(self.data, id=True)
+            data = filter_fields(table, self.data, allow_id=True)
         else:
             data = Storage()
 

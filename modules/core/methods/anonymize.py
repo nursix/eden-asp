@@ -199,7 +199,7 @@ class Anonymize(CRUDMethod):
             script = '''var submitButton=$('.anonymize-submit');$('input[name="anonymize_confirm"]').off('.anonymize').on('click.anonymize',function(){if ($(this).prop('checked')){submitButton.prop('disabled',false);}else{submitButton.prop('disabled',true);}});'''
             dialog = TAG[""](form, SCRIPT(script, _type='text/javascript'))
             current.response.headers["Content-Type"] = "application/json"
-            output = json.dumps({"dialog": dialog.xml().decode("utf-8")})
+            output = json.dumps({"dialog": s3_str(dialog.xml())})
 
         elif form.accepts(r.vars, current.session, formname=form_name):
             # Dialog submission

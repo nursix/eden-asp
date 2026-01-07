@@ -104,7 +104,21 @@ class S3DAL:
             else:
                 raise
 
+    _filter_fields = staticmethod(lambda table, record, allow_id=False, writable_only=False:
+                                      table._filter_fields(record, allow_id=allow_id, writable_only=writable_only))
+
+    @classmethod
+    def filter_fields(cls, table, record, allow_id=False, writable_only=False):
+
+        try:
+            return cls._filter_fields(table, record, allow_id=allow_id, writable_only=writable_only)
+        except TypeError:
+            cls._filter_fields = staticmethod(lambda table, record, allow_id=False, writable_only=False:
+                                      table._filter_fields(record, id=allow_id))
+            return cls._filter_fields(table, record, allow_id=allow_id, writable_only=writable_only)
+
 # =============================================================================
 original_tablename = S3DAL.original_tablename
+filter_fields = S3DAL.filter_fields
 
 # END =========================================================================

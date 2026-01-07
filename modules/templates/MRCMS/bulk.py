@@ -14,7 +14,7 @@ from gluon.storage import Storage
 
 from s3dal import Field
 
-from core import CRUDMethod, FS, FormKey, \
+from core import CRUDMethod, FS, FormKey, s3_str, \
                  IS_ONE_OF, IS_UTC_DATETIME, S3CalendarWidget, S3DateTime
 
 # =============================================================================
@@ -106,7 +106,7 @@ class CheckoutResidents(CRUDMethod):
             dialog = TAG[""](form, SCRIPT(script, _type='text/javascript'))
 
             current.response.headers["Content-Type"] = "application/json"
-            output = json.dumps({"dialog": dialog.xml().decode("utf-8")})
+            output = json.dumps({"dialog": s3_str(dialog.xml())})
 
         elif form.accepts(r.vars, current.session, formname=form_name):
             # Dialog submission
@@ -568,7 +568,7 @@ class CreateAppointment(CRUDMethod):
             dialog = TAG[""](form, SCRIPT(script, _type='text/javascript'))
 
             current.response.headers["Content-Type"] = "application/json"
-            output = json.dumps({"dialog": dialog.xml().decode("utf-8")})
+            output = json.dumps({"dialog": s3_str(dialog.xml())})
 
         elif form.accepts(r.vars, current.session, formname=form_name):
 
@@ -970,7 +970,7 @@ class CompleteAppointments(CRUDMethod):
             dialog = TAG[""](form, SCRIPT(script, _type='text/javascript'))
 
             current.response.headers["Content-Type"] = "application/json"
-            output = json.dumps({"dialog": dialog.xml().decode("utf-8")})
+            output = json.dumps({"dialog": s3_str(dialog.xml())})
 
         elif form.accepts(r.vars, current.session, formname=form_name):
             # Dialog submission

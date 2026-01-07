@@ -35,7 +35,7 @@ from gluon.fileutils import parse_version
 class UpdateCheck:
 
     # This is the current version of requirements
-    REQUIREMENTS = 5
+    REQUIREMENTS = 6
 
     # This is the required version of models/000_config.py
     CONFIG = 1
@@ -90,25 +90,23 @@ class UpdateCheck:
                 tuple of lists of strings (errors, warnings)
         """
 
-        # We require web2py-2.21.1 or later for PyDAL compatibility
-        web2py_minimum_version = "Version 2.21.2-stable+timestamp.2021.10.15.07.44.23"
+        supported_versions = ("2.27.1",)
 
         version_ok = True
         try:
-            required = parse_version(web2py_minimum_version)[4]
-
-            with open("VERSION", "r") as version:
-                web2py_installed_version = version.read().split()[-1].strip()
-            installed = parse_version(web2py_installed_version)[4]
-
-            version_ok = installed >= required
+            cur_version = current.request.global_settings.web2py_version
+            installed = ".".join(map(str, parse_version(cur_version)[:3]))
+            version_ok = installed in supported_versions
         except AttributeError:
+            installed = "?.?.?"
             version_ok = False
 
         if not version_ok:
-            msg = "\n".join(("The installed version of Web2py is too old to support the current version of Eden.",
-                             "Please upgrade Web2py to at least version: %s" % web2py_minimum_version,
-                             ))
+            supported = ", ".join(supported_versions)
+            msg = "\n".join((
+                        f"The installed version {installed} of web2py is not supported.",
+                        f"Please use one of the following versions: {supported}",
+                        ))
             errors = [msg]
         else:
             errors = []

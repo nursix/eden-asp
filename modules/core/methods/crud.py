@@ -36,7 +36,7 @@ from gluon.languages import lazyT
 from gluon.storage import Storage
 from gluon.tools import callback
 
-from s3dal import original_tablename
+from s3dal import original_tablename, filter_fields
 
 from ..resource import DataExporter
 from ..tools import JSONSEPARATORS, S3DateTime, get_crud_string, \
@@ -3058,7 +3058,7 @@ class BasicCRUD(CRUDMethod):
 
             # Extract data for embedded form from post_vars
             post_vars = request.post_vars
-            form_vars = Storage(table._filter_fields(post_vars))
+            form_vars = Storage(filter_fields(table, post_vars))
 
             # Pass values through validator to convert them into db-format
             for k in form_vars:

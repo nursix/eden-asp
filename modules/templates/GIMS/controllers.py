@@ -12,6 +12,8 @@ from gluon import Field, HTTP, SQLFORM, URL, current, redirect, \
 
 from gluon.storage import Storage
 
+from s3dal import filter_fields
+
 from core import ConsentTracking, CustomController, ICON, s3_mark_required, s3_str
 
 from templates.RLPPTM.notifications import formatmap
@@ -254,7 +256,7 @@ class register_invited(CustomController):
 
             # Get the account
             account = self.account(key, form_vars.code)
-            account.update_record(**utable._filter_fields(form_vars, id=False))
+            account.update_record(**filter_fields(utable, form_vars, allow_id=False))
 
             del session.s3["invite_key"]
 
@@ -279,7 +281,7 @@ class register_invited(CustomController):
             self.send_welcome_email(account)
 
             # Log them in
-            user = Storage(utable._filter_fields(account, id=True))
+            user = Storage(filter_fields(utable, account, allow_id=True))
             auth.login_user(user)
 
             auth_messages = auth.messages

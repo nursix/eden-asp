@@ -14,6 +14,8 @@ from gluon import Field, SQLFORM, URL, XML, current, redirect, \
 
 from gluon.storage import Storage
 
+from s3dal import filter_fields
+
 from core import ConsentTracking, CustomController, DateField, \
                  IS_ONE_OF, IS_PHONE_NUMBER_MULTI, IS_PHONE_NUMBER_SINGLE, \
                  S3GroupedOptionsWidget, LocationSelector, S3MultiSelectWidget, \
@@ -408,7 +410,7 @@ class register(CustomController):
                 formvars["link_user_to"] = ["volunteer"]
 
             # Create the user record
-            user_id = utable.insert(**utable._filter_fields(formvars, id=False))
+            user_id = utable.insert(**filter_fields(utable, formvars, id=False))
             formvars.id = user_id
 
             # Save temporary user fields in s3db.auth_user_temp
@@ -463,7 +465,7 @@ class register(CustomController):
                 if "language" not in form.vars:
                     # Was missing from login form
                     form.vars.language = T.accepted_language
-                user = Storage(utable._filter_fields(form.vars, id=True))
+                user = Storage(filter_fields(utable, form.vars, id=True))
                 auth.login_user(user)
 
                 # Send welcome email
@@ -1222,7 +1224,7 @@ class verify_email(CustomController):
             self.send_welcome_email(user)
 
             # Log them in
-            user = Storage(utable._filter_fields(user, id=True))
+            user = Storage(filter_fields(utable, user, id=True))
             auth.login_user(user)
 
             auth_messages = auth.messages
