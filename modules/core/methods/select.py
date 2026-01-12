@@ -298,7 +298,7 @@ class Select(CRUDMethod):
         #            )
 
         # Produce a JSON output with the dialog contents HTML as string
-        #output = {"dialog": form.xml()}
+        #output = {"dialog": s3_str(form.xml())}
 
         # Set Content Type
         #current.response.headers["Content-Type"] = "application/json"

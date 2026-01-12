@@ -419,7 +419,7 @@ class Checkpoint(CRUDMethod):
 
         if person:
             output["l"] = person.pe_label
-            output["p"] = self.person_details(person).xml()
+            output["p"] = s3_str(self.person_details(person).xml())
             output["b"] = self.profile_picture(person)
 
             # Check if resident
