@@ -42,7 +42,7 @@ from gluon import current, A, DIV, INPUT, TAG, TD, TR, IS_LIST_OF, SQLFORM
 from gluon.storage import Storage
 from gluon.tools import callback
 
-from s3dal import Field
+from s3dal import Field, filter_fields
 
 from ..tools import s3_mark_required, set_last_record_id, s3_str, SKIP_VALIDATION
 
@@ -1424,7 +1424,7 @@ class CustomForm(CRUDForm):
         """
 
         if alias is None:
-            return self.table._filter_fields(form.vars)
+            return filter_fields(self.table, form.vars)
         else:
             subform = Storage()
             alias_length = len(alias)

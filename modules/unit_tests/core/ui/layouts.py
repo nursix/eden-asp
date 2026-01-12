@@ -65,7 +65,7 @@ class LayoutTests(unittest.TestCase):
         auth.s3_impersonate("admin@example.com")
         self.assertTrue(comment.check_permission())
         output = comment.xml()
-        self.assertTrue(type(output) is bytes)
+        self.assertTrue(type(output) in (str, bytes))
         self.assertNotEqual(output, "")
         auth.s3_impersonate(None)
 

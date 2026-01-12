@@ -40,6 +40,8 @@ from gluon import current, \
 from gluon.sqlhtml import FormWidget, StringWidget, OptionsWidget
 from gluon.storage import Storage
 
+from s3dal import filter_fields
+
 from .icons import ICON
 from ..tools import IS_LOCATION, IS_PHONE_NUMBER_MULTI, IS_PHONE_NUMBER_SINGLE, \
                     JSONERRORS, JSONSEPARATORS, StringTemplateParser, \
@@ -3224,7 +3226,7 @@ class PersonSelector(FormWidget):
         # Validate the person fields
         ptable = s3db.pr_person
         person = {}
-        for f in ptable._filter_fields(data):
+        for f in filter_fields(ptable, data):
             if f == "id":
                 continue
             if f == "pe_label" and self.pe_label_ignore:

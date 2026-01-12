@@ -1382,10 +1382,8 @@ def system_info():
 
     # Server Components
     base_version = ".".join(map(str, version_info()))
-    try:
-        with open(os.path.join(request.env.web2py_path, "VERSION"), "r", encoding="utf-8") as version_file:
-            web2py_version = version_file.read()[8:].strip("\n")
-    except IOError:
+    web2py_version = request.global_settings.web2py_version
+    if not web2py_version:
         web2py_version = UNKNOWN
     os_version = platform.platform()
 
