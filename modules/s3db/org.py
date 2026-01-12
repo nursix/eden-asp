@@ -144,6 +144,7 @@ class OrgOrganisationModel(DataModel):
                      Field("parent", "reference org_organisation_type", # This form of hierarchy may not work on all Databases
                            label = T("SubType of"),
                            ondelete = "RESTRICT",
+                           requires = IS_EMPTY_OR(IS_IN_DB(db, "%s.id" % tablename)),
                            readable = hierarchical_organisation_types,
                            writable = hierarchical_organisation_types,
                            ),
@@ -255,6 +256,7 @@ class OrgOrganisationModel(DataModel):
                                # Label hard-coded for IFRC currently
                                label = T("Zone"),
                                ondelete = "RESTRICT",
+                               requires = IS_EMPTY_OR(IS_IN_DB(db, "%s.id" % tablename)),
                                readable = hierarchical_regions,
                                writable = hierarchical_regions,
                                ),
@@ -356,9 +358,10 @@ class OrgOrganisationModel(DataModel):
                      self.super_link("pe_id", "pr_pentity"),
                      Field("root_organisation", "reference org_organisation",
                            ondelete = "CASCADE",
+                           represent = S3Represent(lookup="org_organisation"),
+                           requires = IS_EMPTY_OR(IS_IN_DB(db, "%s.id" % tablename)),
                            readable = False,
                            writable = False,
-                           represent = S3Represent(lookup="org_organisation"),
                            ),
                      Field("name", notnull=True,
                            length=128, # Mayon Compatibility
@@ -2326,6 +2329,7 @@ class OrgServiceModel(DataModel):
         define_table(tablename,
                      Field("root_service", "reference org_service",
                            ondelete = "CASCADE",
+                           requires = IS_EMPTY_OR(IS_IN_DB(db, "%s.id" % tablename)),
                            readable = False,
                            writable = False,
                            ),
@@ -2339,6 +2343,7 @@ class OrgServiceModel(DataModel):
                      Field("parent", "reference org_service",
                            label = T("SubType of"),
                            ondelete = "RESTRICT",
+                           requires = IS_EMPTY_OR(IS_IN_DB(db, "%s.id" % tablename)),
                            readable = hierarchical_service_types,
                            writable = hierarchical_service_types,
                            ),
@@ -4279,6 +4284,7 @@ class OrgFacilityModel(DataModel):
                      Field("parent", "reference org_facility_type", # This form of hierarchy may not work on all Databases
                            label = T("SubType of"),
                            ondelete = "RESTRICT",
+                           requires = IS_EMPTY_OR(IS_IN_DB(db, "%s.id" % tablename)),
                            readable = hierarchical_facility_types,
                            writable = hierarchical_facility_types,
                            ),

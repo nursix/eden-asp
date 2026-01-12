@@ -183,9 +183,9 @@ def select():
     import re
     db = get_database(request)
     dbname = request.args[0]
-    regex = re.compile('(?P<table>\w+)\.(?P<field>\w+)=(?P<value>\d+)')
+    regex = re.compile(r"(?P<table>\w+)\.(?P<field>\w+)=(?P<value>\d+)")
     if len(request.args) > 1 and hasattr(db[request.args[1]], '_primarykey'):
-        regex = re.compile('(?P<table>\w+)\.(?P<field>\w+)=(?P<value>.+)')
+        regex = re.compile(r"(?P<table>\w+)\.(?P<field>\w+)=(?P<value>.+)")
     if request.vars.query:
         match = regex.match(request.vars.query)
         if match:
@@ -227,7 +227,7 @@ def select():
 
     tb = None
     if form.accepts(request.vars, formname=None):
-        regex = re.compile(request.args[0] + '\.(?P<table>\w+)\..+')
+        regex = re.compile(request.args[0] + r"\.(?P<table>\w+)\..+")
         match = regex.match(form.vars.query.strip())
         if match:
             table = match.group('table')

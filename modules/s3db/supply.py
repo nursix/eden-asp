@@ -215,6 +215,7 @@ class SupplyCatalogModel(DataModel):
                            "reference supply_item_category",
                            label = T("Parent Category"),
                            ondelete = "RESTRICT",
+                           requires = IS_EMPTY_OR(IS_IN_DB(db, "%s.id" % tablename)),
                            represent = parent_represent,
                            readable = category_hierarchy,
                            writable = category_hierarchy,

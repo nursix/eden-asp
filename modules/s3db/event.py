@@ -133,6 +133,7 @@ class EventModel(DataModel):
                      Field("parent", "reference event_event_type", # This form of hierarchy may not work on all Databases
                            label = T("SubType of"),
                            ondelete = "RESTRICT",
+                           requires = IS_EMPTY_OR(IS_IN_DB(db, "%s.id" % tablename)),
                            readable = hierarchical_event_types,
                            writable = hierarchical_event_types,
                            ),
@@ -2681,6 +2682,7 @@ class EventIncidentTypeModel(DataModel):
                           Field("parent", "reference event_incident_type", # This form of hierarchy may not work on all Databases
                                 label = T("SubType of"),
                                 ondelete = "RESTRICT",
+                                requires = IS_EMPTY_OR(IS_IN_DB(db, "%s.id" % tablename)),
                                 readable = hierarchical_incident_types,
                                 writable = hierarchical_incident_types,
                                 ),

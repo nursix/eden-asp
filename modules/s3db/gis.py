@@ -147,6 +147,7 @@ class GISLocationModel(DataModel):
                   label = T("Parent"),
                   ondelete = "RESTRICT",
                   represent = gis_location_represent,
+                  requires = IS_EMPTY_OR(IS_IN_DB(db, "%s.id" % tablename)),
                   widget = S3LocationAutocompleteWidget(level=hierarchy_level_keys),
                   ),
             # Materialised Path

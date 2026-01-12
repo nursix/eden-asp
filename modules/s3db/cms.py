@@ -655,8 +655,7 @@ class CMSContentModel(DataModel):
         tablename = "cms_comment"
         define_table(tablename,
                      Field("parent", "reference cms_comment",
-                           requires = IS_EMPTY_OR(
-                                        IS_ONE_OF(db, "cms_comment.id")),
+                           requires = IS_EMPTY_OR(IS_IN_DB(db, "%s.id" % tablename)),
                            readable = False,
                            ),
                      post_id(empty = False),

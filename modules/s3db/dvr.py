@@ -1884,6 +1884,7 @@ class DVRResponseModel(DataModel):
                                                    translate = True,
                                                    hierarchy = True,
                                                    ),
+                           requires = IS_EMPTY_OR(IS_IN_DB(db, "%s.id" % tablename)),
                            readable = hierarchical_response_types,
                            writable = hierarchical_response_types,
                            ),

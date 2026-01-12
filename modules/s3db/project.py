@@ -3902,9 +3902,7 @@ class ProjectTaskModel(DataModel):
         define_table(tablename,
                      Field("parent", "reference project_comment",
                            readable = False,
-                           requires = IS_EMPTY_OR(
-                                        IS_ONE_OF(db, "project_comment.id"
-                                       )),
+                           requires = IS_EMPTY_OR(IS_IN_DB(db, "%s.id" % tablename)),
                            ),
                      task_id(empty = False,
                              ondelete = "CASCADE",
