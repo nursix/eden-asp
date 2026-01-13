@@ -55,7 +55,7 @@ if set.intersection(set(["-s", "--suite"]), set(argv)):
 args = []
 isopt = False
 suitename = ""
-for i in xrange(1, len(argv)):
+for i in range(1, len(argv)):
 
     arg = argv[i]
 

@@ -520,7 +520,7 @@ $.filterOptionsS3({
         # ---------------------------------------------------------------------
         # Pass names back to global scope (s3.*)
         #
-        # return None
+        #return {}
 
 # =============================================================================
 class RequestNeedsSkillsModel(DataModel):
@@ -585,7 +585,7 @@ class RequestNeedsSkillsModel(DataModel):
         # ---------------------------------------------------------------------
         # Pass names back to global scope (s3.*)
         #
-        # return None
+        #return {}
 
 # =============================================================================
 class RequestNeedsServiceModel(DataModel):
@@ -689,7 +689,7 @@ class RequestNeedsServiceModel(DataModel):
         # ---------------------------------------------------------------------
         # Pass names back to global scope (s3.*)
         #
-        # return None
+        #return {}
 
 # =============================================================================
 class RequestNeedsActivityModel(DataModel):
@@ -724,7 +724,7 @@ class RequestNeedsActivityModel(DataModel):
         # ---------------------------------------------------------------------
         # Pass names back to global scope (s3.*)
         #
-        # return None
+        #return {}
 
 # =============================================================================
 class RequestNeedsContactModel(DataModel):
@@ -763,7 +763,7 @@ class RequestNeedsContactModel(DataModel):
         # ---------------------------------------------------------------------
         # Pass names back to global scope (s3.*)
         #
-        # return None
+        #return {}
 
 # =============================================================================
 class RequestNeedsTagModel(DataModel):
@@ -813,7 +813,7 @@ class RequestNeedsTagModel(DataModel):
         # ---------------------------------------------------------------------
         # Pass names back to global scope (s3.*)
         #
-        # return None
+        #return {}
 
 # =============================================================================
 class RequestModel(DataModel):
@@ -2387,7 +2387,7 @@ class RequestApproverModel(DataModel):
         # ---------------------------------------------------------------------
         # Pass names back to global scope (s3.*)
         #
-        # return None
+        #return {}
 
 # =============================================================================
 class RequestItemModel(DataModel):
@@ -3126,7 +3126,7 @@ class RequestRecurringModel(DataModel):
         # ---------------------------------------------------------------------
         # Pass names back to global scope (s3.*)
         #
-        # return None
+        #return {}
 
 # =============================================================================
 class RequestTagModel(DataModel):
@@ -3171,7 +3171,7 @@ class RequestTagModel(DataModel):
         # ---------------------------------------------------------------------
         # Pass names back to global scope (s3.*)
         #
-        # return None
+        #return {}
 
 # =============================================================================
 class RequestOrderItemModel(DataModel):
@@ -3242,7 +3242,7 @@ class RequestOrderItemModel(DataModel):
         # ---------------------------------------------------------------------
         # Pass names back to global scope (s3.*)
         #
-        # return None
+        #return {}
 
 # =============================================================================
 class RequestProjectModel(DataModel):
@@ -3274,7 +3274,7 @@ class RequestProjectModel(DataModel):
         # ---------------------------------------------------------------------
         # Pass names back to global scope (s3.*)
         #
-        # return None
+        #return {}
 
 # =============================================================================
 class RequestTaskModel(DataModel):
@@ -3308,7 +3308,7 @@ class RequestTaskModel(DataModel):
         # ---------------------------------------------------------------------
         # Pass names back to global scope (s3.*)
         #
-        # return None
+        #return {}
 
 # =============================================================================
 class RequestRequesterCategoryModel(DataModel):
@@ -3347,7 +3347,7 @@ class RequestRequesterCategoryModel(DataModel):
         # ---------------------------------------------------------------------
         # Pass names back to global scope (s3.*)
         #
-        # return None
+        #return {}
 
 # =============================================================================
 class CommitModel(DataModel):
@@ -3850,7 +3850,7 @@ class CommitPersonModel(DataModel):
         # ---------------------------------------------------------------------
         # Pass names back to global scope (s3.*)
         #
-        # return None
+        #return {}
 
     # -------------------------------------------------------------------------
     @staticmethod
@@ -3935,7 +3935,7 @@ class CommitSkillModel(DataModel):
         # ---------------------------------------------------------------------
         # Pass names back to global scope (s3.*)
         #
-        # return None
+        #return {}
 
     # -------------------------------------------------------------------------
     @staticmethod

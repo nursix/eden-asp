@@ -157,9 +157,9 @@ class S3DateTime:
         if time:
             try:
                 return time.strftime(str(format))
-            except AttributeError:
+            except AttributeError as e:
                 # Invalid argument type
-                raise TypeError("Invalid argument type: %s" % type(time))
+                raise TypeError("Invalid argument type: %s" % type(time)) from e
         else:
             return current.messages["NONE"]
 
@@ -699,17 +699,17 @@ class S3Calendar:
                 year = "%04i" % dt.year
                 fmt = fmt.replace("%Y", year).replace("%y", year[-2:])
                 dtstr = dt.replace(year=1900).strftime(fmt)
-            except AttributeError:
+            except AttributeError as e:
                 # Invalid argument type
-                raise TypeError("Invalid argument type: %s" % type(dt))
+                raise TypeError("Invalid argument type: %s" % type(dt)) from e
 
         else:
             if not isinstance(dt, datetime.datetime):
                 try:
                     timetuple = (dt.year, dt.month, dt.day, 0, 0, 0)
-                except AttributeError:
+                except AttributeError as e:
                     # Invalid argument type
-                    raise TypeError("Invalid argument type: %s" % type(dt))
+                    raise TypeError("Invalid argument type: %s" % type(dt)) from e
             else:
                 timetuple = (dt.year, dt.month, dt.day,
                              dt.hour, dt.minute, dt.second,
@@ -1275,8 +1275,8 @@ class S3DateTimeParser:
             raise TypeError("Invalid argument type: expected str, got %s" % type(string))
         try:
             result = self.grammar.parseString(string)
-        except self.ParseException:
-            raise ValueError("Invalid date/time: %s" % string)
+        except self.ParseException as e:
+            raise ValueError("Invalid date/time: %s" % string) from e
 
         return self._validate(result)
 
@@ -1325,10 +1325,7 @@ class S3DateTimeParser:
                 rule = False
                 continue
 
-            if c == "%" and not rule:
-                rule = True
-            else:
-                rule = False
+            rule = not rule and c == "%"
             sequence.append(c)
         if sequence:
             close(sequence)
@@ -1607,10 +1604,7 @@ class S3DateTimeFormatter:
                 rule = False
                 continue
 
-            if c == "%" and not rule:
-                rule = True
-            else:
-                rule = False
+            rule = not rule and c == "%"
             sequence.append(c)
         if sequence:
             close(sequence)
@@ -1692,8 +1686,8 @@ def s3_decode_iso_datetime(dtstr):
 
     try:
         dt = dateutil.parser.parse(dtstr, default=DEFAULT)
-    except (AttributeError, TypeError, ValueError):
-        raise ValueError("Invalid date/time string: %s (%s)" % (dtstr, type(dtstr)))
+    except (AttributeError, TypeError, ValueError) as e:
+        raise ValueError("Invalid date/time string: %s (%s)" % (dtstr, type(dtstr))) from e
 
     if dt.tzinfo is None:
         dt = dt.replace(tzinfo=dateutil.tz.tzutc())
@@ -1746,7 +1740,7 @@ class S3DefaultTZ(datetime.tzinfo):
 
     def __init__(self, offset=None):
 
-        super(S3DefaultTZ, self).__init__()
+        super().__init__()
 
         if offset:
             offset_sec = S3DateTime.get_offset_value(offset)
