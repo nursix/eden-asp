@@ -620,7 +620,7 @@ def errors():
             os.unlink(apath("%s/errors/%s" % (appname, item[7:]), r=request))
 
     func = lambda p: os.stat(apath("%s/errors/%s" % (appname, p), r=request)).st_mtime
-    tickets = sorted(listdir(apath("%s/errors/" % appname, r=request), "^\w.*"),
+    tickets = sorted(listdir(apath("%s/errors/" % appname, r=request), r"^\w.*"),
                      key=func,
                      reverse=True)
 
