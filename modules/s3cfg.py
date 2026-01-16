@@ -327,7 +327,9 @@ class S3Config(Storage):
                 # Import the template
                 template = getattr(__import__(package, fromlist=[config]), config)
             except ImportError as e:
-                raise RuntimeError("Template not found: %s" % name) from e
+                raise RuntimeError(f"Template '{name}' not found") from e
+            except AttributeError as e:
+                raise RuntimeError(f"Invalid template '{name}'") from e
             template.config(self)
 
         return self
