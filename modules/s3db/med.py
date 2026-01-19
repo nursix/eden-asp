@@ -531,7 +531,12 @@ class MedPatientModel(DataModel):
                            default = False,
                            ),
                      CommentsField(),
-                     s3_fieldmethod("patient_link", self.patient_link, search_field="reason"),
+                     s3_fieldmethod("patient_link",
+                                    self.patient_link,
+                                    represent = lambda v, row=None: \
+                                                "-" if v is None else v if hasattr(v, "xml") else s3_str(v),
+                                    search_field = "reason",
+                                    ),
                      )
 
         # Components
