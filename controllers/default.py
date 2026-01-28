@@ -659,7 +659,7 @@ def person():
                            "user_profile",
                            ],
                    )
-        onaccept = lambda form: auth.s3_approve_user(form.vars),
+        onaccept = lambda form: auth.s3_approve_user(form.vars)
         auth.configure_user_fields()
         form = auth.profile(next = next,
                             onaccept = onaccept)
