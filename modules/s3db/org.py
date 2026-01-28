@@ -5926,7 +5926,7 @@ class org_SiteRepresent(S3Represent):
         show_link = show_link and self.show_link
         if show_link and not rows:
             # Retrieve the rows
-            rows = self.lookup_rows(None, values)
+            rows = self.lookup_rows(None, [v for v in values if v is not None])
 
         self._setup()
 
