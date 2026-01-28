@@ -128,6 +128,7 @@ UI_OPTIONS = {"LEA": {"case_arrival_date_label": "Date of AKN",
 #
 UI_TYPES = {"LEA Ellwangen": "LEA",
             "Ankunftszentrum Heidelberg": "LEA",
+            "eva Heidenheim gGmbH": "LEA",
             }
 
 # =============================================================================
