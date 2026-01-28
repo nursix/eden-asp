@@ -2596,7 +2596,7 @@ class ImageUploadWidget(EdenFormWidget):
         """
 
         # If there is an uploaded file, accept it as-is
-        if value not in (b"", None):
+        if value not in ("", b"", None):
             return value, None
 
         # Check for cropped image
