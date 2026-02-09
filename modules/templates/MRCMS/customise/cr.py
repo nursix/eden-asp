@@ -10,6 +10,7 @@ from gluon import current, URL, DIV, H4, P, TAG, IS_EMPTY_OR
 
 from core import BasicCRUD, FS, IS_ONE_OF, \
                  LocationSelector, PresenceRegistration, CustomForm, \
+                 DateFilter, OptionsFilter, RangeFilter, TextFilter, get_filter_options, \
                  get_form_record_id, s3_fieldmethod, s3_str, represent_occupancy
 
 # -------------------------------------------------------------------------
@@ -367,6 +368,7 @@ def cr_shelter_controller(**attr):
 
     rtable = s3db.cr_shelter_registration
     htable = s3db.cr_shelter_registration_history
+    otable = s3db.org_organisation
 
     is_admin = auth.s3_has_role("ADMIN")
     is_org_group_admin = auth.s3_has_role("ORG_GROUP_ADMIN")
@@ -384,7 +386,6 @@ def cr_shelter_controller(**attr):
         result = standard_prep(r) if callable(standard_prep) else True
 
         resource = r.resource
-        resource.configure(filter_widgets = None)
 
         # Restrict organisation selector
         s3db.org_restrict_for_organisations(resource)
@@ -402,8 +403,82 @@ def cr_shelter_controller(**attr):
                                )
 
         if not r.component:
-            # Open shelter basic details in read mode
-            resource.configure(open_read_first=True)
+            # Custom list fields
+            list_fields = ["name",
+                           "status",
+                           "shelter_type_id",
+                           "capacity",
+                           "population",
+                           "location_id$addr_street",
+                           "location_id$L1",
+                           "location_id$L2",
+                           "location_id$L3",
+                           "location_id$L4",
+                           ]
+
+            # Custom Filter Widgets
+            from s3db.cr import shelter_status_opts
+            filter_widgets = [TextFilter(["name",
+                                          "location_id$L1",
+                                          "location_id$L2",
+                                          "location_id$L3",
+                                          "location_id$L4",
+                                          "location_id$addr_street",
+                                          "comments",
+                                          ],
+                                         label = T("Search"),
+                                         ),
+                              OptionsFilter("shelter_type_id",
+                                            options = get_filter_options("cr_shelter_type"),
+                                            hidden = True,
+                                            ),
+                              OptionsFilter("status",
+                                            options = shelter_status_opts,
+                                            cols = 2,
+                                            hidden = True,
+                                            ),
+                              RangeFilter("capacity",
+                                          hidden = True,
+                                          ),
+                              RangeFilter("population",
+                                          hidden = True,
+                                          ),
+                              ]
+
+            from ..helpers import permitted_orgs
+            organisation_ids = permitted_orgs("read", "cr_shelter")
+            if len(organisation_ids) > 1:
+                # User can see shelters from more than one organisation
+                # => show organisation_id in data table
+                list_fields.insert(0, "organisation_id")
+
+                def org_filter_opts():
+                    # Lazy options lookup for organisation_filter
+                    organisations = db(otable.id.belongs(organisation_ids)).select(otable.id,
+                                                                                   otable.name,
+                                                                                   )
+                    return {o.id: o.name for o in organisations}
+
+                # Add organisation-filter
+                filter_widgets.insert(1,
+                    OptionsFilter("organisation_id",
+                                  options = org_filter_opts,
+                                  hidden = True,
+                                  ))
+
+            if is_admin or is_org_group_admin:
+                # Show date of registration in table and add a filter for it
+                registered_on = T("Registered on")
+                list_fields.append((registered_on, "created_on"))
+                filter_widgets.append(DateFilter("created_on",
+                                                 label = registered_on,
+                                                 hide_time = True,
+                                                 hidden = True,
+                                                 ))
+            if r.representation == "json":
+                # Make sure list_fields include site_id
+                # - required by site_id filterOptionsS3 lookup (e.g. act/issue)
+                list_fields.append("site_id")
 
             # Deletability
             if r.record and is_admin:
@@ -414,19 +489,16 @@ def cr_shelter_controller(**attr):
                 if not row:
                     query = (htable.shelter_id == shelter_id)
                     row = db(query).select(htable.id, limitby=(0, 1)).first()
-                resource.configure(deletable = not row)
+                deletable = not row
             else:
-                resource.configure(deletable = is_admin)
+                deletable = is_admin
 
-            if r.representation == "json":
-                # Make sure list_fields include site_id
-                # - required by site_id filterOptionsS3 lookup (e.g. act/issue)
-                list_fields = resource.get_config("list_fields")
-                if not list_fields:
-                    list_fields = ["id", "site_id"]
-                elif "site_id" not in list_fields:
-                    list_fields.append("site_id")
-                resource.configure(list_fields=list_fields)
+            resource.configure(filter_widgets = filter_widgets,
+                               list_fields = list_fields,
+                               # Open shelter basic details in read mode
+                               open_read_first = True,
+                               deletable = deletable,
+                               )
 
         elif r.component_name != "document":
             # Customise doc_document in any case (for inline-attachments)
@@ -435,7 +507,6 @@ def cr_shelter_controller(**attr):
         if r.component_name == "shelter_unit":
 
             if is_shelter_admin:
-                from core import OptionsFilter, TextFilter
                 r.component.configure(
                     filter_widgets = [
                         TextFilter(["name", "comments"],
