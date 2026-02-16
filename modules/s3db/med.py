@@ -30,6 +30,7 @@ __all__ = ("MedUnitModel",
            "MedVitalsModel",
            "MedTreatmentModel",
            "MedStatusModel",
+           "MedParameterModel",
            "MedAnamnesisModel",
            "MedEpicrisisModel",
            "MedMedicationModel",
@@ -1081,6 +1082,102 @@ class MedStatusModel(DataModel):
             vhash = datahash(values)
             record.update_record(vhash=vhash)
 
+# =============================================================================
+class MedParameterModel(DataModel):
+    """ Data Model for medical parameters (e.g. lab results) """
+
+    names = ("med_parameter",
+             "med_parameter_group",
+             "med_parameter_value",
+             "med_sample",
+             "med_sample_type",
+             )
+
+    def model(self):
+
+        define_table = self.define_table
+
+        # ---------------------------------------------------------------------
+        # Parameter Group
+        # - for grouping of results
+        #
+        tablename = "med_parameter_group"
+        define_table(tablename,
+                     # organisation-specific
+                     # name
+                     # abbreviation
+                     )
+
+        # TODO field template
+
+        # ---------------------------------------------------------------------
+        # Sample Type
+        #
+        tablename = "med_sample_type"
+        define_table(tablename,
+                     # name
+                     # abbreviation/code
+                     # instructions
+                     )
+
+        # TODO field template
+
+        # ---------------------------------------------------------------------
+        # Parameter
+        #
+        tablename = "med_parameter"
+        define_table(tablename,
+                     # organisation-specific
+                     # parameter group
+                     # sample type
+                     # quantitative/qualitative
+                     # unit of measure
+                     # options
+                     # name
+                     # abbreviation
+                     # normal
+                     # plausible
+                     # instructions
+                     )
+
+        # TODO field template
+        # TODO inherit organisation_id from parameter group if using parameter groups
+
+        # ---------------------------------------------------------------------
+        # Sample/Measurement
+        #
+        tablename = "med_sample"
+        define_table(tablename,
+                     # sample number (autogenerate)?
+                     # patient-id
+                     # person-id
+                     # date
+                     # taken_by
+                     )
+
+        # TODO automatically set patient/person IDs
+
+        # ---------------------------------------------------------------------
+        # Measured/observed values
+        #
+        tablename = "med_parameter_value"
+        define_table(tablename,
+                     # sample-id
+                     # parameter-id
+                     # value_quantitative
+                     # value_qualitative
+                     # assessed_by
+                     # assessed_on
+                     # reported_by
+                     # reported_on
+                     # acknowledged_on
+                     # acknowledged_by
+                     # comment
+                     # invalid yes/no
+                     # vhash
+                     )
+
+        # ---------------------------------------------------------------------
 # =============================================================================
 class MedVitalsModel(DataModel):
     """ Data Model for vital signs """
