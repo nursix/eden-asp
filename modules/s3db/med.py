@@ -545,6 +545,8 @@ class MedPatientModel(DataModel):
                             med_status = "patient_id",
                             med_treatment = "patient_id",
                             med_vitals = "patient_id",
+                            med_sample = "patient_id",
+                            med_parameter_value = "patient_id",
                             med_epicrisis = {"joinby": "patient_id",
                                              "multiple": False,
                                              },
@@ -1095,7 +1097,18 @@ class MedParameterModel(DataModel):
 
     def model(self):
 
+        T = current.T
+        db = current.db
+        s3db = current.s3db
+
+        s3 = current.response.s3
+        crud_strings = s3.crud_strings
+
         define_table = self.define_table
+
+        organisation_id = self.org_organisation_id
+        person_id = self.pr_person_id
+        patient_id = self.med_patient_id
 
         # ---------------------------------------------------------------------
         # Parameter Group
@@ -1103,79 +1116,250 @@ class MedParameterModel(DataModel):
         #
         tablename = "med_parameter_group"
         define_table(tablename,
-                     # organisation-specific
-                     # name
-                     # abbreviation
+                     organisation_id(),
+                     Field("name", notnull=True,
+                           label = T("Name"),
+                           requires = IS_NOT_EMPTY(),
+                           ),
+                     CommentsField(),
                      )
 
-        # TODO field template
+        # TODO import option
+        # TODO onvalidation to ensure uniqueness of name within organisation
+
+        # Foreign key template
+        represent = S3Represent(lookup=tablename)
+        parameter_group_id = FieldTemplate("parameter_group_id", "reference %s" % tablename,
+                                           label = T("Parameter Group"),
+                                           ondelete = "SET NULL",
+                                           represent = represent,
+                                           requires = IS_EMPTY_OR(
+                                                        IS_ONE_OF(db, "%s.id" % tablename,
+                                                                  represent,
+                                                                  )),
+                                           )
+
+        # CRUD Strings
+        crud_strings[tablename] = Storage(
+            label_create = T("Add Parameter Group"),
+            title_display = T("Parameter Group"),
+            title_list = T("Parameter Groups"),
+            title_update = T("Edit Parameter Group"),
+            label_list_button = T("List Parameter Groups"),
+            label_delete_button = T("Delete Parameter Group"),
+            msg_record_created = T("Parameter Group added"),
+            msg_record_modified = T("Parameter Group updated"),
+            msg_record_deleted = T("Parameter Group deleted"),
+            msg_list_empty = T("No Parameter Groups currently defined"),
+            )
 
         # ---------------------------------------------------------------------
         # Sample Type
         #
         tablename = "med_sample_type"
         define_table(tablename,
-                     # name
-                     # abbreviation/code
-                     # instructions
+                     # TODO name/code must be unique
+                     Field("name", notnull=True,
+                           label = T("Name"),
+                           requires = IS_NOT_EMPTY(),
+                           ),
+                     Field("code", notnull=True,
+                           label = T("Code"),
+                           requires = IS_NOT_EMPTY(),
+                           ),
+                     CommentsField("instructions",
+                                   label = T("Instructions"),
+                                   comment = None,
+                                   ),
+                     # TODO obsolete-field?
+                     CommentsField(),
                      )
 
-        # TODO field template
+        # TODO import template
+        # TODO import deduplication primary=code+Name
+
+        # Foreign key template
+        represent = S3Represent(lookup=tablename)
+        sample_type_id = FieldTemplate("sample_type_id", "reference %s" % tablename,
+                                       label = T("Sample Type"),
+                                       ondelete = "RESTRICT",
+                                       represent = represent,
+                                       requires = IS_EMPTY_OR(
+                                                    IS_ONE_OF(db, "%s.id" % tablename,
+                                                              represent,
+                                                              )),
+                                       )
+
+        # CRUD Strings
+        crud_strings[tablename] = Storage(
+            label_create = T("Add Sample Type"),
+            title_display = T("Sample Type"),
+            title_list = T("Sample Types"),
+            title_update = T("Edit Sample Type"),
+            label_list_button = T("List Sample Types"),
+            label_delete_button = T("Delete Sample Type"),
+            msg_record_created = T("Sample Type added"),
+            msg_record_modified = T("Sample Type updated"),
+            msg_record_deleted = T("Sample Type deleted"),
+            msg_list_empty = T("No Sample Types currently defined"),
+            )
 
         # ---------------------------------------------------------------------
         # Parameter
         #
         tablename = "med_parameter"
         define_table(tablename,
-                     # organisation-specific
-                     # parameter group
-                     # sample type
-                     # quantitative/qualitative
-                     # unit of measure
-                     # options
-                     # name
-                     # abbreviation
-                     # normal
-                     # plausible
-                     # instructions
+                     organisation_id(),
+                     parameter_group_id(),
+                     sample_type_id(),
+                     Field("name",
+                           label = T("Parameter"),
+                           requires = IS_NOT_EMPTY(),
+                           ),
+                     Field("abbrv",
+                           label = T("Abbreviation"),
+                           requires = IS_NOT_EMPTY(),
+                           ),
+                     Field("qualitative", "boolean",
+                           label = T("Qualitative"),
+                           default = False,
+                           ),
+                     Field("um",
+                           label = T("Unit of Measure"),
+                           ),
+                     Field("precsn", "integer",
+                           label = T("Precision"),
+                           default = 0,
+                           requires = IS_INT_IN_RANGE(minimum=0, maximum=4),
+                           ),
+                     # TODO options (JSON list (min/max) or (val, val, val))
+                     # TODO normal range (JSON list (min/max) or (val,val,val))
+                     # TODO obsolete-field?
+                     CommentsField("instructions",
+                                   label = T("Instructions"),
+                                   comment = None,
+                                   ),
+                     CommentsField(),
                      )
 
-        # TODO field template
+        # TODO onvalidation to ensure uniqueness of name/abbrv within organisation
         # TODO inherit organisation_id from parameter group if using parameter groups
+
+        # Foreign key template
+        represent = S3Represent(lookup=tablename)
+        parameter_id = FieldTemplate("parameter_id", "reference %s" % tablename,
+                                     label = T("Parameter"),
+                                     ondelete = "RESTRICT",
+                                     represent = represent,
+                                     requires = IS_EMPTY_OR(
+                                                    IS_ONE_OF(db, "%s.id" % tablename,
+                                                              represent,
+                                                              )),
+                                     )
+
+        # CRUD Strings
+        crud_strings[tablename] = Storage(
+            label_create = T("Add Parameter"),
+            title_display = T("Parameter"),
+            title_list = T("Parameters"),
+            title_update = T("Edit Parameter"),
+            label_list_button = T("List Parameters"),
+            label_delete_button = T("Delete Parameter"),
+            msg_record_created = T("Parameter added"),
+            msg_record_modified = T("Parameter updated"),
+            msg_record_deleted = T("Parameter deleted"),
+            msg_list_empty = T("No Parameters currently defined"),
+            )
 
         # ---------------------------------------------------------------------
         # Sample/Measurement
         #
         tablename = "med_sample"
         define_table(tablename,
+                     patient_id(),
+                     person_id(),
+                     # sample type
                      # sample number (autogenerate)?
-                     # patient-id
-                     # person-id
-                     # date
+                     DateField(default="now"),
                      # taken_by
+                     # invalid yes/no
+                     # vhash
+                     CommentsField(),
                      )
 
-        # TODO automatically set patient/person IDs
+        # Components
+        self.add_components(tablename,
+                            med_parameter_value = "sample_id",
+                            )
+
+        # TODO automatically set patient/person IDs (onaccept)
+
+        # Foreign key template
+        represent = S3Represent(lookup=tablename, fields=("date",))
+        sample_id = FieldTemplate("sample_id", "reference %s" % tablename,
+                                  label = T("Sample"),
+                                  ondelete = "SET NULL",
+                                  represent = represent,
+                                  requires = IS_EMPTY_OR(
+                                                IS_ONE_OF(db, "%s.id" % tablename,
+                                                          represent,
+                                                          )),
+                                  )
+
+        # TODO CRUD strings
 
         # ---------------------------------------------------------------------
         # Measured/observed values
         #
         tablename = "med_parameter_value"
         define_table(tablename,
-                     # sample-id
-                     # parameter-id
-                     # value_quantitative
-                     # value_qualitative
-                     # assessed_by
-                     # assessed_on
-                     # reported_by
-                     # reported_on
-                     # acknowledged_on
-                     # acknowledged_by
-                     # comment
-                     # invalid yes/no
-                     # vhash
+                     person_id(
+                         label = T("Patient"),
+                         empty = False,
+                         comment = None,
+                         readable = False,
+                         writable = False,
+                         ),
+                     patient_id(
+                         empty = False,
+                         readable = False,
+                         writable = False,
+                         ),
+                     sample_id(),
+                     parameter_id(empty=False),
+                     Field("value", "double",
+                           label = T("Result"),
+                           ),
+                     Field("value_qualitative",
+                           label = T("Result (qualitative)"),
+                           ),
+                     DateTimeField(label = T("Date reported"),
+                                   default = "now",
+                                   future = 0,
+                                   writable = False,
+                                   ),
+                     # TODO reported_by
+                     #DateTimeField("assessed_on"
+                     #              label = T("Date assessed"),
+                     #              ),
+                     # TODO assessed_by
+                     #DateTimeField("acknowledged_on",
+                     #              label = T("Date acknowledged"),
+                     #              ),
+                     # TODO acknowledged_by
+                     Field("invalid", "boolean",
+                           label = T("Invalid"),
+                           default = False,
+                           # TODO BooleanRepresent
+                           ),
+                     CommentsField(),
+                     # TODO vhash
                      )
+
+        # TODO inherit person_id/patient_id from sample (onaccept),
+        #      alternatively, set patient_id/person_id automatically
+
+        # TODO CRUD Strings
 
         # ---------------------------------------------------------------------
 # =============================================================================

@@ -627,6 +627,24 @@ def document():
                            )
 
 # =============================================================================
+# Observations and Measurements
+#
+def parameter_group():
+    """ Parameter Groups - CRUD Controller """
+
+    return crud_controller()
+
+def sample_type():
+    """ Sample Types - CRUD Controller """
+
+    return crud_controller()
+
+def parameter():
+    """ Parameters - CRUD Controller """
+
+    return crud_controller()
+
+# =============================================================================
 # Vaccinations
 #
 def vaccination_type():
