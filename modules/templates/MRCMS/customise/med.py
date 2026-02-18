@@ -152,6 +152,7 @@ def configure_med_case_file(r):
             reason = (T("Reason for visit"), "patient_link")
         else:
             reason = "reason"
+
         list_fields = ["date",
                        "refno",
                        reason,
@@ -163,12 +164,15 @@ def configure_med_case_file(r):
         component.configure(crud_form = crud_form,
                             subheadings = subheadings,
                             list_fields = list_fields,
+                            list_layout = s3db.med_PatientListLayout(),
                             orderby = "%s.date desc" % r.component.tablename,
                             insertable = not current_patient_id,
                             editable = True,
                             deletable = False,
                             open_read_first = True,
                             )
+        if auth.permission.has_permission("read", c="med", f="epicrisis"):
+            r.component.configure(list_type="datalist")
 
     elif component_name == "vitals":
         # Require active patient file for adding new record

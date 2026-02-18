@@ -127,15 +127,16 @@
         padding: 0.1rem 0.5rem;
         &.meta-fix {
             min-width: 27%;
-            background-color: #f0f0f0;
+            // background-color: #f0f0f0;
             line-height: 0.9rem;
         }
+        vertical-align: middle;
     }
     &.editable {
         .meta {
             color: #b03737;
             &.meta-fix {
-                background-color: #fff6e4;
+                // background-color: #fff6e4;
             }
         }
         background-color: #fde7bd;
