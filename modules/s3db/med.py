@@ -1175,7 +1175,6 @@ class MedParameterModel(DataModel):
                      CommentsField(),
                      )
 
-        # TODO import template
         # TODO import deduplication primary=code+Name
 
         # Foreign key template
