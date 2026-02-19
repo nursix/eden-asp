@@ -3460,12 +3460,15 @@ class med_PatientListLayout(S3DataListLayout):
 
         # Show date, hazard icons and status
         for colname in ("med_patient.date",
-                        "med_patient.hazards",
+                        "med_patient.unit_id",
                         "med_patient.status",
+                        "med_patient.hazards",
                         ):
             if colname not in record:
                 continue
             content = DIV(record[colname], _class="meta")
+            if colname == "med_patient.unit_id":
+                content.add_class("meta-fix")
             header.append(content)
 
         # Render toolbox
@@ -3494,27 +3497,27 @@ class med_PatientListLayout(S3DataListLayout):
         if record["_row"]["med_patient.status"] in ("ARRIVED", "TREATMENT"):
             body.add_class("editable")
 
-        # epicrisis_id = record["_row"]["med_epicrisis.id"]
-        # TODO use patient_link instead of reason if user is permitted to open
+        cols = {rfield.colname: rfield for rfield in rfields}
+
         reason = "med_patient.patient_link" if self.patient_link else "med_patient.reason"
-        for rfield in rfields:
-            if rfield.colname in ("med_patient.unit_id",
-                                  reason,
-                                  "med_patient.hazards_advice",
-                                  "med_epicrisis.situation",
-                                  "med_epicrisis.diagnoses",
-                                  "med_epicrisis.progress",
-                                  "med_epicrisis.outcome",
-                                  "med_epicrisis.recommendation",
-                                  ):
-                value = record["_row"][rfield.colname]
-                if isinstance(value, str):
-                    value = value.strip()
-                if not value:
-                    continue
-                content = self.render_column(item_id, rfield, record)
-                if content:
-                    body.append(content)
+        for colname in (reason,
+                        "med_patient.hazards_advice",
+                        "med_epicrisis.situation",
+                        "med_epicrisis.diagnoses",
+                        "med_epicrisis.progress",
+                        "med_epicrisis.outcome",
+                        "med_epicrisis.recommendation",
+                        ):
+            if colname not in cols:
+                continue
+            value = record["_row"][colname]
+            if isinstance(value, str):
+                value = value.strip()
+            if not value:
+                continue
+            content = self.render_column(item_id, cols[colname], record)
+            if content:
+                body.append(content)
 
         return body
 
@@ -3596,14 +3599,14 @@ class med_PatientListLayout(S3DataListLayout):
             return None
 
         raw = record["_row"]
-        if rfield.colname in ("med_epicrisis.situation",
-                              "med_epicrisis.diagnoses",
-                              "med_epicrisis.progress",
-                              "med_epicrisis.outcome",
-                              "med_epicrisis.recommendation",
-                              "med_status.situation",
-                              ):
-            # Use raw data
+
+        if colname in ("med_epicrisis.situation",
+                       "med_epicrisis.diagnoses",
+                       "med_epicrisis.progress",
+                       "med_epicrisis.outcome",
+                       "med_epicrisis.recommendation",
+                       "med_status.situation",
+                       ):
             value = raw[colname]
             if value:
                 value = value.strip()
@@ -3622,6 +3625,11 @@ class med_PatientListLayout(S3DataListLayout):
         value = P(value,
                   _id = value_id,
                   _class = "dl-field-value")
+
+        if rfield.tname == "med_epicrisis" and not raw.get("med_epicrisis.is_final"):
+            value.add_class("med-preliminary")
+        if colname in ("med_patient.reason", "med_patient.patient_link"):
+            value.add_class("med-reason")
 
         return TAG[""](label, value)
 
