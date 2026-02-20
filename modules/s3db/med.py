@@ -35,6 +35,7 @@ __all__ = ("MedUnitModel",
            "MedEpicrisisModel",
            "MedMedicationModel",
            "MedVaccinationModel",
+           "med_PatientListLayout",
            "med_UnitRepresent",
            "med_DocEntityRepresent",
            "med_get_current_patient_id",
@@ -3367,6 +3368,268 @@ class med_StatusListLayout(S3DataListLayout):
         value = P(value,
                   _id = value_id,
                   _class = "dl-field-value")
+
+        return TAG[""](label, value)
+
+# =============================================================================
+class med_PatientListLayout(S3DataListLayout):
+    """ List layout for visits (on tab of person) """
+
+    def __init__(self, profile=None):
+
+        super().__init__(profile=profile)
+
+        T = current.T
+
+        self.list_fields = ["person_id",
+                            "unit_id",
+                            (T("Reason for visit"), "patient_link"),
+                            "refno",
+                            "date",
+                            "reason",
+                            "status",
+                            "hazards",
+                            "hazards_advice",
+                            ]
+        if current.auth.permission.has_permission("read", "med_epicrisis"):
+            self.list_fields.extend(["epicrisis.id",
+                                     "epicrisis.situation",
+                                     "epicrisis.diagnoses",
+                                     "epicrisis.progress",
+                                     "epicrisis.outcome",
+                                     "epicrisis.recommendation",
+                                     "epicrisis.is_final",
+                                     ])
+
+        self.patient_link = current.auth.permission.has_permission("read",
+                                                                   c="med",
+                                                                   f="patient",
+                                                                   t="med_patient",
+                                                                   )
+
+    # -------------------------------------------------------------------------
+    # def prep(self, resource, records):
+    #     """
+    #         Bulk lookups for cards
+    #
+    #         Args:
+    #             resource: the resource
+    #             records: the records as returned from CRUDResource.select
+    #     """
+    #
+    #     db = current.db
+    #     s3db = current.s3db
+    #
+    #     record_ids = [r["med_patient.id"] for r in records]
+    #
+    #     # Look up epicrises
+    #     etable = s3db.med_epicrisis
+    #     query = current.auth.s3_accessible_query("read", "med_epicrisis") & \
+    #             (etable.patient_id.belongs(record_ids)) & \
+    #             (etable.deleted == False)
+    #     rows = db(query).select(etable.id,
+    #                             etable.patient_id,
+    #                             etable.situation,
+    #                             etable.diagnoses,
+    #                             etable.progress,
+    #                             etable.outcome,
+    #                             etable.recommendation,
+    #                             etable.is_final,
+    #                             )
+    #     for row in rows:
+    #         self.epicrises[row.patient_id] = row
+    #
+    # -------------------------------------------------------------------------
+    def render_header(self, list_id, item_id, resource, rfields, record):
+        """
+            Render the card header
+
+            Args:
+                list_id: the HTML ID of the list
+                item_id: the HTML ID of the item
+                resource: the CRUDResource to render
+                rfields: the S3ResourceFields to render
+                record: the record as dict
+        """
+
+        header = DIV(_class="med-status-header")
+
+        # Show ref.no
+        if "med_patient.refno" in record:
+            header.append(DIV(SPAN(record["med_patient.refno"], _class="med-refno"), _class="meta"))
+
+        # Show date, hazard icons and status
+        for colname in ("med_patient.date",
+                        "med_patient.unit_id",
+                        "med_patient.status",
+                        "med_patient.hazards",
+                        ):
+            if colname not in record:
+                continue
+            content = DIV(record[colname], _class="meta")
+            if colname == "med_patient.unit_id":
+                content.add_class("meta-fix")
+            header.append(content)
+
+        # Render toolbox
+        toolbox = self.render_toolbox(list_id, resource, record)
+        if toolbox:
+            header.append(toolbox)
+
+        return header
+
+    # -------------------------------------------------------------------------
+    def render_body(self, list_id, item_id, resource, rfields, record):
+        """
+            Render the card body
+
+            Args:
+                list_id: the HTML ID of the list
+                item_id: the HTML ID of the item
+                resource: the CRUDResource to render
+                rfields: the S3ResourceFields to render
+                record: the record as dict
+        """
+
+        record_id = record["_row"]["med_patient.id"]
+
+        body = DIV(_class="med-status")
+        if record["_row"]["med_patient.status"] in ("ARRIVED", "TREATMENT"):
+            body.add_class("editable")
+
+        cols = {rfield.colname: rfield for rfield in rfields}
+
+        reason = "med_patient.patient_link" if self.patient_link else "med_patient.reason"
+        for colname in (reason,
+                        "med_patient.hazards_advice",
+                        "med_epicrisis.situation",
+                        "med_epicrisis.diagnoses",
+                        "med_epicrisis.progress",
+                        "med_epicrisis.outcome",
+                        "med_epicrisis.recommendation",
+                        ):
+            if colname not in cols:
+                continue
+            value = record["_row"][colname]
+            if isinstance(value, str):
+                value = value.strip()
+            if not value:
+                continue
+            content = self.render_column(item_id, cols[colname], record)
+            if content:
+                body.append(content)
+
+        return body
+
+    # -------------------------------------------------------------------------
+    def render_toolbox(self, list_id, resource, record):
+        """
+            Render the toolbox
+
+            Args:
+                list_id: the HTML ID of the list
+                resource: the CRUDResource to render
+                record: the record as dict
+        """
+
+        table = resource.table
+        tablename = resource.tablename
+
+        raw = record["_row"]
+        record_id = raw["med_patient.id"]
+        person_id = raw["med_patient.person_id"]
+
+        toolbox = DIV(_class = "edit-bar fright")
+
+        # Look up the patient ID
+        f = current.request.function
+        if f == "person" and person_id:
+            update_url = URL(c = "med",
+                             f = "person",
+                             args = [person_id, "patient", record_id, "update.popup"],
+                             vars = {"refresh": list_id,
+                                     "record": record_id,
+                                     "profile": self.profile,
+                                     },
+                             )
+        elif f == "patient":
+            update_url = URL(c = "med",
+                             f = "patient",
+                             args = [record_id, "update.popup"],
+                             vars = {"refresh": list_id,
+                                     "record": record_id,
+                                     "profile": self.profile,
+                                     },
+                             )
+        else:
+            return None
+
+        has_permission = current.auth.s3_has_permission
+
+        if has_permission("update", table, record_id=record_id):
+            btn = A(ICON("edit"),
+                    _href = update_url,
+                    _class = "s3_modal",
+                    _title = get_crud_string(tablename, "title_update"),
+                    )
+            toolbox.append(btn)
+
+        if has_permission("delete", table, record_id=record_id):
+            btn = A(ICON("delete"),
+                    _class = "dl-item-delete",
+                    _title = get_crud_string(tablename, "label_delete_button"),
+                    )
+            toolbox.append(btn)
+
+        return toolbox
+
+    # ---------------------------------------------------------------------
+    def render_column(self, item_id, rfield, record):
+        """
+            Render a data column.
+
+            Args:
+                item_id: the HTML element ID of the item
+                rfield: the S3ResourceField for the column
+                record: the record (from CRUDResource.select)
+        """
+
+        colname = rfield.colname
+        if colname not in record:
+            return None
+
+        raw = record["_row"]
+
+        if colname in ("med_epicrisis.situation",
+                       "med_epicrisis.diagnoses",
+                       "med_epicrisis.progress",
+                       "med_epicrisis.outcome",
+                       "med_epicrisis.recommendation",
+                       "med_status.situation",
+                       ):
+            value = raw[colname]
+            if value:
+                value = value.strip()
+        else:
+            value = record[colname]
+
+        if not value:
+            return None
+
+        value_id = "%s-%s" % (item_id, rfield.colname.replace(".", "_"))
+
+        label = LABEL("%s:" % rfield.label,
+                      _for = value_id,
+                      _class = "dl-field-label")
+
+        value = P(value,
+                  _id = value_id,
+                  _class = "dl-field-value")
+
+        if rfield.tname == "med_epicrisis" and not raw.get("med_epicrisis.is_final"):
+            value.add_class("med-preliminary")
+        if colname in ("med_patient.reason", "med_patient.patient_link"):
+            value.add_class("med-reason")
 
         return TAG[""](label, value)
 

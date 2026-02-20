@@ -389,6 +389,7 @@
     background-repeat: no-repeat;
     background-size: 20px;
     background-position: center;
+    vertical-align: middle;
 }
 
 .hazard-bio.hazard-pos {
@@ -404,9 +405,9 @@
 // Patient rheader
 .med-reason, .med-reason-historical {
     font-size: 0.8rem;
-}
-.med-reason {
-    color: #840088;
+    padding: 0 0.5rem;
+    font-weight: bold;
+    vertical-align: middle;
 }
 .med-reason-historical {
     color: $black;
@@ -418,28 +419,86 @@
     background: #eee;
     margin-right: 1rem;
     font-weight: normal;
-    vertical-align: top;
+    vertical-align: middle;
 }
 .med-patient, .med-unregistered {
     font-size: 0.9rem;
-    vertical-align: top;
+    vertical-align: middle;
 }
 .med-unregistered {
     font-style: italic;
     color: grey;
 }
 .med-refno {
-    font-size: 0.7rem;
-    padding: 0.025rem 0.25rem;
-    vertical-align: top;
+    font-size: 0.8rem;
+    padding: 0.05rem 0.25rem;
+    vertical-align: middle;
     margin-right: 0.4rem;
-    color: #666;
+    color: #333;
     background: #ffddbb;
     border: 1px solid #333;
-    border-radius: 1rem;
     min-width: 1rem;
     display: inline-block;
     text-align: center;
+    font-weight: normal;
+}
+// Medical Status Reports
+.dl .med-status-header {
+    padding: 0.3rem;
+    border: 1px solid #ccc;
+    background-color: #7979792b;
+    .meta {
+        display: inline-block;
+        // font-weight: bold;
+        padding: 0.1rem 0.5rem;
+        &.meta-fix {
+            min-width: 27%;
+            // background-color: #f0f0f0;
+            line-height: 0.9rem;
+        }
+        vertical-align: middle;
+    }
+    &.editable {
+        .meta {
+            color: #b03737;
+            &.meta-fix {
+                // background-color: #fff6e4;
+            }
+        }
+        background-color: #fde7bd;
+    }
+}
+.dl .med-status {
+    padding: 0.7rem;
+    &.editable {
+        background-color: #fff6e4;
+        border: 1px solid #b03737;
+    }
+    .dl-field-label, .dl-field-value {
+        display: block;
+    }
+    .dl-field-label {
+        font-size: 0.7rem;
+        font-weight: bold;
+    }
+    .dl-field-value {
+        white-space: pre-wrap;
+        margin-bottom: 0.5rem;
+        font-weight: normal;
+        &.med-preliminary {
+            font-style: italic;
+        }
+    }
+    p.pending {
+        font-size: 0.7rem;
+        font-style: italic;
+        color: #b03737;
+    }
+    .med-reason {
+        padding: 0;
+        font-weight: bold;
+        font-size: 0.9rem;
+    }
 }
 
 // ----------------------------------------------------------------------------
@@ -447,7 +506,7 @@
 //
 .client-gender-age {
     font-size: 0.7rem;
-    vertical-align: top;
+    vertical-align: middle;
     color: #999;
     .fa {
         margin: 0 0.2rem;
