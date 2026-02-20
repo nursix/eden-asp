@@ -513,70 +513,74 @@ button.toggle-text {
   white-space: pre;
 }
 /* line 322, ../../default/scss/theme/_represent.scss */
+.workflow-options.workflow-blue {
+  color: #0563a1;
+}
+/* line 325, ../../default/scss/theme/_represent.scss */
 .workflow-options.workflow-grey {
   color: #555;
 }
-/* line 325, ../../default/scss/theme/_represent.scss */
+/* line 328, ../../default/scss/theme/_represent.scss */
 .workflow-options.workflow-red {
   color: #c42626;
 }
-/* line 328, ../../default/scss/theme/_represent.scss */
+/* line 331, ../../default/scss/theme/_represent.scss */
 .workflow-options.workflow-amber {
   color: #ec8d27;
 }
-/* line 331, ../../default/scss/theme/_represent.scss */
+/* line 334, ../../default/scss/theme/_represent.scss */
 .workflow-options.workflow-green {
   color: green;
 }
-/* line 334, ../../default/scss/theme/_represent.scss */
+/* line 337, ../../default/scss/theme/_represent.scss */
 .workflow-options.workflow-advice {
   border: 1px solid #c42626;
   background-color: #ffdede;
   padding: 0.3rem 0.7rem;
 }
-/* line 339, ../../default/scss/theme/_represent.scss */
+/* line 342, ../../default/scss/theme/_represent.scss */
 .workflow-options .fa {
   margin-right: 0.2rem;
 }
-/* line 341, ../../default/scss/theme/_represent.scss */
+/* line 344, ../../default/scss/theme/_represent.scss */
 [dir=rtl] .workflow-options .fa {
   margin-right: 0;
   margin-left: 0.2rem;
 }
-/* line 346, ../../default/scss/theme/_represent.scss */
+/* line 349, ../../default/scss/theme/_represent.scss */
 .controls .workflow-options {
   margin-left: 0.5rem;
 }
-/* line 348, ../../default/scss/theme/_represent.scss */
+/* line 351, ../../default/scss/theme/_represent.scss */
 [dir=rtl] .controls .workflow-options {
   margin-left: 0;
   margin-right: 0.5rem;
 }
 
-/* line 358, ../../default/scss/theme/_represent.scss */
+/* line 361, ../../default/scss/theme/_represent.scss */
 .issue-date {
   display: block;
   font-size: 0.75rem;
   color: #666;
 }
 
-/* line 363, ../../default/scss/theme/_represent.scss */
+/* line 366, ../../default/scss/theme/_represent.scss */
 .issue-full {
   border: 1px solid #ccc;
   background-color: #fdf7de;
   padding: 0.5rem 0.75rem;
 }
-/* line 367, ../../default/scss/theme/_represent.scss */
+/* line 370, ../../default/scss/theme/_represent.scss */
 .issue-full h4 {
   font-size: 1rem;
 }
-/* line 370, ../../default/scss/theme/_represent.scss */
+/* line 373, ../../default/scss/theme/_represent.scss */
 .issue-full .issue-description {
   font-size: 0.85rem;
   font-style: italic;
 }
 
-/* line 380, ../../default/scss/theme/_represent.scss */
+/* line 383, ../../default/scss/theme/_represent.scss */
 .hazard-neg, .hazard-pos {
   display: inline-block;
   width: 20px;
@@ -586,84 +590,150 @@ button.toggle-text {
   background-repeat: no-repeat;
   background-size: 20px;
   background-position: center;
+  vertical-align: middle;
 }
 
-/* line 391, ../../default/scss/theme/_represent.scss */
+/* line 395, ../../default/scss/theme/_represent.scss */
 .hazard-bio.hazard-pos {
   background-image: url(../../img/hazard/bio.png);
 }
 
-/* line 394, ../../default/scss/theme/_represent.scss */
+/* line 398, ../../default/scss/theme/_represent.scss */
 .hazard-tox.hazard-pos {
   background-image: url(../../img/hazard/tox.png);
 }
 
-/* line 397, ../../default/scss/theme/_represent.scss */
+/* line 401, ../../default/scss/theme/_represent.scss */
 .hazard-rad.hazard-pos {
   background-image: url(../../img/hazard/rad.png);
 }
 
-/* line 402, ../../default/scss/theme/_represent.scss */
+/* line 406, ../../default/scss/theme/_represent.scss */
 .med-reason, .med-reason-historical {
   font-size: 0.8rem;
+  padding: 0 0.5rem;
+  font-weight: bold;
+  vertical-align: middle;
 }
 
-/* line 405, ../../default/scss/theme/_represent.scss */
-.med-reason {
-  color: #840088;
-}
-
-/* line 408, ../../default/scss/theme/_represent.scss */
+/* line 412, ../../default/scss/theme/_represent.scss */
 .med-reason-historical {
   color: #444;
   font-style: italic;
 }
 
-/* line 412, ../../default/scss/theme/_represent.scss */
+/* line 416, ../../default/scss/theme/_represent.scss */
 .med-area {
   font-size: 0.8rem;
   padding: 0.2rem 0.4rem;
   background: #eee;
   margin-right: 1rem;
   font-weight: normal;
-  vertical-align: top;
-}
-
-/* line 420, ../../default/scss/theme/_represent.scss */
-.med-patient, .med-unregistered {
-  font-size: 0.9rem;
-  vertical-align: top;
+  vertical-align: middle;
 }
 
 /* line 424, ../../default/scss/theme/_represent.scss */
+.med-patient, .med-unregistered {
+  font-size: 0.9rem;
+  vertical-align: middle;
+}
+
+/* line 428, ../../default/scss/theme/_represent.scss */
 .med-unregistered {
   font-style: italic;
   color: grey;
 }
 
-/* line 428, ../../default/scss/theme/_represent.scss */
+/* line 432, ../../default/scss/theme/_represent.scss */
 .med-refno {
-  font-size: 0.7rem;
-  padding: 0.025rem 0.25rem;
-  vertical-align: top;
+  font-size: 0.8rem;
+  padding: 0.05rem 0.25rem;
+  vertical-align: middle;
   margin-right: 0.4rem;
-  color: #666;
+  color: #333;
   background: #ffddbb;
   border: 1px solid #333;
-  border-radius: 1rem;
   min-width: 1rem;
   display: inline-block;
   text-align: center;
+  font-weight: normal;
 }
 
-/* line 445, ../../default/scss/theme/_represent.scss */
+/* line 446, ../../default/scss/theme/_represent.scss */
+.dl .med-status-header {
+  padding: 0.3rem;
+  border: 1px solid #ccc;
+  background-color: #7979792b;
+}
+/* line 450, ../../default/scss/theme/_represent.scss */
+.dl .med-status-header .meta {
+  display: inline-block;
+  padding: 0.1rem 0.5rem;
+  vertical-align: middle;
+}
+/* line 454, ../../default/scss/theme/_represent.scss */
+.dl .med-status-header .meta.meta-fix {
+  min-width: 27%;
+  line-height: 0.9rem;
+}
+/* line 461, ../../default/scss/theme/_represent.scss */
+.dl .med-status-header.editable {
+  background-color: #fde7bd;
+}
+/* line 462, ../../default/scss/theme/_represent.scss */
+.dl .med-status-header.editable .meta {
+  color: #b03737;
+}
+
+/* line 471, ../../default/scss/theme/_represent.scss */
+.dl .med-status {
+  padding: 0.7rem;
+}
+/* line 473, ../../default/scss/theme/_represent.scss */
+.dl .med-status.editable {
+  background-color: #fff6e4;
+  border: 1px solid #b03737;
+}
+/* line 477, ../../default/scss/theme/_represent.scss */
+.dl .med-status .dl-field-label, .dl .med-status .dl-field-value {
+  display: block;
+}
+/* line 480, ../../default/scss/theme/_represent.scss */
+.dl .med-status .dl-field-label {
+  font-size: 0.7rem;
+  font-weight: bold;
+}
+/* line 484, ../../default/scss/theme/_represent.scss */
+.dl .med-status .dl-field-value {
+  white-space: pre-wrap;
+  margin-bottom: 0.5rem;
+  font-weight: normal;
+}
+/* line 488, ../../default/scss/theme/_represent.scss */
+.dl .med-status .dl-field-value.med-preliminary {
+  font-style: italic;
+}
+/* line 492, ../../default/scss/theme/_represent.scss */
+.dl .med-status p.pending {
+  font-size: 0.7rem;
+  font-style: italic;
+  color: #b03737;
+}
+/* line 497, ../../default/scss/theme/_represent.scss */
+.dl .med-status .med-reason {
+  padding: 0;
+  font-weight: bold;
+  font-size: 0.9rem;
+}
+
+/* line 507, ../../default/scss/theme/_represent.scss */
 .client-gender-age {
   font-size: 0.7rem;
-  vertical-align: top;
+  vertical-align: middle;
   color: #999;
   margin: 0 1rem;
 }
-/* line 449, ../../default/scss/theme/_represent.scss */
+/* line 511, ../../default/scss/theme/_represent.scss */
 .client-gender-age .fa {
   margin: 0 0.2rem;
 }
@@ -3960,65 +4030,6 @@ table th, table td {
 /* line 93, ../../default/scss/theme/_datalists.scss */
 .dl-exports.list_formats {
   padding: 0;
-}
-
-/* line 98, ../../default/scss/theme/_datalists.scss */
-.med-status {
-  padding: 0.7rem;
-}
-/* line 100, ../../default/scss/theme/_datalists.scss */
-.med-status.editable {
-  background-color: #fff6e4;
-  border: 1px solid #b03737;
-}
-/* line 104, ../../default/scss/theme/_datalists.scss */
-.med-status .dl-field-label, .med-status .dl-field-value {
-  display: block;
-}
-/* line 107, ../../default/scss/theme/_datalists.scss */
-.med-status .dl-field-label {
-  font-size: 0.7rem;
-}
-/* line 110, ../../default/scss/theme/_datalists.scss */
-.med-status .dl-field-value {
-  white-space: pre-wrap;
-  margin-bottom: 0.5rem;
-}
-/* line 114, ../../default/scss/theme/_datalists.scss */
-.med-status p.pending {
-  font-size: 0.7rem;
-  font-style: italic;
-  color: #b03737;
-}
-
-/* line 120, ../../default/scss/theme/_datalists.scss */
-.med-status-header {
-  padding: 0.3rem;
-  border: 1px solid #ccc;
-  background-color: #7979792b;
-}
-/* line 124, ../../default/scss/theme/_datalists.scss */
-.med-status-header .meta {
-  display: inline-block;
-  padding: 0.1rem 0.5rem;
-}
-/* line 128, ../../default/scss/theme/_datalists.scss */
-.med-status-header .meta.meta-fix {
-  min-width: 27%;
-  background-color: #f0f0f0;
-  line-height: 0.9rem;
-}
-/* line 134, ../../default/scss/theme/_datalists.scss */
-.med-status-header.editable {
-  background-color: #fde7bd;
-}
-/* line 135, ../../default/scss/theme/_datalists.scss */
-.med-status-header.editable .meta {
-  color: #b03737;
-}
-/* line 137, ../../default/scss/theme/_datalists.scss */
-.med-status-header.editable .meta.meta-fix {
-  background-color: #fff6e4;
 }
 
 /* line 11, ../../default/scss/theme/_summary.scss */
