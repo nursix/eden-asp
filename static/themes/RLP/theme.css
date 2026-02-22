@@ -3993,41 +3993,45 @@ table th, table td {
   font-weight: bold;
 }
 /* line 62, ../../default/scss/theme/_datalists.scss */
+.dl .dl-toggle-contents {
+  margin: 0;
+}
+/* line 65, ../../default/scss/theme/_datalists.scss */
 .dl .edit-bar.fright {
   float: right;
 }
-/* line 65, ../../default/scss/theme/_datalists.scss */
+/* line 68, ../../default/scss/theme/_datalists.scss */
 .dl .edit-bar a {
   font-size: 1rem;
   padding: 0 0.2rem;
   color: #444;
 }
-/* line 71, ../../default/scss/theme/_datalists.scss */
+/* line 74, ../../default/scss/theme/_datalists.scss */
 [dir=rtl] .dl .dl-header {
   text-align: left;
 }
-/* line 75, ../../default/scss/theme/_datalists.scss */
+/* line 78, ../../default/scss/theme/_datalists.scss */
 [dir=rtl] .dl .dl-item .dropdown .caret {
   margin-left: 0;
   margin-right: 0.2rem;
 }
-/* line 79, ../../default/scss/theme/_datalists.scss */
+/* line 82, ../../default/scss/theme/_datalists.scss */
 [dir=rtl] .dl .dl-item .attachments {
   margin-right: 0;
   margin-left: 0.2rem;
 }
-/* line 84, ../../default/scss/theme/_datalists.scss */
+/* line 87, ../../default/scss/theme/_datalists.scss */
 [dir=rtl] .dl .edit-bar.fright {
   float: left;
 }
 
-/* line 90, ../../default/scss/theme/_datalists.scss */
+/* line 93, ../../default/scss/theme/_datalists.scss */
 .dl-empty {
   font-style: italic;
   font-size: 0.825rem;
 }
 
-/* line 93, ../../default/scss/theme/_datalists.scss */
+/* line 96, ../../default/scss/theme/_datalists.scss */
 .dl-exports.list_formats {
   padding: 0;
 }
