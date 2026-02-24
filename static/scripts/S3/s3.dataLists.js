@@ -2,7 +2,7 @@
  * jQuery UI DataList Widget for "lists of data cards"
  * - server-side implementation is S3DataList in modules/s3/s3data.py
  *
- * @copyright 2013-2021 (c) Sahana Software Foundation
+ * @copyright 2013 (c) Sahana Software Foundation
  * @license MIT
  *
  * requires jQuery 1.9.1+
@@ -118,6 +118,9 @@
 
             this.id = datalistID;
             datalistID += 1;
+
+            // Namespace for events
+            this.eventNamespace = '.dl';
         },
 
         /**
@@ -145,7 +148,7 @@
         refresh: function() {
 
             // Unbind global events
-            //this._unbindEvents();
+            this._unbindEvents();
 
             // Initialize infinite scroll
             this._infiniteScroll();
@@ -154,7 +157,7 @@
             this._bindItemEvents();
 
             // Bind global events
-            //this._bindEvents();
+            this._bindEvents();
 
             // Fire initial update event
             $(this.element).trigger('listUpdate');
@@ -256,6 +259,7 @@
                             dl._autoRetrieve();
                         }
                     });
+                    // Bind item events
                     dl._bindItemEvents();
                 });
 
@@ -594,6 +598,7 @@
                         .removeClass('dl-col-0')
                         .addClass('dl-col-' + (rowSize - 1))
                         .appendTo(lastRow);
+                    // Bind item events
                     dl._bindItemEvents();
                 },
                 'error': function(request, status, error) {
@@ -731,36 +736,11 @@
         },
 
         /**
-         * Bind events in list items
-         *
-         * @todo: call from _bindEvents?
+         * Bind global events to newly added HTML (e.g. modals)
          */
         _bindItemEvents: function() {
-            // Bind events in list items
 
-            var $datalist = $(this.element);
-
-            // Click-event for dl-item-delete
-            var dl = this;
-            $datalist.find('.dl-item-delete')
-                     .css({cursor: 'pointer'})
-                     .off('click.dl')
-                     .on('click.dl', function(event) {
-                if (confirm(i18n.delete_confirmation)) {
-                    dl._ajaxDeleteItem(this);
-                    return true;
-                } else {
-                    event.preventDefault();
-                    return false;
-                }
-            });
-
-            // Add Event Handlers to new page elements
             S3.redraw();
-
-            // Other callbacks
-
-            return;
         },
 
         /**
@@ -768,7 +748,35 @@
          */
         _bindEvents: function() {
 
-            return true;
+            var $el = $(this.element),
+                ns = this.eventNamespace,
+                self = this;
+
+            // Click-event for dl-item-delete
+            $el.on('click' + ns, '.dl-item-delete', function(event) {
+
+                const $target = $(event.target);
+
+                if (confirm(i18n.delete_confirmation)) {
+                    self._ajaxDeleteItem($target);
+                    return true;
+                } else {
+                    event.preventDefault();
+                    return false;
+                }
+
+            });
+
+            // Click-event for dl-toggle-contents
+            $el.on('click' + ns, '.dl-toggle-contents', function(event) {
+
+                const $target = $(event.target).hide();
+
+                $target.siblings('.hide').hide().removeClass("hide");
+                $target.siblings().toggle();
+            });
+
+            return this;
         },
 
         /**
@@ -776,7 +784,12 @@
          */
         _unbindEvents: function() {
 
-            return true;
+            var $el = $(this.element),
+                ns = this.eventNamespace;
+
+            $el.off(ns);
+
+            return this;
         }
     });
 

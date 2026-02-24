@@ -2919,6 +2919,7 @@
 'Here are the solution items related to the problem.': 'Hier sind die mit diesem Problem verbundenen Lösungselemente.',
 'Herero': 'Otjiherero',
 'Heritage Listed': 'Erbe aufgelistet',
+'Hide Details': 'Details ausblenden',
 'Hide Map': 'Karte ausblenden',
 'Hide Picture': 'Bild ausblenden',
 'Hide Table': 'Tabelle ausblenden',

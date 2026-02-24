@@ -3500,6 +3500,8 @@ class med_PatientListLayout(S3DataListLayout):
         cols = {rfield.colname: rfield for rfield in rfields}
 
         reason = "med_patient.patient_link" if self.patient_link else "med_patient.reason"
+        epicrisis = []
+
         for colname in (reason,
                         "med_patient.hazards_advice",
                         "med_epicrisis.situation",
@@ -3515,9 +3517,23 @@ class med_PatientListLayout(S3DataListLayout):
                 value = value.strip()
             if not value:
                 continue
+            rfield = cols[colname]
             content = self.render_column(item_id, cols[colname], record)
             if content:
-                body.append(content)
+                if rfield.tname == "med_epicrisis":
+                    epicrisis.append(content)
+                else:
+                    body.append(content)
+
+        if epicrisis:
+            # Wrap epicrisis in DIV and add contents-toggle
+            T = current.T
+            content = DIV(*epicrisis,
+                          A(T("Show Details"), _class="action-lnk dl-toggle-contents"),
+                          A(T("Hide Details"), _class="action-lnk dl-toggle-contents hide"),
+                          _class = "med-epicrisis",
+                          )
+            body.append(content)
 
         return body
 
@@ -3620,14 +3636,21 @@ class med_PatientListLayout(S3DataListLayout):
 
         label = LABEL("%s:" % rfield.label,
                       _for = value_id,
-                      _class = "dl-field-label")
+                      _class = "dl-field-label",
+                      )
 
         value = P(value,
                   _id = value_id,
-                  _class = "dl-field-value")
+                  _class = "dl-field-value",
+                  )
 
-        if rfield.tname == "med_epicrisis" and not raw.get("med_epicrisis.is_final"):
-            value.add_class("med-preliminary")
+        if rfield.tname == "med_epicrisis":
+            # Hide epicrisis details initially
+            label.add_class("hide")
+            value.add_class("hide")
+            # Mark as preliminary if not final yet
+            if not raw.get("med_epicrisis.is_final"):
+                value.add_class("med-preliminary")
         if colname in ("med_patient.reason", "med_patient.patient_link"):
             value.add_class("med-reason")
 
