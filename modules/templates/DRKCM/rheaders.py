@@ -6,17 +6,17 @@
 
 from gluon import current, A, DIV, SPAN, URL
 
+from core import S3ResourceHeader, s3_fullname, s3_rheader_resource, s3_rheader_tabs
+
 from .helpers import client_name_age, warn_if_missing
 
 # =============================================================================
-def drk_cr_rheader(r, tabs=None):
+def cr_rheader(r, tabs=None):
     """ CR custom resource headers """
 
     if r.representation != "html":
         # Resource headers only used in interactive views
         return None
-
-    from core import s3_rheader_resource, S3ResourceHeader
 
     tablename, record = s3_rheader_resource(r)
     if tablename != r.tablename:
@@ -51,14 +51,13 @@ def drk_cr_rheader(r, tabs=None):
     return rheader
 
 # =============================================================================
-def drk_dvr_rheader(r, tabs=None):
+def dvr_rheader(r, tabs=None):
     """ DVR custom resource headers """
 
     if r.representation != "html":
         # Resource headers only used in interactive views
         return None
 
-    from core import s3_rheader_resource, S3ResourceHeader
     from .uioptions import get_ui_options
 
     tablename, record = s3_rheader_resource(r)
@@ -315,14 +314,51 @@ def drk_dvr_rheader(r, tabs=None):
     return rheader
 
 # =============================================================================
-def drk_org_rheader(r, tabs=None):
+def default_rheader(r, tabs=None):
+    """ Custom resource header for user profile """
+
+    if r.representation != "html":
+        # Resource headers only used in interactive views
+        return None
+
+    tablename, record = s3_rheader_resource(r)
+    if tablename != r.tablename:
+        resource = current.s3db.resource(tablename, id=record.id)
+    else:
+        resource = r.resource
+
+    rheader = None
+    rheader_fields = []
+
+    if record:
+
+        T = current.T
+
+        if tablename == "pr_person":
+            # Personal profile
+            tabs = [(T("Person Details"), None),
+                    (T("User Account"), "user_profile"),
+                    #(T("ID"), "identity"),
+                    (T("Contact Information"), "contacts"),
+                    (T("Address"), "address"),
+                    (T("Staff Record"), "human_resource"),
+                    ]
+            rheader_fields = []
+            rheader_title = s3_fullname
+
+            rheader = S3ResourceHeader(rheader_fields, tabs, title=rheader_title)
+            rheader = rheader(r, table=resource.table, record=record)
+
+    return rheader
+
+# =============================================================================
+def org_rheader(r, tabs=None):
     """ ORG custom resource headers """
 
     if r.representation != "html":
         # Resource headers only used in interactive views
         return None
 
-    from core import s3_rheader_resource, s3_rheader_tabs, S3ResourceHeader
     from .uioptions import get_ui_options
 
     s3db = current.s3db

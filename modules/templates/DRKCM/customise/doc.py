@@ -92,8 +92,8 @@ def doc_document_controller(**attr):
     if current.request.controller == "dvr":
 
         # Use custom rheader for case perspective
-        from ..rheaders import drk_dvr_rheader
-        attr["rheader"] = drk_dvr_rheader
+        from ..rheaders import dvr_rheader
+        attr["rheader"] = dvr_rheader
 
         # Set contacts-method to retain the tab
         s3db.set_method("pr_person",

@@ -44,8 +44,8 @@ def org_organisation_controller(**attr):
     s3.prep = custom_prep
 
     # Customr header
-    from ..rheaders import drk_org_rheader
-    attr["rheader"] = drk_org_rheader
+    from ..rheaders import org_rheader
+    attr["rheader"] = org_rheader
 
     return attr
 
@@ -138,8 +138,8 @@ def org_facility_controller(**attr):
 
     # Custom rheader+tabs
     if current.request.controller == "org":
-        from ..rheaders import drk_org_rheader
-        attr["rheader"] = drk_org_rheader
+        from ..rheaders import org_rheader
+        attr["rheader"] = org_rheader
 
     return attr
 

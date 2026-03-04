@@ -105,6 +105,8 @@ def dvr_case_onaccept(form):
         if row:
             person_id = row.person_id
             site_id = row.site_id
+        else:
+            return
     else:
         site_id = form_vars.site_id
 
@@ -504,7 +506,7 @@ def configure_case_activity_sector(r, table, case_root_org):
 def configure_case_activity_subject(r,
                                     table,
                                     case_root_org,
-                                    person_id,
+                                    person_id, *,
                                     use_need = False,
                                     use_subject = False,
                                     autolink = False,
@@ -1543,7 +1545,7 @@ def configure_response_action_reports(ui_options,
                            )
 
 # -------------------------------------------------------------------------
-def configure_response_action_filters(r,
+def configure_response_action_filters(r, *,
                                       use_theme = False,
                                       use_time = False,
                                       use_response_type = False,
@@ -1695,7 +1697,7 @@ def configure_response_action_filters(r,
                    )
 
 # -------------------------------------------------------------------------
-def configure_response_action_theme(ui_options,
+def configure_response_action_theme(ui_options, *,
                                     case_root_org = None,
                                     person_id = None,
                                     record_id = None,
@@ -1897,7 +1899,7 @@ def configure_response_action_view(ui_options,
 
 # -------------------------------------------------------------------------
 def configure_response_action_tab(person_id,
-                                  ui_options,
+                                  ui_options, *,
                                   response_type = None,
                                   use_due_date = False,
                                   use_theme = False,
@@ -2269,8 +2271,8 @@ def dvr_response_action_controller(**attr):
 
     # Custom rheader
     if current.request.controller == "dvr":
-        from ..rheaders import drk_dvr_rheader
-        attr["rheader"] = drk_dvr_rheader
+        from ..rheaders import dvr_rheader
+        attr["rheader"] = dvr_rheader
 
     return attr
 
