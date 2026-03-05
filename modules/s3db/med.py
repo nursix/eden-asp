@@ -1277,8 +1277,8 @@ class MedParameterModel(DataModel):
         tablename = "med_sample"
         define_table(tablename,
                      patient_id(),
-                     person_id(),
-                     # sample type
+                     person_id(comment=None),
+                     sample_type_id(),
                      # sample number (autogenerate)?
                      DateField(default="now"),
                      # taken_by
@@ -1306,7 +1306,19 @@ class MedParameterModel(DataModel):
                                                           )),
                                   )
 
-        # TODO CRUD strings
+        # CRUD strings
+        crud_strings[tablename] = Storage(
+            label_create = T("Create Sample"),
+            title_display = T("Sample"),
+            title_list = T("Samples"),
+            title_update = T("Edit Sample"),
+            label_list_button = T("List Samples"),
+            label_delete_button = T("Delete Sample"),
+            msg_record_created = T("Sample created"),
+            msg_record_modified = T("Sample updated"),
+            msg_record_deleted = T("Sample deleted"),
+            msg_list_empty = T("No Samples currently registered"),
+            )
 
         # ---------------------------------------------------------------------
         # Measured/observed values
