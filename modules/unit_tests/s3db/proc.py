@@ -9,7 +9,7 @@ import unittest
 from gluon import URL, current
 from gluon.storage import Storage
 
-from s3db.proc import PROCProcurementPlansModel, PROCPurchaseOrdersModel
+from s3db.proc import PROCProcurementPlansModel, PROCPurchaseOrdersModel, proc_rheader
 from unit_tests import run_suite
 from unit_tests.s3db.helpers import SupplyChainTestCase
 
@@ -193,12 +193,110 @@ class PurchaseOrderModelTests(ProcTestCase):
 
 
 # =============================================================================
+class ProcurementControllerTests(ProcTestCase):
+    """Tests for procurement controller wrappers"""
+
+    # -------------------------------------------------------------------------
+    def testProcIndexUsesCmsIndex(self):
+        """Module home controller delegates to cms_index with the proc module"""
+
+        s3db = current.s3db
+        saved = s3db.cms_index
+        s3db.cms_index = lambda module: Storage(module=module)
+
+        try:
+            with self.controller("proc", function="index") as controller:
+                output = controller.module["index"]()
+        finally:
+            s3db.cms_index = saved
+
+        self.assertEqual(output.module, "proc")
+
+    # -------------------------------------------------------------------------
+    def testProcOrderControllerUsesProcRheader(self):
+        """order controller configures rheader and hides filters"""
+
+        with self.controller("proc", function="order") as controller:
+            output = controller.module["order"]()
+
+        self.assertEqual(output.kwargs["rheader"], current.s3db.proc_rheader)
+        self.assertTrue(output.kwargs["hide_filter"])
+
+    # -------------------------------------------------------------------------
+    def testProcRheaderRendersOrderAndPlanSummaries(self):
+        """proc_rheader renders the expected summary blocks for orders and plans"""
+
+        db = current.db
+        s3db = current.s3db
+
+        office = self.create_office(name="Proc Rheader Office")
+        order_table = s3db.proc_order
+        order_id = order_table.insert(site_id=office.site_id,
+                                      purchase_ref="PO-RHDR-001",
+                                      )
+        order_record = db(order_table.id == order_id).select(order_table.ALL,
+                                                             limitby=(0, 1),
+                                                             ).first()
+
+        plan_table = s3db.proc_plan
+        plan_id = plan_table.insert(site_id=office.site_id,
+                                    order_date=datetime.date(2026, 3, 7),
+                                    eta=datetime.date(2026, 3, 20),
+                                    )
+        plan_record = db(plan_table.id == plan_id).select(plan_table.ALL,
+                                                          limitby=(0, 1),
+                                                          ).first()
+
+        saved_tabs = proc_rheader.__globals__["s3_rheader_tabs"]
+        proc_rheader.__globals__["s3_rheader_tabs"] = lambda r, tabs: \
+            "PROC-TABS:%s" % ",".join(tab[1] or "" for tab in tabs)
+        try:
+            order_rheader = proc_rheader(Storage(representation="html",
+                                                 record=order_record,
+                                                 tablename="proc_order",
+                                                 table=order_table,
+                                                 ))
+            plan_rheader = proc_rheader(Storage(representation="html",
+                                                record=plan_record,
+                                                tablename="proc_plan",
+                                                table=plan_table,
+                                                ))
+        finally:
+            proc_rheader.__globals__["s3_rheader_tabs"] = saved_tabs
+
+        self.assertIn("PO-RHDR-001", str(order_rheader))
+        self.assertIn("PROC-TABS:,order_item", str(order_rheader))
+        self.assertIn("PROC-TABS:,plan_item", str(plan_rheader))
+        self.assertIn(str(plan_table.eta.represent(plan_record.eta)), str(plan_rheader))
+
+    # -------------------------------------------------------------------------
+    def testProcPlanControllerUsesProcRheader(self):
+        """plan controller configures rheader and hides filters"""
+
+        with self.controller("proc", function="plan") as controller:
+            output = controller.module["plan"]()
+
+        self.assertEqual(output.kwargs["rheader"], current.s3db.proc_rheader)
+        self.assertTrue(output.kwargs["hide_filter"])
+
+    # -------------------------------------------------------------------------
+    def testProcSupplierControllerDelegatesToOrganisationCrud(self):
+        """supplier controller exposes the supplier CRUD view on organisations"""
+
+        with self.controller("proc", function="supplier") as controller:
+            output = controller.module["supplier"]()
+
+        self.assertEqual(output.args, ("org", "organisation"))
+
+
+# =============================================================================
 if __name__ == "__main__":
 
     run_suite(
         ProcLazyLoadTests,
         ProcurementPlanModelTests,
         PurchaseOrderModelTests,
+        ProcurementControllerTests,
     )
 
 # END ========================================================================

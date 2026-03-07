@@ -3,10 +3,23 @@
 # Shared test fixtures for logistics-related unit tests.
 #
 import datetime
+import os
+import runpy
 import unittest
+
+from contextlib import contextmanager
 
 from gluon import current
 from gluon.storage import Storage
+
+
+class ControllerRedirect(Exception):
+    """Raised to intercept web2py redirects in controller unit tests"""
+
+    def __init__(self, url):
+
+        super().__init__(url)
+        self.url = url
 
 
 class SupplyChainTestCase(unittest.TestCase):
@@ -58,7 +71,14 @@ class SupplyChainTestCase(unittest.TestCase):
         return organisation_id
 
     # -------------------------------------------------------------------------
-    def create_office(self, organisation_id=None, name=None, code=None):
+    def create_office(self,
+                      organisation_id=None,
+                      name=None,
+                      code=None,
+                      comments=None,
+                      location_id=None,
+                      phone1=None,
+                      phone2=None):
         """Create an office and return both office_id and site_id"""
 
         db = current.db
@@ -83,15 +103,44 @@ class SupplyChainTestCase(unittest.TestCase):
                                                 ).first()
         site_id = row.site_id
 
+        updates = {}
+        if comments is not None:
+            updates["comments"] = comments
+        if location_id is not None:
+            updates["location_id"] = location_id
+        if phone1 is not None:
+            updates["phone1"] = phone1
+        if phone2 is not None:
+            updates["phone2"] = phone2
+        if updates:
+            db(ftable.id == office_id).update(**updates)
+
+        stable = s3db.org_site
+        site_updates = {}
         if code:
-            stable = s3db.org_site
-            db(stable.site_id == site_id).update(code=code)
+            site_updates["code"] = code
+        if location_id is not None:
+            site_updates["location_id"] = location_id
+        if site_updates:
+            db(stable.site_id == site_id).update(**site_updates)
 
         return Storage(id=office_id,
                        pe_id=row.pe_id,
                        site_id=site_id,
                        organisation_id=organisation_id,
                        )
+
+    # -------------------------------------------------------------------------
+    def create_location(self, name=None, level=None, parent=None, L0=None):
+        """Create a location record"""
+
+        table = current.s3db.gis_location
+
+        return table.insert(name=name or self.unique_name("Location "),
+                            level=level,
+                            parent=parent,
+                            L0=L0,
+                            )
 
     # -------------------------------------------------------------------------
     def create_person(self, first_name="Test", last_name=None):
@@ -127,6 +176,40 @@ class SupplyChainTestCase(unittest.TestCase):
                              contact_method=contact_method,
                              value=value,
                              )
+
+    # -------------------------------------------------------------------------
+    def create_user_for_person(self,
+                               person_id,
+                               email=None,
+                               language="en",
+                               first_name="Test",
+                               last_name=None):
+        """Create an auth_user linked to a person"""
+
+        db = current.db
+        auth = current.auth
+        s3db = current.s3db
+
+        ptable = s3db.pr_person
+        person = db(ptable.id == person_id).select(ptable.pe_id,
+                                                   limitby=(0, 1),
+                                                   ).first()
+        self.assertIsNotNone(person)
+
+        utable = auth.settings.table_user
+        user_id = utable.insert(first_name=first_name,
+                                last_name=last_name or self.unique_name("User"),
+                                email=email or "%s@example.com" % self.unique_name("user").lower(),
+                                password="test",
+                                language=language,
+                                )
+
+        ltable = s3db.pr_person_user
+        ltable.insert(user_id=user_id,
+                      pe_id=person.pe_id,
+                      )
+
+        return user_id
 
     # -------------------------------------------------------------------------
     def create_catalog(self, organisation_id=None, name=None):
@@ -215,21 +298,25 @@ class SupplyChainTestCase(unittest.TestCase):
                        req_status=0,
                        commit_status=0,
                        transit_status=0,
-                       fulfil_status=0):
+                       fulfil_status=0,
+                       **fields):
         """Create a request record"""
 
         table = current.s3db.req_req
 
-        return table.insert(type=req_type,
-                            site_id=site_id,
-                            req_ref=req_ref,
-                            requester_id=requester_id,
-                            req_status=req_status,
-                            commit_status=commit_status,
-                            transit_status=transit_status,
-                            fulfil_status=fulfil_status,
-                            date_required=current.request.utcnow + datetime.timedelta(days=1),
-                            )
+        data = Storage(type=req_type,
+                       site_id=site_id,
+                       req_ref=req_ref,
+                       requester_id=requester_id,
+                       req_status=req_status,
+                       commit_status=commit_status,
+                       transit_status=transit_status,
+                       fulfil_status=fulfil_status,
+                       date_required=current.request.utcnow + datetime.timedelta(days=1),
+                       )
+        data.update(fields)
+
+        return table.insert(**data)
 
     # -------------------------------------------------------------------------
     def create_request_item(self,
@@ -304,7 +391,11 @@ class SupplyChainTestCase(unittest.TestCase):
                        )
         data.update(fields)
 
-        return table.insert(**data)
+        item_id = table.insert(**data)
+        data.update(id=item_id)
+        current.s3db.update_super(table, data)
+
+        return item_id
 
     # -------------------------------------------------------------------------
     def create_track_item(self,
@@ -334,7 +425,11 @@ class SupplyChainTestCase(unittest.TestCase):
                        )
         data.update(fields)
 
-        return table.insert(**data)
+        track_item_id = table.insert(**data)
+        data.update(id=track_item_id)
+        current.s3db.update_super(table, data)
+
+        return track_item_id
 
     # -------------------------------------------------------------------------
     def create_warehouse(self, name=None, code=None, organisation_id=None):
@@ -410,6 +505,44 @@ class SupplyChainTestCase(unittest.TestCase):
         return table.insert(**data)
 
     # -------------------------------------------------------------------------
+    def create_proc_plan(self, site_id, order_date=None, eta=None, **fields):
+        """Create a procurement plan"""
+
+        table = current.s3db.proc_plan
+
+        data = Storage(site_id=site_id,
+                       order_date=order_date or current.request.utcnow.date(),
+                       eta=eta,
+                       )
+        data.update(fields)
+
+        return table.insert(**data)
+
+    # -------------------------------------------------------------------------
+    def create_proc_plan_item(self,
+                              plan_id,
+                              item_id,
+                              item_pack_id,
+                              quantity=1,
+                              **fields):
+        """Create a procurement plan item"""
+
+        table = current.s3db.proc_plan_item
+
+        data = Storage(plan_id=plan_id,
+                       item_id=item_id,
+                       item_pack_id=item_pack_id,
+                       quantity=quantity,
+                       )
+        data.update(fields)
+
+        plan_item_id = table.insert(**data)
+        data.update(id=plan_item_id)
+        current.s3db.update_super(table, data)
+
+        return plan_item_id
+
+    # -------------------------------------------------------------------------
     def create_skill(self, name=None):
         """Create an HR skill"""
 
@@ -461,3 +594,141 @@ class SupplyChainTestCase(unittest.TestCase):
                             title=title,
                             matcher=matcher,
                             )
+
+    # -------------------------------------------------------------------------
+    @staticmethod
+    def _capture_controller_state():
+        """Capture request/response state before loading a controller"""
+
+        request = current.request
+        response = current.response
+        s3 = response.s3
+
+        return Storage(controller=request.controller,
+                       function=request.function,
+                       args_class=request.args.__class__,
+                       args=list(request.args),
+                       vars=Storage(request.vars),
+                       get_vars=Storage(request.get_vars),
+                       post_vars=Storage(request.post_vars),
+                       headers=dict(response.headers),
+                       title=response.title,
+                       prep=getattr(s3, "prep", None),
+                       postp=getattr(s3, "postp", None),
+                       filter=getattr(s3, "filter", None),
+                       )
+
+    # -------------------------------------------------------------------------
+    @staticmethod
+    def _restore_controller_state(state):
+        """Restore request/response state after a controller test"""
+
+        request = current.request
+        response = current.response
+        s3 = response.s3
+
+        request.controller = state.controller
+        request.function = state.function
+        request.args = state.args_class(state.args)
+        vars_ = Storage(state.vars)
+        get_vars = Storage(state.get_vars)
+        post_vars = Storage(state.post_vars)
+        request._vars = vars_
+        request._get_vars = get_vars
+        request._post_vars = post_vars
+        request.vars = vars_
+        request.get_vars = get_vars
+        request.post_vars = post_vars
+
+        response.headers.clear()
+        response.headers.update(state.headers)
+        response.title = state.title
+        s3.prep = state.prep
+        s3.postp = state.postp
+        s3.filter = state.filter
+
+    # -------------------------------------------------------------------------
+    @contextmanager
+    def controller(self,
+                   name,
+                   function=None,
+                   args=None,
+                   query_vars=None,
+                   vars=None,
+                   overrides=None):
+        """
+            Load a controller module with a stubbed CRUD cycle
+
+            Returns:
+                Storage with:
+                    module: controller globals
+                    calls: captured crud_controller calls
+        """
+
+        request = current.request
+        response = current.response
+
+        state = self._capture_controller_state()
+
+        if query_vars is None:
+            query_vars = vars
+
+        request.controller = name
+        request.function = function or name
+        request.args = state.args_class(list(args) if args else [])
+        query = Storage(query_vars or {})
+        post = Storage()
+        request._vars = query
+        request._get_vars = query
+        request._post_vars = post
+        request.vars = query
+        request.get_vars = query
+        request.post_vars = post
+
+        response.s3.prep = None
+        response.s3.postp = None
+        response.s3.filter = None
+
+        calls = []
+
+        def crud_controller(*cargs, **ckwargs):
+            """Capture CRUD controller invocations for assertions"""
+
+            call = Storage(args=cargs,
+                           kwargs=ckwargs,
+                           prep=response.s3.prep,
+                           postp=response.s3.postp,
+                           filter=getattr(response.s3, "filter", None),
+                           )
+            calls.append(call)
+            return call
+
+        def redirect(url, *args, **kwargs):
+            """Intercept controller redirects"""
+
+            raise ControllerRedirect(url)
+
+        env = current.globalenv.copy()
+        env.update({"request": request,
+                    "response": response,
+                    "session": current.session,
+                    "db": current.db,
+                    "s3db": current.s3db,
+                    "settings": current.deployment_settings,
+                    "auth": current.auth,
+                    "s3": response.s3,
+                    "get_vars": request.get_vars,
+                    "crud_controller": crud_controller,
+                    "redirect": redirect,
+                    "s3_redirect_default": redirect,
+                    })
+        if overrides:
+            env.update(overrides)
+
+        path = os.path.join(current.request.folder, "controllers", "%s.py" % name)
+
+        try:
+            module = runpy.run_path(path, init_globals=env)
+            yield Storage(module=module, calls=calls)
+        finally:
+            self._restore_controller_state(state)
