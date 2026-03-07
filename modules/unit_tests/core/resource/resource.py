@@ -1140,7 +1140,7 @@ class MergeOrganisationsTests(unittest.TestCase):
         link1_id = btable.insert(**link1)
         s3db.pr_update_affiliations(btable, link1_id)
         ancestors = s3db.pr_get_ancestors(branch1_pe_id)
-        assertEqual(ancestors, [str(org1_pe_id)])
+        assertEqual(ancestors, [org1_pe_id])
 
         branch2 = Storage(name="TestBranch2")
         branch2_id = otable.insert(**branch2)
@@ -1155,7 +1155,7 @@ class MergeOrganisationsTests(unittest.TestCase):
         link2_id = btable.insert(**link2)
         s3db.pr_update_affiliations(btable, link2_id)
         ancestors = s3db.pr_get_ancestors(branch2_pe_id)
-        assertEqual(ancestors, [str(org2_pe_id)])
+        assertEqual(ancestors, [org2_pe_id])
 
         success = self.resource.merge(self.id1, self.id2)
         assertTrue(success)
@@ -1167,10 +1167,10 @@ class MergeOrganisationsTests(unittest.TestCase):
         assertEqual(str(link2.organisation_id), str(self.id1))
 
         ancestors = s3db.pr_get_ancestors(branch1_pe_id)
-        assertEqual(ancestors, [str(org1_pe_id)])
+        assertEqual(ancestors, [org1_pe_id])
 
         ancestors = s3db.pr_get_ancestors(branch2_pe_id)
-        assertEqual(ancestors, [str(org1_pe_id)])
+        assertEqual(ancestors, [org1_pe_id])
 
     # -------------------------------------------------------------------------
     def testMergeVirtualReference(self):
