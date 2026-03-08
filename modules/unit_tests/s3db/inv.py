@@ -11,7 +11,7 @@ from contextlib import contextmanager
 
 import core
 
-from gluon import A, B, HTTP, URL, current
+from gluon import A, B, HTTP, SPAN, URL, current
 from gluon.storage import Storage
 
 from s3db.inv import (SHIP_STATUS_IN_PROCESS,
@@ -123,6 +123,8 @@ class InventoryRepresentationTests(SupplyChainTestCase):
 
         none_send_ref = InventoryTrackingModel.inv_send_ref_represent(None)
         none_recv_ref = InventoryTrackingModel.inv_recv_ref_represent(None)
+        none_send = InventoryTrackingModel.inv_send_represent(None)
+        none_recv = InventoryTrackingModel.inv_recv_represent(None)
         unknown_send_ref = InventoryTrackingModel.inv_send_ref_represent("UNKNOWN", show_link=True)
         none_qnty = InventoryTrackingModel.qnty_recv_repr(None)
         zero_qnty = InventoryTrackingModel.qnty_recv_repr(0)
@@ -130,10 +132,74 @@ class InventoryRepresentationTests(SupplyChainTestCase):
 
         self.assertEqual(none_send_ref, current.messages["NONE"])
         self.assertEqual(none_recv_ref, current.messages["NONE"])
+        self.assertEqual(none_send, current.messages["NONE"])
+        self.assertEqual(none_recv, current.messages["NONE"])
         self.assertEqual(unknown_send_ref, "UNKNOWN")
         self.assertTrue(isinstance(none_qnty, B))
         self.assertTrue(isinstance(zero_qnty, B))
         self.assertEqual(full_qnty, 7)
+
+    # -------------------------------------------------------------------------
+    def testShipmentRepresentationsHandleRowInputAndExternalSources(self):
+        """Shipment representers accept row inputs, external senders and unknown records"""
+
+        db = current.db
+        s3db = current.s3db
+
+        # Build a send row that exercises the row-input and plain-text branch
+        origin = self.create_office(name="Row Origin")
+        destination = self.create_office(name="Row Destination")
+        send_id = self.create_send(origin.site_id,
+                                   to_site_id=destination.site_id,
+                                   send_ref="WB-ROW-001",
+                                   )
+        sendtable = s3db.inv_send
+        send_row = db(sendtable.id == send_id).select(sendtable.id,
+                                                      sendtable.date,
+                                                      sendtable.send_ref,
+                                                      sendtable.to_site_id,
+                                                      limitby=(0, 1),
+                                                      ).first()
+
+        plain_send = InventoryTrackingModel.inv_send_represent(None,
+                                                               row=send_row,
+                                                               show_link=False,
+                                                               )
+        expected_destination = str(sendtable.to_site_id.represent(destination.site_id,
+                                                                  show_link=False,
+                                                                  ))
+        self.assertIn("WB-ROW-001", plain_send)
+        self.assertIn(expected_destination, plain_send)
+
+        # External receipts fall back to the supplier organisation representation
+        supplier_id = self.create_organisation(name="External Supplier")
+        recv_id = self.create_recv(destination.site_id,
+                                   from_site_id=None,
+                                   organisation_id=supplier_id,
+                                   recv_ref="GRN-EXT-001",
+                                   )
+        recvtable = s3db.inv_recv
+        recv_row = db(recvtable.id == recv_id).select(recvtable.id,
+                                                      recvtable.date,
+                                                      recvtable.recv_ref,
+                                                      recvtable.from_site_id,
+                                                      recvtable.organisation_id,
+                                                      limitby=(0, 1),
+                                                      ).first()
+
+        plain_recv = InventoryTrackingModel.inv_recv_represent(None,
+                                                               row=recv_row,
+                                                               show_link=False,
+                                                               )
+        expected_supplier = str(recvtable.organisation_id.represent(supplier_id,
+                                                                    show_link=False,
+                                                                    ))
+        self.assertIn("GRN-EXT-001", plain_recv)
+        self.assertIn(expected_supplier, plain_recv)
+
+        # Unknown shipment IDs should degrade cleanly rather than crashing
+        self.assertEqual(InventoryTrackingModel.inv_send_represent(999999),
+                         current.messages.UNKNOWN_OPT)
 
     # -------------------------------------------------------------------------
     def testInventoryItemRepresentIncludesSourceOwnerAndBin(self):
@@ -222,6 +288,17 @@ class InventoryMeasureComputationTests(SupplyChainTestCase):
         self.assertEqual(inv_item_total_volume(row), 3.0)
 
     # -------------------------------------------------------------------------
+    def testInvItemTotalValueUsesNestedRowsAndFallbacks(self):
+        """Inventory item total value supports nested rows and degrades for incomplete data"""
+
+        nested = Storage(inv_inv_item=Storage(quantity=4, pack_value=2.5))
+        self.assertEqual(InventoryModel.inv_item_total_value(nested), 10.0)
+
+        incomplete = Storage(quantity=None, pack_value=2.5)
+        self.assertEqual(InventoryModel.inv_item_total_value(incomplete),
+                         current.messages["NONE"])
+
+    # -------------------------------------------------------------------------
     def testInvItemTotalsFallbackToPackLookup(self):
         """Inventory item totals can reload pack metrics from the database"""
 
@@ -242,6 +319,52 @@ class InventoryMeasureComputationTests(SupplyChainTestCase):
 
         self.assertEqual(inv_item_total_weight(row), 3.75)
         self.assertEqual(inv_item_total_volume(row), 1.5)
+
+    # -------------------------------------------------------------------------
+    def testInvItemTotalsSupportFlatRowsAndMissingPackMetrics(self):
+        """Inventory item totals accept flat rows and degrade cleanly without pack metrics"""
+
+        office = self.create_office()
+        item_id = self.create_supply_item()
+
+        class FlatInvRow:
+
+            def __init__(self, record_id):
+
+                self.id = record_id
+
+        # Flat rows should trigger reloads for both the pack metrics and the quantity
+        pack_id = self.create_item_pack(item_id,
+                                        quantity=1,
+                                        weight=1.5,
+                                        volume=0.25,
+                                        )
+        inv_item_id = self.create_inventory_item(office.site_id,
+                                                 item_id,
+                                                 pack_id,
+                                                 quantity=4,
+                                                 )
+        flat_row = FlatInvRow(inv_item_id)
+
+        self.assertEqual(inv_item_total_weight(flat_row), 6.0)
+        self.assertEqual(inv_item_total_volume(flat_row), 1.0)
+
+        # Rows without pack metrics must produce NONE instead of crashing
+        metricless_pack_id = self.create_item_pack(item_id,
+                                                   name="metricless",
+                                                   quantity=1,
+                                                   )
+        metricless_item_id = self.create_inventory_item(office.site_id,
+                                                        item_id,
+                                                        metricless_pack_id,
+                                                        quantity=3,
+                                                        )
+        metricless_row = FlatInvRow(metricless_item_id)
+
+        self.assertEqual(inv_item_total_weight(metricless_row),
+                         current.messages["NONE"])
+        self.assertEqual(inv_item_total_volume(metricless_row),
+                         current.messages["NONE"])
 
     # -------------------------------------------------------------------------
     def testTrackItemTotalsUsePackMetrics(self):
@@ -270,6 +393,43 @@ class InventoryMeasureComputationTests(SupplyChainTestCase):
         self.assertEqual(InventoryTrackingModel.inv_track_item_total_volume(row), 3.6)
         self.assertEqual(InventoryTrackingModel.inv_track_item_total_weight(row, received=True), 4.0)
         self.assertEqual(InventoryTrackingModel.inv_track_item_total_volume(row, received=True), 2.4)
+
+    # -------------------------------------------------------------------------
+    def testTrackItemTotalsSupportFlatRowsWithoutNestedTrackItems(self):
+        """Track item totals support flat row shapes that only provide direct fields"""
+
+        item_id = self.create_supply_item()
+        pack_id = self.create_item_pack(item_id,
+                                        quantity=1,
+                                        weight=1.25,
+                                        volume=0.75,
+                                        )
+        track_item_id = self.create_track_item(item_id,
+                                               pack_id,
+                                               quantity=4,
+                                               recv_quantity=2,
+                                               pack_value=1.5,
+                                               )
+
+        class FlatTrackRow:
+
+            def __init__(self, **kwargs):
+
+                self.__dict__.update(kwargs)
+
+            def __getitem__(self, key):
+
+                return self.__dict__[key]
+
+        row = FlatTrackRow(id=track_item_id,
+                           quantity=4,
+                           recv_quantity=2,
+                           pack_value=1.5,
+                           )
+
+        self.assertEqual(InventoryTrackingModel.inv_track_item_total_value(row), 6.0)
+        self.assertEqual(InventoryTrackingModel.inv_track_item_total_weight(row), 5.0)
+        self.assertEqual(InventoryTrackingModel.inv_track_item_total_volume(row), 3.0)
 
     # -------------------------------------------------------------------------
     def testTrackItemTotalsFallbackToPackLookup(self):
@@ -340,6 +500,77 @@ class InventoryMeasureComputationTests(SupplyChainTestCase):
                                              ))
         self.assertEqual(InventoryTrackingModel.inv_track_item_total_value(row), 9.0)
 
+    # -------------------------------------------------------------------------
+    def testTrackItemTotalValueReloadsAndHandlesIncompleteRows(self):
+        """Track item total value reloads missing fields and returns NONE for incomplete rows"""
+
+        item_id = self.create_supply_item()
+        pack_id = self.create_item_pack(item_id, quantity=1)
+        track_item_id = self.create_track_item(item_id,
+                                               pack_id,
+                                               quantity=3,
+                                               pack_value=2.0,
+                                               )
+
+        class TrackItemRef:
+
+            def __init__(self, record_id):
+
+                self.id = record_id
+
+        # Missing quantity/pack_value should trigger a DB reload
+        row = Storage(inv_track_item=TrackItemRef(track_item_id))
+        self.assertEqual(InventoryTrackingModel.inv_track_item_total_value(row), 6.0)
+
+        # Zero quantities or missing pack values currently render as NONE
+        none_row = Storage(inv_track_item=Storage(quantity=0, pack_value=None))
+        self.assertEqual(InventoryTrackingModel.inv_track_item_total_value(none_row),
+                         current.messages["NONE"])
+
+    # -------------------------------------------------------------------------
+    def testTrackItemTotalsReturnNoneWithoutMetricsOrReceivedQuantities(self):
+        """Track item totals return NONE when pack metrics or received quantities are unavailable"""
+
+        db = current.db
+        s3db = current.s3db
+
+        # Missing pack metrics short-circuit the helper before quantity lookup
+        missing_metrics = Storage(inv_track_item=Storage(quantity=2,
+                                                         recv_quantity=1,
+                                                         ),
+                                  supply_item_pack=Storage(weight=None,
+                                                           volume=None,
+                                                           ),
+                                  )
+        self.assertEqual(InventoryTrackingModel.inv_track_item_total_weight(missing_metrics),
+                         current.messages["NONE"])
+        self.assertEqual(InventoryTrackingModel.inv_track_item_total_volume(missing_metrics),
+                         current.messages["NONE"])
+
+        # Missing recv_quantity in the stored track item must also return NONE
+        item_id = self.create_supply_item()
+        pack_id = self.create_item_pack(item_id,
+                                        quantity=1,
+                                        weight=1.5,
+                                        volume=0.5,
+                                        )
+        track_item_id = self.create_track_item(item_id,
+                                               pack_id,
+                                               quantity=3,
+                                               recv_quantity=1,
+                                               )
+        db(s3db.inv_track_item.id == track_item_id).update(recv_quantity=None)
+
+        class KeyErrorRow(dict):
+
+            __getattr__ = dict.__getitem__
+
+        row = Storage(inv_track_item=KeyErrorRow(id=track_item_id))
+        self.assertEqual(InventoryTrackingModel.inv_track_item_total_weight(row, received=True),
+                         current.messages["NONE"])
+        self.assertEqual(InventoryTrackingModel.inv_track_item_total_volume(row, received=True),
+                         current.messages["NONE"])
+
 
 # =============================================================================
 class InventoryWorkflowTests(SupplyChainTestCase):
@@ -395,6 +626,91 @@ class InventoryWorkflowTests(SupplyChainTestCase):
         self.assertEqual(rows.first().quantity, 5)
 
     # -------------------------------------------------------------------------
+    def testInvSendOnacceptPreservesExistingRefAndSkipsZeroQuantityRows(self):
+        """Typed send onaccept keeps existing refs and ignores empty stock rows"""
+
+        db = current.db
+        s3db = current.s3db
+
+        office = self.create_office(name="Typed Send Office")
+        item_id = self.create_supply_item(name="Typed Send Item")
+        pack_id = self.create_item_pack(item_id, quantity=1)
+        zero_item_id = self.create_inventory_item(office.site_id,
+                                                  item_id,
+                                                  pack_id,
+                                                  quantity=0,
+                                                  status=6,
+                                                  )
+        full_item_id = self.create_inventory_item(office.site_id,
+                                                  item_id,
+                                                  pack_id,
+                                                  quantity=4,
+                                                  status=6,
+                                                  )
+        send_id = self.create_send(office.site_id,
+                                   type=6,
+                                   send_ref="WB-KEEP-001",
+                                   )
+
+        onaccept_calls = []
+        saved = s3db.inv_track_item_onaccept
+        s3db.inv_track_item_onaccept = lambda form: onaccept_calls.append(form.vars.send_inv_item_id)
+
+        try:
+            InventoryTrackingModel.inv_send_onaccept(self.make_form(id=send_id,
+                                                                    site_id=office.site_id,
+                                                                    type=6,
+                                                                    ))
+        finally:
+            s3db.inv_track_item_onaccept = saved
+
+        send = db(s3db.inv_send.id == send_id).select(s3db.inv_send.send_ref,
+                                                      limitby=(0, 1),
+                                                      ).first()
+        track_items = db(s3db.inv_track_item.send_id == send_id).select(s3db.inv_track_item.send_inv_item_id,
+                                                                        orderby=s3db.inv_track_item.id,
+                                                                        )
+
+        self.assertEqual(send.send_ref, "WB-KEEP-001")
+        self.assertEqual([row.send_inv_item_id for row in track_items], [full_item_id])
+        self.assertEqual(onaccept_calls, [full_item_id])
+        self.assertNotIn(zero_item_id, onaccept_calls)
+
+    # -------------------------------------------------------------------------
+    def testInvSendOnacceptWithoutShipmentTypeOnlyGeneratesReference(self):
+        """Plain send onaccept generates a reference without auto-creating track rows"""
+
+        db = current.db
+        s3db = current.s3db
+
+        office = self.create_office(name="Plain Send Office")
+        item_id = self.create_supply_item(name="Plain Send Item")
+        pack_id = self.create_item_pack(item_id, quantity=1)
+        self.create_inventory_item(office.site_id,
+                                   item_id,
+                                   pack_id,
+                                   quantity=4,
+                                   status=5,
+                                   )
+        send_id = self.create_send(office.site_id,
+                                   type=None,
+                                   send_ref=None,
+                                   )
+
+        InventoryTrackingModel.inv_send_onaccept(self.make_form(id=send_id,
+                                                                site_id=office.site_id,
+                                                                type=None,
+                                                                ))
+
+        send = db(s3db.inv_send.id == send_id).select(s3db.inv_send.send_ref,
+                                                      limitby=(0, 1),
+                                                      ).first()
+        track_count = db(s3db.inv_track_item.send_id == send_id).count()
+
+        self.assertTrue(send.send_ref)
+        self.assertEqual(track_count, 0)
+
+    # -------------------------------------------------------------------------
     def testInvSendFormAddsRequestCommentsAndPackValues(self):
         """Waybill export includes request comments and pack values when configured"""
 
@@ -434,6 +750,42 @@ class InventoryWorkflowTests(SupplyChainTestCase):
         self.assertIn("pack_value", result["list_fields"])
         self.assertEqual(result["pdf_footer"], inv_send_pdf_footer)
         self.assertEqual(result["pdf_orientation"], "Landscape")
+
+    # -------------------------------------------------------------------------
+    def testInvSendFormOmitsRequestCommentsAndPackValuesWhenDisabled(self):
+        """Waybill export omits request comments and pack values when not applicable"""
+
+        settings = current.deployment_settings
+
+        office = self.create_office(name="Send Form Office")
+        destination = self.create_office(name="Send Form Destination")
+        send_id = self.create_send(office.site_id,
+                                   to_site_id=destination.site_id,
+                                   req_ref=None,
+                                   send_ref="WB-FORM-PLAIN",
+                                   )
+
+        saved_pdf = core.DataExporter.pdf
+        saved_track_pack_values = settings.supply.get("track_pack_values")
+        captured = {}
+
+        try:
+            settings.supply.track_pack_values = False
+            core.DataExporter.pdf = lambda resource, **kwargs: captured.update(kwargs) or kwargs
+
+            r = Storage(id=send_id,
+                        record=Storage(req_ref=None),
+                        resource="inv_send",
+                        )
+            result = InventoryTrackingModel.inv_send_form(r)
+        finally:
+            core.DataExporter.pdf = saved_pdf
+            settings.supply.track_pack_values = saved_track_pack_values
+
+        self.assertEqual(result, captured)
+        self.assertNotIn("req_item_id$comments", result["list_fields"])
+        self.assertNotIn("currency", result["list_fields"])
+        self.assertNotIn("pack_value", result["list_fields"])
 
     # -------------------------------------------------------------------------
     def testInvRecvExportsConfigureFormAndDonationCertificate(self):
@@ -500,6 +852,42 @@ class InventoryWorkflowTests(SupplyChainTestCase):
         form = self.make_form(type=32)
         InventoryTrackingModel.inv_recv_onvalidation(form)
         self.assertIn("organisation_id", form.errors)
+
+    # -------------------------------------------------------------------------
+    def testInvRecvCallbacksPreserveExistingRefsAndAllowValidSources(self):
+        """Receive callbacks leave existing refs untouched and accept valid source data"""
+
+        db = current.db
+        s3db = current.s3db
+
+        office = self.create_office(name="Valid Receive Office")
+        supplier_id = self.create_organisation(name="Valid Supplier")
+        recv_id = self.create_recv(office.site_id,
+                                   recv_ref="GRN-KEEP-001",
+                                   )
+
+        InventoryTrackingModel.inv_recv_onaccept(self.make_form(id=recv_id))
+
+        recv = db(s3db.inv_recv.id == recv_id).select(s3db.inv_recv.recv_ref,
+                                                      limitby=(0, 1),
+                                                      ).first()
+        self.assertEqual(recv.recv_ref, "GRN-KEEP-001")
+
+        send_form = self.make_form(to_site_id=office.site_id,
+                                   organisation_id=None,
+                                   )
+        recv_form = self.make_form(type=32,
+                                   organisation_id=supplier_id,
+                                   )
+        recv_form_none = self.make_form(type=None)
+
+        InventoryTrackingModel.inv_send_onvalidation(send_form)
+        InventoryTrackingModel.inv_recv_onvalidation(recv_form)
+        InventoryTrackingModel.inv_recv_onvalidation(recv_form_none)
+
+        self.assertEqual(send_form.errors, Storage())
+        self.assertEqual(recv_form.errors, Storage())
+        self.assertEqual(recv_form_none.errors, Storage())
 
     # -------------------------------------------------------------------------
     def testInvSendOnvalidationRequiresDestinationSiteOrOrganisation(self):
@@ -886,6 +1274,21 @@ class InventoryWorkflowTests(SupplyChainTestCase):
         self.assertEqual(fallback_form.vars.recv_quantity, 5)
 
     # -------------------------------------------------------------------------
+    def testInvTrackItemOnvalidateKeepsExplicitReceivedQuantity(self):
+        """Track item validation keeps explicit recv_quantity values and tolerates scalar bins"""
+
+        form = self.make_form(quantity=7,
+                              recv_quantity=2,
+                              recv_bin="BIN-A",
+                              send_inv_item_id=None,
+                              )
+
+        InventoryTrackingModel.inv_track_item_onvalidate(form)
+
+        self.assertEqual(form.vars.recv_quantity, 2)
+        self.assertEqual(form.errors, Storage())
+
+    # -------------------------------------------------------------------------
     def testInvTrackItemDeletingRestoresStockAndTransit(self):
         """Deleting a preparing track item restores stock and request transit quantity"""
 
@@ -993,6 +1396,52 @@ class InventoryWorkflowTests(SupplyChainTestCase):
         self.assertIn("0 kit(s)", str(form.errors.quantity))
 
     # -------------------------------------------------------------------------
+    def testInvKittingOnvalidateUsesLowestAvailableComponentCount(self):
+        """Kitting validation limits kit output by the scarcest component without false errors"""
+
+        db = current.db
+        s3db = current.s3db
+
+        office = self.create_office(name="Balanced Kit Office")
+        item_a = self.create_supply_item(name="Kit Component A")
+        item_b = self.create_supply_item(name="Kit Component B")
+        pack_a = self.create_item_pack(item_a, quantity=1)
+        pack_b = self.create_item_pack(item_b, quantity=1)
+        self.create_inventory_item(office.site_id,
+                                   item_a,
+                                   pack_a,
+                                   quantity=10,
+                                   )
+        self.create_inventory_item(office.site_id,
+                                   item_b,
+                                   pack_b,
+                                   quantity=3,
+                                   )
+
+        kit_id = self.create_supply_item(name="Balanced Kit")
+        db(s3db.supply_item.id == kit_id).update(kit=True)
+        kit_pack_id = self.create_item_pack(kit_id, quantity=1)
+        s3db.supply_kit_item.insert(parent_item_id=kit_id,
+                                    item_id=item_a,
+                                    item_pack_id=pack_a,
+                                    quantity=1,
+                                    )
+        s3db.supply_kit_item.insert(parent_item_id=kit_id,
+                                    item_id=item_b,
+                                    item_pack_id=pack_b,
+                                    quantity=1,
+                                    )
+
+        form = self.make_form(item_id=kit_id,
+                              item_pack_id=kit_pack_id,
+                              quantity=2,
+                              site_id=office.site_id,
+                              )
+        InventoryTrackingModel.inv_kitting_onvalidate(form)
+
+        self.assertEqual(form.errors, Storage())
+
+    # -------------------------------------------------------------------------
     def testInvKittingOnacceptConsumesComponentsAndCreatesKitStock(self):
         """Kitting onaccept consumes components, records the pick list and adds finished kits to stock"""
 
@@ -1059,6 +1508,72 @@ class InventoryWorkflowTests(SupplyChainTestCase):
         self.assertIsNotNone(kit_stock)
         self.assertEqual(kit_stock.quantity, 2)
         self.assertEqual(kit_stock.expiry_date, expiry)
+
+    # -------------------------------------------------------------------------
+    def testInvKittingOnacceptSplitsConsumptionAcrossMultipleStockRows(self):
+        """Kitting onaccept consumes multiple stock rows until the requirement is met"""
+
+        db = current.db
+        s3db = current.s3db
+
+        office = self.create_office()
+        component_id = self.create_supply_item(name="Gloves")
+        component_pack_id = self.create_item_pack(component_id, quantity=1)
+        first_stock_id = self.create_inventory_item(office.site_id,
+                                                    component_id,
+                                                    component_pack_id,
+                                                    quantity=1,
+                                                    expiry_date=current.request.now.date() + datetime.timedelta(days=5),
+                                                    bin="A-1",
+                                                    item_source_no="SRC-G1",
+                                                    )
+        second_stock_id = self.create_inventory_item(office.site_id,
+                                                     component_id,
+                                                     component_pack_id,
+                                                     quantity=5,
+                                                     expiry_date=current.request.now.date() + datetime.timedelta(days=10),
+                                                     bin="A-2",
+                                                     item_source_no="SRC-G2",
+                                                     )
+
+        kit_id = self.create_supply_item(name="Protection Kit")
+        db(s3db.supply_item.id == kit_id).update(kit=True)
+        kit_pack_id = self.create_item_pack(kit_id, quantity=1)
+        s3db.supply_kit_item.insert(parent_item_id=kit_id,
+                                    item_id=component_id,
+                                    item_pack_id=component_pack_id,
+                                    quantity=2,
+                                    )
+
+        kitting_id = s3db.inv_kitting.insert(site_id=office.site_id,
+                                             item_id=kit_id,
+                                             item_pack_id=kit_pack_id,
+                                             quantity=2,
+                                             )
+
+        InventoryTrackingModel.inv_kitting_onaccept(self.make_form(id=kitting_id,
+                                                                   item_id=kit_id,
+                                                                   item_pack_id=kit_pack_id,
+                                                                   quantity=2,
+                                                                   site_id=office.site_id,
+                                                                   ))
+
+        # The first stock row is exhausted, the second only partially used
+        first_stock = db(s3db.inv_inv_item.id == first_stock_id).select(s3db.inv_inv_item.deleted,
+                                                                        limitby=(0, 1),
+                                                                        ).first()
+        second_stock = db(s3db.inv_inv_item.id == second_stock_id).select(s3db.inv_inv_item.quantity,
+                                                                          limitby=(0, 1),
+                                                                          ).first()
+        picks = db(s3db.inv_kitting_item.kitting_id == kitting_id).select(s3db.inv_kitting_item.inv_item_id,
+                                                                          s3db.inv_kitting_item.quantity,
+                                                                          orderby=s3db.inv_kitting_item.id,
+                                                                          )
+
+        self.assertTrue(first_stock.deleted)
+        self.assertEqual(second_stock.quantity, 2)
+        self.assertEqual([(row.inv_item_id, row.quantity) for row in picks],
+                         [(first_stock_id, 1), (second_stock_id, 3)])
 
     # -------------------------------------------------------------------------
     def testInvTrackItemOnacceptUpdatesStockAndDocumentReferences(self):
@@ -1130,6 +1645,34 @@ class InventoryWorkflowTests(SupplyChainTestCase):
         self.assertEqual(send.req_ref, "REQ-TRACK-001")
         self.assertEqual(recv.send_ref, "WB-TRACK-001")
         self.assertEqual(recv.req_ref, "REQ-TRACK-001")
+
+    # -------------------------------------------------------------------------
+    def testInvTrackItemOnacceptWithoutRecordCopiesSendReference(self):
+        """Track item onaccept tolerates external rows and still propagates the send reference"""
+
+        db = current.db
+        s3db = current.s3db
+
+        origin = self.create_office(name="External Origin")
+        destination = self.create_office(name="External Destination")
+        send_id = self.create_send(origin.site_id,
+                                   to_site_id=destination.site_id,
+                                   send_ref="WB-EXT-001",
+                                   )
+        recv_id = self.create_recv(destination.site_id,
+                                   from_site_id=origin.site_id,
+                                   )
+
+        InventoryTrackingModel.inv_track_item_onaccept(self.make_form(id=0,
+                                                                      quantity=1,
+                                                                      send_id=send_id,
+                                                                      recv_id=recv_id,
+                                                                      ))
+
+        recv = db(s3db.inv_recv.id == recv_id).select(s3db.inv_recv.send_ref,
+                                                      limitby=(0, 1),
+                                                      ).first()
+        self.assertEqual(recv.send_ref, "WB-EXT-001")
 
     # -------------------------------------------------------------------------
     def testInvTrackItemOnacceptReceivesUnloadingItemsAndCreatesAdjustment(self):
@@ -1221,6 +1764,157 @@ class InventoryWorkflowTests(SupplyChainTestCase):
         self.assertEqual(adj_item.inv_item_id, source_inv_item_id)
         self.assertEqual(adj_item.old_quantity, 5)
         self.assertEqual(adj_item.new_quantity, 3)
+
+    # -------------------------------------------------------------------------
+    def testInvTrackItemOnacceptUpdatesExistingReceivedStockWithoutAdjustment(self):
+        """Unloading track items reuse matching stock rows and skip adjustments for full receipts"""
+
+        db = current.db
+        s3db = current.s3db
+
+        origin = self.create_office(name="Existing Origin")
+        destination = self.create_office(name="Existing Destination")
+        item_id = self.create_supply_item(name="Mosquito Net")
+        pack_id = self.create_item_pack(item_id, quantity=1)
+        expiry = current.request.now.date() + datetime.timedelta(days=45)
+
+        existing_inv_item_id = self.create_inventory_item(destination.site_id,
+                                                          item_id,
+                                                          pack_id,
+                                                          quantity=2,
+                                                          currency="USD",
+                                                          pack_value=7.5,
+                                                          expiry_date=expiry,
+                                                          bin="C-3",
+                                                          owner_org_id=destination.organisation_id,
+                                                          supply_org_id=origin.organisation_id,
+                                                          item_source_no="SRC-NET-1",
+                                                          status=0,
+                                                          )
+        recv_id = self.create_recv(destination.site_id,
+                                   from_site_id=origin.site_id,
+                                   )
+        track_item_id = self.create_track_item(item_id,
+                                               pack_id,
+                                               quantity=3,
+                                               recv_quantity=3,
+                                               recv_id=recv_id,
+                                               status=TRACK_STATUS_UNLOADING,
+                                               currency="USD",
+                                               pack_value=7.5,
+                                               expiry_date=expiry,
+                                               recv_bin="C-3",
+                                               owner_org_id=destination.organisation_id,
+                                               supply_org_id=origin.organisation_id,
+                                               item_source_no="SRC-NET-1",
+                                               inv_item_status=0,
+                                               )
+        record = db(s3db.inv_track_item.id == track_item_id).select(s3db.inv_track_item.ALL,
+                                                                    limitby=(0, 1),
+                                                                    ).first()
+
+        InventoryTrackingModel.inv_track_item_onaccept(self.make_form(record=record,
+                                                                      id=track_item_id,
+                                                                      ))
+
+        existing = db(s3db.inv_inv_item.id == existing_inv_item_id).select(s3db.inv_inv_item.quantity,
+                                                                           limitby=(0, 1),
+                                                                           ).first()
+        track_item = db(s3db.inv_track_item.id == track_item_id).select(s3db.inv_track_item.recv_inv_item_id,
+                                                                        s3db.inv_track_item.status,
+                                                                        s3db.inv_track_item.adj_item_id,
+                                                                        limitby=(0, 1),
+                                                                        ).first()
+
+        self.assertEqual(existing.quantity, 5)
+        self.assertEqual(track_item.recv_inv_item_id, existing_inv_item_id)
+        self.assertEqual(track_item.status, TRACK_STATUS_ARRIVED)
+        self.assertEqual(track_item.adj_item_id, None)
+
+    # -------------------------------------------------------------------------
+    def testInvTrackItemOnacceptCreatesExternalDonationStock(self):
+        """Unloading external donations create received stock without source warehouse rows"""
+
+        db = current.db
+        s3db = current.s3db
+
+        destination = self.create_office(name="Donation Destination")
+        donor_id = self.create_organisation(name="Donor")
+        item_id = self.create_supply_item(name="Hygiene Kit")
+        pack_id = self.create_item_pack(item_id, quantity=1)
+        expiry = current.request.now.date() + datetime.timedelta(days=20)
+        recv_id = self.create_recv(destination.site_id,
+                                   organisation_id=donor_id,
+                                   type=2,
+                                   )
+        track_item_id = self.create_track_item(item_id,
+                                               pack_id,
+                                               quantity=4,
+                                               recv_quantity=4,
+                                               recv_id=recv_id,
+                                               status=TRACK_STATUS_UNLOADING,
+                                               currency="USD",
+                                               pack_value=3.0,
+                                               expiry_date=expiry,
+                                               recv_bin="D-4",
+                                               owner_org_id=destination.organisation_id,
+                                               supply_org_id=donor_id,
+                                               item_source_no="SRC-DON-1",
+                                               inv_item_status=0,
+                                               )
+        record = db(s3db.inv_track_item.id == track_item_id).select(s3db.inv_track_item.ALL,
+                                                                    limitby=(0, 1),
+                                                                    ).first()
+
+        InventoryTrackingModel.inv_track_item_onaccept(self.make_form(record=record,
+                                                                      id=track_item_id,
+                                                                      ))
+
+        recv_inv_item = db((s3db.inv_inv_item.site_id == destination.site_id) &
+                           (s3db.inv_inv_item.item_id == item_id)).select(s3db.inv_inv_item.quantity,
+                                                                           s3db.inv_inv_item.source_type,
+                                                                           s3db.inv_inv_item.bin,
+                                                                           limitby=(0, 1),
+                                                                           ).first()
+        track_item = db(s3db.inv_track_item.id == track_item_id).select(s3db.inv_track_item.adj_item_id,
+                                                                        s3db.inv_track_item.status,
+                                                                        limitby=(0, 1),
+                                                                        ).first()
+
+        self.assertEqual(recv_inv_item.quantity, 4)
+        self.assertEqual(recv_inv_item.source_type, 1)
+        self.assertEqual(recv_inv_item.bin, "D-4")
+        self.assertEqual(track_item.adj_item_id, None)
+        self.assertEqual(track_item.status, TRACK_STATUS_ARRIVED)
+
+    # -------------------------------------------------------------------------
+    def testInvTrackItemDeletingRejectsLockedRowsAndAllowsUnlinkedDraftRows(self):
+        """Track item deletion rejects non-draft rows and tolerates rows without request or stock links"""
+
+        db = current.db
+        s3db = current.s3db
+
+        item_id = self.create_supply_item(name="Delete Test Item")
+        pack_id = self.create_item_pack(item_id, quantity=1)
+
+        locked_track_item_id = self.create_track_item(item_id,
+                                                      pack_id,
+                                                      quantity=1,
+                                                      status=TRACK_STATUS_UNLOADING,
+                                                      )
+        draft_track_item_id = self.create_track_item(item_id,
+                                                     pack_id,
+                                                     quantity=2,
+                                                     status=1,
+                                                     )
+
+        self.assertFalse(InventoryTrackingModel.inv_track_item_deleting(locked_track_item_id))
+        self.assertTrue(InventoryTrackingModel.inv_track_item_deleting(draft_track_item_id))
+
+        draft_track_item = db(s3db.inv_track_item.id == draft_track_item_id).select(s3db.inv_track_item.quantity,
+                                                                                    limitby=(0, 1),
+                                                                                    ).first()
+        self.assertEqual(draft_track_item.quantity, 2)
 
 
 # =============================================================================
@@ -1385,6 +2079,46 @@ class InventoryModelHelperTests(SupplyChainTestCase):
         self.assertIn(item_id, calls[0]["not_filter_opts"])
 
     # -------------------------------------------------------------------------
+    def testInvPrepKeepsCurrentItemSelectableDuringUpdates(self):
+        """inv_prep keeps the currently edited stock item selectable in update forms"""
+
+        office = self.create_office(name="Update Prep Office")
+        item_a = self.create_supply_item(name="Update Item A")
+        item_b = self.create_supply_item(name="Update Item B")
+        pack_a = self.create_item_pack(item_a, quantity=1)
+        pack_b = self.create_item_pack(item_b, quantity=1)
+        current_item_id = self.create_inventory_item(office.site_id,
+                                                     item_a,
+                                                     pack_a,
+                                                     quantity=2,
+                                                     )
+        self.create_inventory_item(office.site_id,
+                                   item_b,
+                                   pack_b,
+                                   quantity=5,
+                                   )
+
+        requires = current.db.inv_inv_item.item_id.requires
+        saved = requires.set_filter
+        calls = []
+        requires.set_filter = lambda **kwargs: calls.append(kwargs)
+
+        try:
+            r = Storage(component=Storage(name="inv_item"),
+                        record=Storage(site_id=office.site_id),
+                        method="update",
+                        args=[None, None, current_item_id],
+                        )
+            InventoryModel.inv_prep(r)
+        finally:
+            requires.set_filter = saved
+
+        self.assertEqual(len(calls), 1)
+        self.assertEqual(calls[0]["not_filterby"], "id")
+        self.assertNotIn(item_a, calls[0]["not_filter_opts"])
+        self.assertIn(item_b, calls[0]["not_filter_opts"])
+
+    # -------------------------------------------------------------------------
     def testInvPrepDefaultsSendComponentToSearchTab(self):
         """inv_prep switches the GIS selector to the search tab for sends"""
 
@@ -1449,6 +2183,262 @@ class InventoryModelHelperTests(SupplyChainTestCase):
         self.assertEqual(item.method, update.UPDATE)
         self.assertEqual(item.data.quantity, 9)
 
+    # -------------------------------------------------------------------------
+    def testInvItemDuplicateLeavesDistinctRowsUntouched(self):
+        """inv_item_duplicate does not flag distinct stock rows as duplicates"""
+
+        office = self.create_office(name="Distinct Duplicate Office")
+        item_id = self.create_supply_item(name="Distinct Duplicate Item")
+        pack_id = self.create_item_pack(item_id, quantity=1)
+        self.create_inventory_item(office.site_id,
+                                   item_id,
+                                   pack_id,
+                                   quantity=4,
+                                   owner_org_id=office.organisation_id,
+                                   bin="BIN-1",
+                                   )
+
+        update = Storage(UPDATE="update")
+        item = Storage(data=Storage(site_id=office.site_id,
+                                    item_id=item_id,
+                                    item_pack_id=pack_id,
+                                    owner_org_id=office.organisation_id,
+                                    supply_org_id=None,
+                                    pack_value=None,
+                                    currency=None,
+                                    bin="BIN-2",
+                                    quantity=3,
+                                    ),
+                       table=current.s3db.inv_inv_item,
+                       METHOD=update,
+                       method=None,
+                       id=None,
+                       )
+
+        InventoryModel.inv_item_duplicate(item)
+
+        self.assertEqual(item.id, None)
+        self.assertEqual(item.method, None)
+        self.assertEqual(item.data.quantity, 3)
+
+    # -------------------------------------------------------------------------
+    def testInvInvItemOnvalidateRejectsDuplicateSourceNumbersPerOwner(self):
+        """Inventory item validation only rejects duplicate source numbers within the same owner org"""
+
+        office = self.create_office(name="Owner Office")
+        other_office = self.create_office(name="Other Owner Office")
+        item_id = self.create_supply_item()
+        pack_id = self.create_item_pack(item_id, quantity=1)
+        self.create_inventory_item(office.site_id,
+                                   item_id,
+                                   pack_id,
+                                   quantity=3,
+                                   owner_org_id=office.organisation_id,
+                                   item_source_no="SRC-INV-001",
+                                   )
+
+        # Empty tracking numbers are ignored by the validator
+        empty = self.make_form(owner_org_id=office.organisation_id,
+                               item_source_no=None,
+                               )
+        InventoryModel.inv_inv_item_onvalidate(empty)
+        self.assertEqual(empty.errors, Storage())
+
+        # Unchanged numbers on the current record must not raise a duplicate
+        unchanged = self.make_form(record=Storage(item_source_no="SRC-INV-001"),
+                                   owner_org_id=office.organisation_id,
+                                   item_source_no="SRC-INV-001",
+                                   )
+        InventoryModel.inv_inv_item_onvalidate(unchanged)
+        self.assertEqual(unchanged.errors, Storage())
+
+        # The same source number in another owner organisation is allowed
+        other_owner = self.make_form(owner_org_id=other_office.organisation_id,
+                                     item_source_no="SRC-INV-001",
+                                     )
+        InventoryModel.inv_inv_item_onvalidate(other_owner)
+        self.assertEqual(other_owner.errors, Storage())
+
+        # The original owner organisation must still reject duplicates
+        duplicate = self.make_form(owner_org_id=office.organisation_id,
+                                   item_source_no="SRC-INV-001",
+                                   )
+        InventoryModel.inv_inv_item_onvalidate(duplicate)
+        self.assertIn("item_source_no", duplicate.errors)
+        self.assertIn("SRC-INV-001", str(duplicate.errors.item_source_no))
+
+    # -------------------------------------------------------------------------
+    def testInvRemoveUpdatesDeletesAndCanSkipStockUpdates(self):
+        """inv_remove updates stock, deletes depleted rows and can skip DB writes"""
+
+        db = current.db
+        s3db = current.s3db
+
+        office = self.create_office(name="Removal Office")
+        item_id = self.create_supply_item(name="Removal Item")
+        pack_id = self.create_item_pack(item_id, quantity=1)
+
+        keep_id = self.create_inventory_item(office.site_id,
+                                             item_id,
+                                             pack_id,
+                                             quantity=10,
+                                             )
+        delete_id = self.create_inventory_item(office.site_id,
+                                               item_id,
+                                               pack_id,
+                                               quantity=3,
+                                               )
+        unchanged_id = self.create_inventory_item(office.site_id,
+                                                  item_id,
+                                                  pack_id,
+                                                  quantity=8,
+                                                  )
+        dry_run_id = self.create_inventory_item(office.site_id,
+                                                item_id,
+                                                pack_id,
+                                                quantity=7,
+                                                )
+
+        table = s3db.inv_inv_item
+        keep = db(table.id == keep_id).select(table.ALL, limitby=(0, 1)).first()
+        delete = db(table.id == delete_id).select(table.ALL, limitby=(0, 1)).first()
+        unchanged = db(table.id == unchanged_id).select(table.ALL, limitby=(0, 1)).first()
+        dry_run = db(table.id == dry_run_id).select(table.ALL, limitby=(0, 1)).first()
+
+        # Partial removals reduce stock in place
+        self.assertEqual(InventoryModel.inv_remove(keep, 4), 4)
+        keep_row = db(table.id == keep_id).select(table.quantity,
+                                                  table.deleted,
+                                                  limitby=(0, 1),
+                                                  ).first()
+        self.assertEqual(keep_row.quantity, 6)
+        self.assertFalse(keep_row.deleted)
+
+        # Over-removals deplete the row and mark it deleted
+        self.assertEqual(InventoryModel.inv_remove(delete, 5), 3)
+        delete_row = db(table.id == delete_id).select(table.deleted,
+                                                      limitby=(0, 1),
+                                                      ).first()
+        self.assertTrue(delete_row.deleted)
+
+        # Matching current-track quantities should be a no-op
+        self.assertEqual(InventoryModel.inv_remove(unchanged,
+                                                   2,
+                                                   current_track_total=2,
+                                                   ),
+                         2)
+        unchanged_row = db(table.id == unchanged_id).select(table.quantity,
+                                                            limitby=(0, 1),
+                                                            ).first()
+        self.assertEqual(unchanged_row.quantity, 8)
+
+        # Dry runs compute removable quantities without writing stock back
+        self.assertEqual(InventoryModel.inv_remove(dry_run,
+                                                   3,
+                                                   update=False,
+                                                   ),
+                         3)
+        dry_run_row = db(table.id == dry_run_id).select(table.quantity,
+                                                        table.deleted,
+                                                        limitby=(0, 1),
+                                                        ).first()
+        self.assertEqual(dry_run_row.quantity, 7)
+        self.assertFalse(dry_run_row.deleted)
+
+
+# =============================================================================
+class InventoryModelConfigurationTests(SupplyChainTestCase):
+    """Tests for model configuration branches driven by deployment settings"""
+
+    # -------------------------------------------------------------------------
+    @staticmethod
+    def _reload_model(model_class, name, *tablenames):
+        """Reload a DataModel after changing settings for a test"""
+
+        s3db = current.s3db
+
+        for tablename in tablenames:
+            s3db.clear_config(tablename)
+
+        loaded = current.response.get("eden_model_load")
+        if loaded:
+            while name in loaded:
+                loaded.remove(name)
+
+        model_class("inv")
+
+    # -------------------------------------------------------------------------
+    def testInventoryModelEnablesPackValueReportingWhenConfigured(self):
+        """InventoryModel adds pack-value reporting columns when enabled in settings"""
+
+        settings = current.deployment_settings
+
+        saved_track_pack_values = settings.supply.get("track_pack_values")
+        try:
+            settings.supply.track_pack_values = True
+            self._reload_model(InventoryModel,
+                               "InventoryModel",
+                               "inv_inv_item",
+                               )
+
+            list_fields = current.s3db.get_config("inv_inv_item", "list_fields")
+            report_options = current.s3db.get_config("inv_inv_item", "report_options")
+
+            self.assertIn("pack_value", list_fields)
+            self.assertIn((current.T("Total Value"), "total_value"), report_options.fact)
+        finally:
+            settings.supply.track_pack_values = saved_track_pack_values
+            self._reload_model(InventoryModel,
+                               "InventoryModel",
+                               "inv_inv_item",
+                               )
+
+    # -------------------------------------------------------------------------
+    def testInventoryTrackingModelSupportsReqControllerOrdersAndTransportOptions(self):
+        """InventoryTrackingModel adapts send/receive config for req controller and order workflow"""
+
+        settings = current.deployment_settings
+        request = current.request
+
+        saved_controller = request.controller
+        saved_shipment_name = settings.inv.get("shipment_name")
+        saved_show_transport = settings.inv.get("send_show_mode_of_transport")
+        saved_time_in = settings.inv.get("send_show_time_in")
+
+        try:
+            request.controller = "req"
+            settings.inv.shipment_name = "order"
+            settings.inv.send_show_mode_of_transport = True
+            settings.inv.send_show_time_in = True
+            self._reload_model(InventoryTrackingModel,
+                               "InventoryTrackingModel",
+                               "inv_send",
+                               "inv_recv",
+                               )
+
+            list_fields = current.s3db.get_config("inv_send", "list_fields")
+            create_next = current.s3db.get_config("inv_send", "create_next")
+            filter_widgets = current.s3db.get_config("inv_recv", "filter_widgets")
+            date_filters = [widget for widget in filter_widgets
+                            if getattr(widget, "field", None) == "eta"]
+
+            self.assertIn("time_in", list_fields)
+            self.assertEqual(create_next,
+                             URL(c="req", f="send", args=["[id]", "track_item"]))
+            self.assertEqual(str(current.s3db.inv_recv_id().label), "Order")
+            self.assertEqual(len(date_filters), 1)
+            self.assertIn("order expected", str(date_filters[0].opts.comment).lower())
+        finally:
+            request.controller = saved_controller
+            settings.inv.shipment_name = saved_shipment_name
+            settings.inv.send_show_mode_of_transport = saved_show_transport
+            settings.inv.send_show_time_in = saved_time_in
+            self._reload_model(InventoryTrackingModel,
+                               "InventoryTrackingModel",
+                               "inv_send",
+                               "inv_recv",
+                               )
+
 
 # =============================================================================
 class InventoryHeaderTests(SupplyChainTestCase):
@@ -1506,6 +2496,69 @@ class InventoryHeaderTests(SupplyChainTestCase):
                          ["inv_item", "recv", "send", "plan"])
 
     # -------------------------------------------------------------------------
+    def testInvTabsReuseSessionStateAndHandleCollapsedDefaults(self):
+        """inv_tabs reuses stored collapse state and returns empty when inventory tabs are disabled"""
+
+        settings = current.deployment_settings
+        auth = current.auth
+        session = current.session
+
+        saved_has_tabs = settings.get_org_site_inv_req_tabs
+        saved_has_module = settings.has_module
+        saved_collapse = settings.get_inv_collapse_tabs
+        saved_recv_label = settings.get_inv_recv_tab_label
+        saved_send_label = settings.get_inv_send_tab_label
+        saved_permission = auth.s3_has_permission
+        saved_show_inv = getattr(session.s3, "show_inv", None)
+        saved_rheader_resource = inv_tabs.__globals__["s3_rheader_resource"]
+
+        settings.get_org_site_inv_req_tabs = lambda: True
+        settings.has_module = lambda module: module == "inv"
+        settings.get_inv_collapse_tabs = lambda: True
+        settings.get_inv_recv_tab_label = lambda: "Incoming"
+        settings.get_inv_send_tab_label = lambda: "Outgoing"
+        auth.s3_has_permission = lambda *args, **kwargs: True
+        inv_tabs.__globals__["s3_rheader_resource"] = lambda r: ("org_office", None)
+        session.s3.show_inv = Storage()
+
+        try:
+            collapsed = inv_tabs(Storage(name="office",
+                                         id=7,
+                                         get_vars=Storage(show_inv="False"),
+                                         ))
+            remembered = inv_tabs(Storage(name="office",
+                                         id=7,
+                                         get_vars=Storage(),
+                                         ))
+
+            settings.get_inv_collapse_tabs = lambda: False
+            inv_tabs.__globals__["s3_rheader_resource"] = lambda r: ("inv_warehouse", None)
+            expanded = inv_tabs(Storage(name="warehouse",
+                                        id=7,
+                                        get_vars=Storage(),
+                                        ))
+
+            auth.s3_has_permission = lambda *args, **kwargs: False
+            empty = inv_tabs(Storage(name="warehouse",
+                                     id=7,
+                                     get_vars=Storage(),
+                                     ))
+        finally:
+            settings.get_org_site_inv_req_tabs = saved_has_tabs
+            settings.has_module = saved_has_module
+            settings.get_inv_collapse_tabs = saved_collapse
+            settings.get_inv_recv_tab_label = saved_recv_label
+            settings.get_inv_send_tab_label = saved_send_label
+            auth.s3_has_permission = saved_permission
+            session.s3.show_inv = saved_show_inv
+            inv_tabs.__globals__["s3_rheader_resource"] = saved_rheader_resource
+
+        self.assertEqual(collapsed, [("+ Warehouse", "inv_item", {"show_inv": "True"})])
+        self.assertEqual(remembered, [("+ Warehouse", "inv_item", {"show_inv": "True"})])
+        self.assertEqual([tab[1] for tab in expanded[:3]], ["inv_item", "recv", "send"])
+        self.assertEqual(empty, [])
+
+    # -------------------------------------------------------------------------
     def testInvRfooterAddsAdjustmentAndTrackingActions(self):
         """inv_rfooter exposes stock adjustment and tracking actions for warehouse stock"""
 
@@ -1538,6 +2591,107 @@ class InventoryHeaderTests(SupplyChainTestCase):
         self.assertIn("Track Shipment", footer)
         self.assertIn("/inv/adj/create", footer)
         self.assertIn("/inv/track_movement", footer)
+
+    # -------------------------------------------------------------------------
+    def testInvRfooterHandlesSummaryRowsAndMissingSite(self):
+        """inv_rfooter omits stock-item actions when there is no component or no site context"""
+
+        settings = current.deployment_settings
+        auth = current.auth
+        response_s3 = current.response.s3
+
+        office = self.create_office(name="Footer Office")
+        saved_direct_stock = settings.get_inv_direct_stock_edits
+        saved_permission = auth.s3_has_permission
+        saved_footer = response_s3.rfooter
+
+        settings.get_inv_direct_stock_edits = lambda: False
+        auth.s3_has_permission = lambda *args, **kwargs: True
+        response_s3.rfooter = "unchanged"
+
+        try:
+            inv_rfooter(Storage(component=Storage(name="inv_item"),
+                               component_id=None,
+                               id=office.id,
+                               ),
+                        Storage(site_id=office.site_id))
+            summary_footer = str(response_s3.rfooter)
+
+            response_s3.rfooter = "unchanged"
+            inv_rfooter(Storage(component=Storage(name="inv_item"),
+                               component_id=None,
+                               id=office.id,
+                               ),
+                        Storage(name="No Site"))
+            missing_site_footer = response_s3.rfooter
+        finally:
+            settings.get_inv_direct_stock_edits = saved_direct_stock
+            auth.s3_has_permission = saved_permission
+            response_s3.rfooter = saved_footer
+
+        self.assertIn("Adjust Stock", summary_footer)
+        self.assertNotIn("Track Shipment", summary_footer)
+        self.assertEqual(missing_site_footer, "unchanged")
+
+    # -------------------------------------------------------------------------
+    def testInvRheaderSupportsWarehouseWithoutLogoAndUnlinkedTrackItems(self):
+        """inv_rheader handles warehouses without logos and track items without source stock rows"""
+
+        db = current.db
+        s3db = current.s3db
+
+        office = self.create_office(name="Logo-Free Warehouse")
+        item_id = self.create_supply_item(name="Header Item")
+        pack_id = self.create_item_pack(item_id, quantity=1)
+        track_item_id = self.create_track_item(item_id,
+                                               pack_id,
+                                               quantity=1,
+                                               send_inv_item_id=None,
+                                               )
+        track_item = db(s3db.inv_track_item.id == track_item_id).select(s3db.inv_track_item.ALL,
+                                                                        limitby=(0, 1),
+                                                                        ).first()
+
+        saved_rheader_resource = inv_rheader.__globals__["s3_rheader_resource"]
+        saved_resource_header = inv_rheader.__globals__["S3ResourceHeader"]
+        saved_logo = s3db.org_organisation_logo
+        saved_tabs = inv_rheader.__globals__["s3_rheader_tabs"]
+        saved_footer = inv_rfooter.__globals__["inv_rfooter"]
+
+        inv_rheader.__globals__["S3ResourceHeader"] = lambda *args, **kwargs: \
+            (lambda r, table=None, record=None: ("WAREHOUSE-FIELDS", "WAREHOUSE-TABS"))
+        s3db.org_organisation_logo = lambda organisation_id: None
+        inv_rheader.__globals__["s3_rheader_tabs"] = lambda r, tabs: "TRACK-TABS"
+        inv_rfooter.__globals__["inv_rfooter"] = lambda r, record: None
+
+        try:
+            inv_rheader.__globals__["s3_rheader_resource"] = lambda r: ("inv_warehouse",
+                                                                        Storage(organisation_id=office.organisation_id,
+                                                                                site_id=office.site_id,
+                                                                                name="Warehouse",
+                                                                                ))
+            warehouse_header = inv_rheader(Storage(representation="html",
+                                                   method=None,
+                                                   id=office.id,
+                                                   ))
+
+            inv_rheader.__globals__["s3_rheader_resource"] = lambda r: ("inv_track_item",
+                                                                        track_item,
+                                                                        )
+            track_header = inv_rheader(Storage(representation="html",
+                                               method=None,
+                                               component=None,
+                                               ))
+        finally:
+            inv_rheader.__globals__["s3_rheader_resource"] = saved_rheader_resource
+            inv_rheader.__globals__["S3ResourceHeader"] = saved_resource_header
+            s3db.org_organisation_logo = saved_logo
+            inv_rheader.__globals__["s3_rheader_tabs"] = saved_tabs
+            inv_rfooter.__globals__["inv_rfooter"] = saved_footer
+
+        self.assertIn("WAREHOUSE-FIELDS", str(warehouse_header))
+        self.assertIn("TRACK-TABS", str(track_header))
+        self.assertIn("piece", str(track_header))
 
     # -------------------------------------------------------------------------
     def testSendAndReceiveRheadersExposeWorkflowActions(self):
@@ -2066,6 +3220,107 @@ class InventoryHeaderTests(SupplyChainTestCase):
         self.assertIn(str(current.messages["NONE"]), str(rheader))
         self.assertIn("SEND-TABS", str(rheader))
 
+    # -------------------------------------------------------------------------
+    def testSendRheaderHandlesCancelledShipmentsAndNonHtmlRequests(self):
+        """Send rheaders render cancelled shipments without actions and return None outside HTML views"""
+
+        db = current.db
+        s3db = current.s3db
+        response_s3 = current.response.s3
+
+        send_id = self.create_send(None,
+                                   to_site_id=None,
+                                   send_ref="WB-CANCELLED",
+                                   status=s3db.inv_ship_status["CANCEL"],
+                                   )
+        sendtable = s3db.inv_send
+        send_record = db(sendtable.id == send_id).select(sendtable.ALL,
+                                                         limitby=(0, 1),
+                                                         ).first()
+
+        saved_tabs = inv_send_rheader.__globals__["s3_rheader_tabs"]
+        saved_footer = response_s3.rfooter
+        response_s3.rfooter = None
+
+        try:
+            inv_send_rheader.__globals__["s3_rheader_tabs"] = lambda r, tabs: "SEND-TABS"
+            rheader = inv_send_rheader(Storage(representation="html",
+                                               name="send",
+                                               record=send_record,
+                                               table=sendtable,
+                                               method="form",
+                                               ))
+        finally:
+            inv_send_rheader.__globals__["s3_rheader_tabs"] = saved_tabs
+            response_s3.rfooter = saved_footer
+
+        self.assertIn("WB-CANCELLED", str(rheader))
+        self.assertNotIn("Cancel Shipment", str(rheader))
+        self.assertEqual(inv_send_rheader(Storage(representation="json",
+                                                 name="send",
+                                                 record=send_record,
+                                                 table=sendtable,
+                                                 method=None,
+                                                 )),
+                         None)
+
+    # -------------------------------------------------------------------------
+    def testRecvRheaderHandlesDocumentsMissingSitesAndNonHtmlRequests(self):
+        """Receive rheaders support document tabs, missing site lookups and multi-line summaries"""
+
+        db = current.db
+        s3db = current.s3db
+        auth = current.auth
+        response_s3 = current.response.s3
+        settings = current.deployment_settings
+
+        destination = self.create_office(name="Recv Header Destination")
+        item_id = self.create_supply_item(name="Recv Header Item")
+        pack_id = self.create_item_pack(item_id, quantity=1)
+        recv_id = self.create_recv(destination.site_id,
+                                   recv_ref="GRN-MULTI",
+                                   status=SHIP_STATUS_SENT,
+                                   )
+        self.create_track_item(item_id, pack_id, quantity=1, recv_id=recv_id)
+        self.create_track_item(item_id, pack_id, quantity=2, recv_id=recv_id)
+
+        recvtable = s3db.inv_recv
+        recv_record = db(recvtable.id == recv_id).select(recvtable.ALL,
+                                                         limitby=(0, 1),
+                                                         ).first()
+        recv_record.site_id = 999999
+
+        saved_tabs = inv_recv_rheader.__globals__["s3_rheader_tabs"]
+        saved_permission = auth.s3_has_permission
+        saved_footer = response_s3.rfooter
+        saved_docs = settings.inv.get("document_filing")
+        auth.s3_has_permission = lambda *args, **kwargs: True
+        settings.inv.document_filing = True
+        response_s3.rfooter = None
+
+        try:
+            captured_tabs = []
+            inv_recv_rheader.__globals__["s3_rheader_tabs"] = lambda r, tabs: captured_tabs.extend(tabs) or "RECV-TABS"
+            rheader = inv_recv_rheader(Storage(representation="html",
+                                               name="recv",
+                                               record=recv_record,
+                                               table=recvtable,
+                                               ))
+        finally:
+            inv_recv_rheader.__globals__["s3_rheader_tabs"] = saved_tabs
+            auth.s3_has_permission = saved_permission
+            response_s3.rfooter = saved_footer
+            settings.inv.document_filing = saved_docs
+
+        self.assertIn(("Documents", "document"), [(str(label), component) for label, component in captured_tabs])
+        self.assertIn("This shipment contains 2 items", str(rheader))
+        self.assertEqual(inv_recv_rheader(Storage(representation="json",
+                                                 name="recv",
+                                                 record=recv_record,
+                                                 table=recvtable,
+                                                 )),
+                         None)
+
 
 # =============================================================================
 class InventoryAdjustmentTests(SupplyChainTestCase):
@@ -2118,6 +3373,73 @@ class InventoryAdjustmentTests(SupplyChainTestCase):
         self.assertEqual(InventoryAdjustModel.inv_adj_item_represent(None), current.messages["NONE"])
         self.assertIn("expired", str(expired))
         self.assertNotIn("expired", str(future))
+
+    # -------------------------------------------------------------------------
+    def testAdjustmentRepresentersHandleRowsUnknownValuesAndNonStockCategories(self):
+        """Adjustment representers accept row input, reject malformed rows and ignore non-stocktake adjustments"""
+
+        db = current.db
+        s3db = current.s3db
+
+        office = self.create_office(name="Adjustment Office")
+        adjuster_id = self.create_person(last_name="Representer")
+        item_id = self.create_supply_item(name="Representation Item")
+        pack_id = self.create_item_pack(item_id, quantity=1)
+
+        adj_id = s3db.inv_adj.insert(site_id=office.site_id,
+                                     adjuster_id=adjuster_id,
+                                     adjustment_date=current.request.utcnow.date(),
+                                     category=0,
+                                     status=0,
+                                     )
+        adj_item_id = s3db.inv_adj_item.insert(adj_id=adj_id,
+                                               item_id=item_id,
+                                               item_pack_id=pack_id,
+                                               old_quantity=0,
+                                               new_quantity=5,
+                                               )
+
+        adj_row = Storage(adjuster_id=adjuster_id,
+                          adjustment_date=current.request.utcnow.date(),
+                          )
+        adj_item_row = Storage(item_id=item_id,
+                               old_quantity=0,
+                               new_quantity=5,
+                               item_pack_id=pack_id,
+                               )
+
+        saved_item_represent = s3db.inv_adj_item.item_id.represent
+        s3db.inv_adj_item.item_id.represent = lambda value, show_link=True: "Representation Item"
+        try:
+            adj_repr = InventoryAdjustModel.inv_adj_represent(adj_id,
+                                                              row=adj_row,
+                                                              show_link=True,
+                                                              )
+            adj_item_repr = InventoryAdjustModel.inv_adj_item_represent(adj_item_id,
+                                                                        row=adj_item_row,
+                                                                        show_link=True,
+                                                                        )
+        finally:
+            s3db.inv_adj_item.item_id.represent = saved_item_represent
+
+        InventoryAdjustModel.inv_adj_onaccept(self.make_form(id=adj_id, site_id=office.site_id))
+        generated = db(s3db.inv_adj_item.adj_id == adj_id).count()
+
+        self.assertTrue(isinstance(adj_repr, SPAN))
+        self.assertTrue(isinstance(adj_item_repr, SPAN))
+        self.assertIn("Representation Item", str(adj_item_repr))
+        self.assertIn(":0 ", str(adj_item_repr))
+        self.assertEqual(generated, 1)
+        self.assertEqual(InventoryAdjustModel.inv_adj_represent(adj_id,
+                                                                row=object(),
+                                                                show_link=False,
+                                                                ),
+                         current.messages.UNKNOWN_OPT)
+        self.assertEqual(InventoryAdjustModel.inv_adj_item_represent(adj_item_id,
+                                                                     row=object(),
+                                                                     show_link=False,
+                                                                     ),
+                         current.messages.UNKNOWN_OPT)
 
     # -------------------------------------------------------------------------
     def testAdjustmentOnacceptBuildsItemsForPositiveStockAndFormatsNoneQuantity(self):
@@ -2285,6 +3607,21 @@ class InventoryControllerTests(SupplyChainTestCase):
 
         self.assertEqual(output["module"], "inv")
         self.assertEqual(output["alt_function"], "index_alt")
+
+    # -------------------------------------------------------------------------
+    def testInvControllerRaises404WhenModuleDisabled(self):
+        """Controller import fails with HTTP 404 when the inventory module is disabled"""
+
+        fake_settings = Storage(has_module=lambda module: False)
+
+        with self.assertRaises(HTTP) as error:
+            with self.controller("inv",
+                                 function="index",
+                                 overrides={"settings": fake_settings},
+                                 ):
+                pass
+
+        self.assertEqual(error.exception.status, 404)
 
     # -------------------------------------------------------------------------
     def testInvIndexAltRedirectsToWarehouseSummary(self):
@@ -4916,6 +6253,89 @@ class InventoryControllerTests(SupplyChainTestCase):
         self.assertEqual(track.status, s3db.inv_tracking_status["SENT"])
         self.assertEqual(req_item.quantity_fulfil, 0)
         self.assertEqual(inv_item.quantity, 1)
+
+    # -------------------------------------------------------------------------
+    def testRecvCancelSkipsMissingReceivedInventoryRows(self):
+        """recv_cancel skips missing received stock rows without crashing"""
+
+        auth = current.auth
+        db = current.db
+        s3db = current.s3db
+        session = current.session
+
+        ship_status = s3db.inv_ship_status
+        origin = self.create_office(name="Cancel Origin")
+        destination = self.create_office(name="Cancel Destination")
+        item_id = self.create_supply_item(name="Canceled Item")
+        pack_id = self.create_item_pack(item_id, quantity=1)
+
+        send_id = self.create_send(origin.site_id,
+                                   to_site_id=destination.site_id,
+                                   status=ship_status["RECEIVED"],
+                                   )
+        recv_id = self.create_recv(destination.site_id,
+                                   from_site_id=origin.site_id,
+                                   status=ship_status["RECEIVED"],
+                                   )
+        recv_inv_item_id = self.create_inventory_item(destination.site_id,
+                                                      item_id,
+                                                      pack_id,
+                                                      quantity=5,
+                                                      )
+        self.create_track_item(item_id,
+                               pack_id,
+                               quantity=2,
+                               recv_quantity=2,
+                               send_id=send_id,
+                               recv_id=recv_id,
+                               recv_inv_item_id=recv_inv_item_id,
+                               status=s3db.inv_tracking_status["RECEIVED"],
+                               )
+        missing_track_id = self.create_track_item(item_id,
+                                                  pack_id,
+                                                  quantity=1,
+                                                  recv_quantity=1,
+                                                  send_id=send_id,
+                                                  recv_id=recv_id,
+                                                  recv_inv_item_id=None,
+                                                  status=s3db.inv_tracking_status["RECEIVED"],
+                                                  )
+
+        saved_permission = auth.s3_has_permission
+        saved_error = session.error
+        auth.s3_has_permission = lambda *args, **kwargs: True
+
+        try:
+            session.error = None
+            with self.controller("inv",
+                                 function="recv_cancel",
+                                 args=[str(recv_id)],
+                                 ) as controller:
+                with self.assertRaises(ControllerRedirect) as redirect:
+                    controller.module["recv_cancel"]()
+                url = str(redirect.exception.url)
+        finally:
+            auth.s3_has_permission = saved_permission
+            session.error = saved_error
+
+        recv = db(s3db.inv_recv.id == recv_id).select(s3db.inv_recv.status,
+                                                      limitby=(0, 1),
+                                                      ).first()
+        send = db(s3db.inv_send.id == send_id).select(s3db.inv_send.status,
+                                                      limitby=(0, 1),
+                                                      ).first()
+        inv_item = db(s3db.inv_inv_item.id == recv_inv_item_id).select(s3db.inv_inv_item.quantity,
+                                                                       limitby=(0, 1),
+                                                                       ).first()
+        missing_track = db(s3db.inv_track_item.id == missing_track_id).select(s3db.inv_track_item.status,
+                                                                              limitby=(0, 1),
+                                                                              ).first()
+
+        self.assertIn("/inv/recv/%s" % recv_id, url)
+        self.assertEqual(recv.status, ship_status["CANCEL"])
+        self.assertEqual(send.status, ship_status["SENT"])
+        self.assertEqual(inv_item.quantity, 3)
+        self.assertEqual(missing_track.status, s3db.inv_tracking_status["SENT"])
 
     # -------------------------------------------------------------------------
     def testSetRecvAttrConfiguresWritableFieldsByShipmentStatus(self):

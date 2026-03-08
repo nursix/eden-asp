@@ -31,12 +31,39 @@ class SupplyChainTestCase(unittest.TestCase):
     def setUp(self):
 
         current.auth.override = True
+        self._clear_represent_caches()
 
     # -------------------------------------------------------------------------
     def tearDown(self):
 
         current.db.rollback()
+        self._clear_represent_caches()
         current.auth.override = False
+
+    # -------------------------------------------------------------------------
+    @staticmethod
+    def _clear_represent_caches():
+        """Clear S3Represent row caches that can outlive DB rollbacks"""
+
+        s3db = current.s3db
+
+        for attr in dir(s3db):
+            table = getattr(s3db, attr, None)
+            if not getattr(table, "_tablename", None):
+                continue
+
+            for field in table:
+                represent = getattr(field, "represent", None)
+                if hasattr(represent, "rows"):
+                    represent.rows = {}
+                if hasattr(represent, "lazy"):
+                    represent.lazy = []
+                if hasattr(represent, "theset"):
+                    represent.theset = None
+                if hasattr(represent, "setup"):
+                    represent.setup = False
+                if hasattr(represent, "table"):
+                    represent.table = None
 
     # -------------------------------------------------------------------------
     @classmethod
@@ -210,6 +237,33 @@ class SupplyChainTestCase(unittest.TestCase):
                       )
 
         return user_id
+
+    # -------------------------------------------------------------------------
+    def create_group_membership(self,
+                                user_id,
+                                group_uuid,
+                                role=None,
+                                pe_id=None):
+        """Create an auth membership, creating the group if it does not yet exist"""
+
+        db = current.db
+
+        gtable = db.auth_group
+        group = db(gtable.uuid == group_uuid).select(gtable.id,
+                                                     limitby=(0, 1),
+                                                     ).first()
+        if group:
+            group_id = group.id
+        else:
+            group_id = gtable.insert(role=role or group_uuid,
+                                     uuid=group_uuid,
+                                     )
+
+        mtable = db.auth_membership
+        return mtable.insert(user_id=user_id,
+                             group_id=group_id,
+                             pe_id=pe_id,
+                             )
 
     # -------------------------------------------------------------------------
     def create_catalog(self, organisation_id=None, name=None):

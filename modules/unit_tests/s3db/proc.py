@@ -6,7 +6,7 @@
 import datetime
 import unittest
 
-from gluon import URL, current
+from gluon import HTTP, URL, current
 from gluon.storage import Storage
 
 from s3db.proc import PROCProcurementPlansModel, PROCPurchaseOrdersModel, proc_rheader
@@ -135,6 +135,36 @@ class ProcurementPlanModelTests(ProcTestCase):
         # Representation must combine site and planned order date
         self.assertEqual(representation, expected)
 
+    # -------------------------------------------------------------------------
+    def testProcPlanRepresentHandlesRowsAndMissingValues(self):
+        """proc_plan representation handles inline rows, empty values and unknown IDs"""
+
+        db = current.db
+
+        office = self.create_office(name="Proc Plan Fallback Office")
+        order_date = datetime.date(2026, 3, 8)
+        plan_table = db.proc_plan
+
+        row = Storage(site_id=office.site_id,
+                      order_date=order_date,
+                      )
+        inline = PROCProcurementPlansModel.proc_plan_represent(1, row=row)
+        expected = "%s (%s)" % (plan_table.site_id.represent(office.site_id),
+                                plan_table.order_date.represent(order_date),
+                                )
+
+        self.assertEqual(inline, expected)
+        self.assertEqual(PROCProcurementPlansModel.proc_plan_represent(None),
+                         current.messages["NONE"])
+        self.assertEqual(PROCProcurementPlansModel.proc_plan_represent(99999999),
+                         current.messages.UNKNOWN_OPT)
+
+    # -------------------------------------------------------------------------
+    def testProcPlanModelDoesNotExposeDisabledDefaults(self):
+        """Procurement-plan model does not define extra defaults helpers"""
+
+        self.assertIsNone(PROCProcurementPlansModel("proc").defaults())
+
 
 # =============================================================================
 class PurchaseOrderModelTests(ProcTestCase):
@@ -191,6 +221,14 @@ class PurchaseOrderModelTests(ProcTestCase):
                                                       ).first()
         self.assertEqual(order.purchase_ref, "PRESET-REF")
 
+    # -------------------------------------------------------------------------
+    def testProcOrderDefaultsExposeDummyField(self):
+        """Disabled procurement-order defaults expose the dummy field template"""
+
+        defaults = PROCPurchaseOrdersModel("proc").defaults()
+
+        self.assertEqual(defaults["proc_order_id"]().name, "order_id")
+
 
 # =============================================================================
 class ProcurementControllerTests(ProcTestCase):
@@ -211,6 +249,21 @@ class ProcurementControllerTests(ProcTestCase):
             s3db.cms_index = saved
 
         self.assertEqual(output.module, "proc")
+
+    # -------------------------------------------------------------------------
+    def testProcControllerRaises404WhenModuleDisabled(self):
+        """Controller import fails with HTTP 404 when the procurement module is disabled"""
+
+        fake_settings = Storage(has_module=lambda module: False)
+
+        with self.assertRaises(HTTP) as error:
+            with self.controller("proc",
+                                 function="index",
+                                 overrides={"settings": fake_settings},
+                                 ):
+                pass
+
+        self.assertEqual(error.exception.status, 404)
 
     # -------------------------------------------------------------------------
     def testProcOrderControllerUsesProcRheader(self):
@@ -268,6 +321,31 @@ class ProcurementControllerTests(ProcTestCase):
         self.assertIn("PROC-TABS:,order_item", str(order_rheader))
         self.assertIn("PROC-TABS:,plan_item", str(plan_rheader))
         self.assertIn(str(plan_table.eta.represent(plan_record.eta)), str(plan_rheader))
+
+    # -------------------------------------------------------------------------
+    def testProcRheaderReturnsNoneWithoutHtmlOrRecord(self):
+        """proc_rheader ignores non-HTML views and missing records"""
+
+        self.assertIsNone(proc_rheader(Storage(representation="pdf",
+                                               record=Storage(id=1),
+                                               tablename="proc_order",
+                                               )))
+        self.assertIsNone(proc_rheader(Storage(representation="html",
+                                               record=None,
+                                               tablename="proc_plan",
+                                               )))
+
+    # -------------------------------------------------------------------------
+    def testProcRheaderIgnoresUnknownTables(self):
+        """proc_rheader ignores HTML records from unrelated resources"""
+
+        rheader = proc_rheader(Storage(representation="html",
+                                       record=Storage(id=1),
+                                       tablename="proc_unknown",
+                                       table=Storage(),
+                                       ))
+
+        self.assertIsNone(rheader)
 
     # -------------------------------------------------------------------------
     def testProcPlanControllerUsesProcRheader(self):
