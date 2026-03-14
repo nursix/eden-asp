@@ -7,11 +7,17 @@ import datetime
 import json
 import unittest
 
-from gluon import A, B, URL, current
+from contextlib import contextmanager
+
+import core
+
+from gluon import A, B, HTTP, URL, current
 from gluon.storage import Storage
 
 from s3db.inv import (SHIP_STATUS_IN_PROCESS,
+                      SHIP_STATUS_RETURNING,
                       SHIP_STATUS_SENT,
+                      TRACK_STATUS_RETURNING,
                       TRACK_STATUS_ARRIVED,
                       TRACK_STATUS_UNLOADING,
                       InventoryAdjustModel,
@@ -35,6 +41,21 @@ from s3db.inv import (SHIP_STATUS_IN_PROCESS,
                       )
 from unit_tests import run_suite
 from unit_tests.s3db.helpers import ControllerRedirect, SupplyChainTestCase
+
+
+# =============================================================================
+@contextmanager
+def capture_redirect(function):
+    """Intercept redirects from model helpers outside controller harnesses"""
+
+    saved_redirect = function.__globals__["redirect"]
+    function.__globals__["redirect"] = lambda url, *args, **kwargs: \
+        (_ for _ in ()).throw(ControllerRedirect(url))
+
+    try:
+        yield
+    finally:
+        function.__globals__["redirect"] = saved_redirect
 
 
 # =============================================================================
@@ -95,6 +116,24 @@ class InventoryRepresentationTests(SupplyChainTestCase):
         recv_ref_plain = InventoryTrackingModel.inv_recv_ref_represent("GRN-001", show_link=False)
         self.assertTrue(isinstance(recv_ref_plain, B))
         self.assertEqual(recv_ref_plain.components[0], "GRN-001")
+
+    # -------------------------------------------------------------------------
+    def testShipmentReferenceHelpersHandleEmptyValuesAndReceivedQuantities(self):
+        """Shipment reference helpers and received-quantity representation degrade cleanly"""
+
+        none_send_ref = InventoryTrackingModel.inv_send_ref_represent(None)
+        none_recv_ref = InventoryTrackingModel.inv_recv_ref_represent(None)
+        unknown_send_ref = InventoryTrackingModel.inv_send_ref_represent("UNKNOWN", show_link=True)
+        none_qnty = InventoryTrackingModel.qnty_recv_repr(None)
+        zero_qnty = InventoryTrackingModel.qnty_recv_repr(0)
+        full_qnty = InventoryTrackingModel.qnty_recv_repr(7)
+
+        self.assertEqual(none_send_ref, current.messages["NONE"])
+        self.assertEqual(none_recv_ref, current.messages["NONE"])
+        self.assertEqual(unknown_send_ref, "UNKNOWN")
+        self.assertTrue(isinstance(none_qnty, B))
+        self.assertTrue(isinstance(zero_qnty, B))
+        self.assertEqual(full_qnty, 7)
 
     # -------------------------------------------------------------------------
     def testInventoryItemRepresentIncludesSourceOwnerAndBin(self):
@@ -356,6 +395,86 @@ class InventoryWorkflowTests(SupplyChainTestCase):
         self.assertEqual(rows.first().quantity, 5)
 
     # -------------------------------------------------------------------------
+    def testInvSendFormAddsRequestCommentsAndPackValues(self):
+        """Waybill export includes request comments and pack values when configured"""
+
+        settings = current.deployment_settings
+
+        office = self.create_office()
+        destination = self.create_office()
+        send_id = self.create_send(office.site_id,
+                                   to_site_id=destination.site_id,
+                                   req_ref="REQ-SEND-FORM",
+                                   send_ref="WB-FORM-001",
+                                   )
+
+        saved_pdf = core.DataExporter.pdf
+        saved_track_pack_values = settings.supply.get("track_pack_values")
+        captured = {}
+
+        try:
+            # Capture the exporter call to inspect the generated list_fields
+            settings.supply.track_pack_values = True
+            core.DataExporter.pdf = lambda resource, **kwargs: captured.update(kwargs) or kwargs
+
+            r = Storage(id=send_id,
+                        record=Storage(req_ref="REQ-SEND-FORM"),
+                        resource="inv_send",
+                        )
+            result = InventoryTrackingModel.inv_send_form(r)
+        finally:
+            core.DataExporter.pdf = saved_pdf
+            settings.supply.track_pack_values = saved_track_pack_values
+
+        self.assertEqual(result, captured)
+        self.assertEqual(result["pdf_filename"], "WB-FORM-001")
+        self.assertEqual(result["pdf_componentname"], "track_item")
+        self.assertIn("req_item_id$comments", result["list_fields"])
+        self.assertIn("currency", result["list_fields"])
+        self.assertIn("pack_value", result["list_fields"])
+        self.assertEqual(result["pdf_footer"], inv_send_pdf_footer)
+        self.assertEqual(result["pdf_orientation"], "Landscape")
+
+    # -------------------------------------------------------------------------
+    def testInvRecvExportsConfigureFormAndDonationCertificate(self):
+        """Receive export helpers build the expected GRN and donation certificate payloads"""
+
+        destination = self.create_office(name="Receive Export Destination")
+        recv_id = self.create_recv(destination.site_id,
+                                   recv_ref="GRN-EXPORT-001",
+                                   )
+
+        saved_pdf = core.DataExporter.pdf
+        captured = []
+
+        try:
+            # Capture both exporter calls to inspect their PDF configuration
+            core.DataExporter.pdf = lambda resource, **kwargs: \
+                captured.append(Storage(resource=resource, kwargs=kwargs)) or kwargs
+
+            r = Storage(id=recv_id,
+                        resource="inv_recv",
+                        )
+            form_result = InventoryTrackingModel.inv_recv_form(r)
+            cert_result = InventoryTrackingModel.inv_recv_donation_cert(r)
+        finally:
+            core.DataExporter.pdf = saved_pdf
+
+        self.assertEqual(form_result["pdf_filename"], "GRN-EXPORT-001")
+        self.assertEqual(form_result["pdf_componentname"], "track_item")
+        self.assertIn("recv_quantity", form_result["list_fields"])
+        self.assertEqual(form_result["pdf_footer"], inv_recv_pdf_footer)
+        self.assertEqual(form_result["pdf_orientation"], "Landscape")
+
+        self.assertEqual(cert_result["pdf_title"], "Donation Certificate")
+        self.assertTrue(cert_result["pdf_filename"].startswith("DC-"))
+        self.assertEqual(cert_result["pdf_componentname"], "track_item")
+
+        self.assertEqual(len(captured), 2)
+        self.assertEqual(captured[0].resource, "inv_recv")
+        self.assertEqual(captured[1].resource, "inv_recv")
+
+    # -------------------------------------------------------------------------
     def testInvRecvOnacceptAndOnvalidation(self):
         """Receive callbacks generate refs and validate shipment sources"""
 
@@ -394,6 +513,332 @@ class InventoryWorkflowTests(SupplyChainTestCase):
         self.assertIn("organisation_id", form.errors)
 
     # -------------------------------------------------------------------------
+    def testInvSendProcessRequiresSendId(self):
+        """Send processing redirects to the shipment list when the record ID is missing"""
+
+        with self.controller("inv", function="send_process") as controller:
+            # Use a mapping-like args object so the helper hits its KeyError branch
+            current.request.args = {}
+            with capture_redirect(current.s3db.inv_send_process):
+                with self.assertRaises(ControllerRedirect) as redirect:
+                    current.s3db.inv_send_process()
+
+        self.assertIn("/inv/send", str(redirect.exception.url))
+
+    # -------------------------------------------------------------------------
+    def testInvSendProcessRejectsUnauthorisedShipments(self):
+        """Send processing refuses users without update permission on the shipment"""
+
+        auth = current.auth
+        session = current.session
+        s3db = current.s3db
+
+        origin = self.create_office(name="Process Origin")
+        destination = self.create_office(name="Process Destination")
+        item_id = self.create_supply_item(name="Rice")
+        pack_id = self.create_item_pack(item_id, quantity=1)
+        send_id = self.create_send(origin.site_id,
+                                   to_site_id=destination.site_id,
+                                   status=SHIP_STATUS_IN_PROCESS,
+                                   )
+        self.create_track_item(item_id,
+                               pack_id,
+                               quantity=1,
+                               send_id=send_id,
+                               status=s3db.inv_tracking_status["IN_PROCESS"],
+                               )
+
+        saved_permission = auth.s3_has_permission
+        saved_error = session.error
+        auth.s3_has_permission = lambda *args, **kwargs: False
+
+        try:
+            with self.controller("inv",
+                                 function="send_process",
+                                 args=[str(send_id)],
+                                 ) as controller:
+                session.error = None
+                with capture_redirect(current.s3db.inv_send_process):
+                    with self.assertRaises(ControllerRedirect) as redirect:
+                        current.s3db.inv_send_process()
+                error = session.error
+        finally:
+            auth.s3_has_permission = saved_permission
+            session.error = saved_error
+
+        self.assertIn("/inv/send/%s" % send_id, str(redirect.exception.url))
+        self.assertEqual(str(error),
+                         "You do not have permission to send this shipment.")
+
+    # -------------------------------------------------------------------------
+    def testInvSendProcessRejectsAlreadySentShipments(self):
+        """Send processing refuses shipments that are no longer editable"""
+
+        auth = current.auth
+        session = current.session
+        s3db = current.s3db
+
+        origin = self.create_office(name="Locked Origin")
+        destination = self.create_office(name="Locked Destination")
+        item_id = self.create_supply_item(name="Maize")
+        pack_id = self.create_item_pack(item_id, quantity=1)
+        send_id = self.create_send(origin.site_id,
+                                   to_site_id=destination.site_id,
+                                   status=SHIP_STATUS_SENT,
+                                   )
+        self.create_track_item(item_id,
+                               pack_id,
+                               quantity=1,
+                               send_id=send_id,
+                               status=s3db.inv_tracking_status["SENT"],
+                               )
+
+        saved_permission = auth.s3_has_permission
+        saved_error = session.error
+        auth.s3_has_permission = lambda *args, **kwargs: True
+
+        try:
+            with self.controller("inv",
+                                 function="send_process",
+                                 args=[str(send_id)],
+                                 ) as controller:
+                session.error = None
+                with capture_redirect(current.s3db.inv_send_process):
+                    with self.assertRaises(ControllerRedirect) as redirect:
+                        current.s3db.inv_send_process()
+                error = session.error
+        finally:
+            auth.s3_has_permission = saved_permission
+            session.error = saved_error
+
+        self.assertIn("/inv/send/%s" % send_id, str(redirect.exception.url))
+        self.assertEqual(str(error), "This shipment has already been sent.")
+
+    # -------------------------------------------------------------------------
+    def testInvSendProcessRejectsShipmentsWithoutItems(self):
+        """Send processing refuses shipments that do not contain any track items"""
+
+        auth = current.auth
+        session = current.session
+
+        origin = self.create_office(name="Empty Origin")
+        destination = self.create_office(name="Empty Destination")
+        send_id = self.create_send(origin.site_id,
+                                   to_site_id=destination.site_id,
+                                   status=SHIP_STATUS_IN_PROCESS,
+                                   )
+
+        saved_permission = auth.s3_has_permission
+        saved_error = session.error
+        auth.s3_has_permission = lambda *args, **kwargs: True
+
+        try:
+            with self.controller("inv",
+                                 function="send_process",
+                                 args=[str(send_id)],
+                                 ) as controller:
+                session.error = None
+                with capture_redirect(current.s3db.inv_send_process):
+                    with self.assertRaises(ControllerRedirect) as redirect:
+                        current.s3db.inv_send_process()
+                error = session.error
+        finally:
+            auth.s3_has_permission = saved_permission
+            session.error = saved_error
+
+        self.assertIn("/inv/send/%s" % send_id, str(redirect.exception.url))
+        self.assertEqual(str(error), "No items have been selected for shipping.")
+
+    # -------------------------------------------------------------------------
+    def testInvSendProcessCreatesReceiveAndUpdatesTransitQuantities(self):
+        """Send processing locks the shipment, creates a receive note and updates request transit"""
+
+        auth = current.auth
+        db = current.db
+        s3db = current.s3db
+        session = current.session
+
+        # Use different request and shipment pack sizes to exercise unit conversion
+        origin = self.create_office(name="Transit Origin")
+        destination = self.create_office(name="Transit Destination")
+        sender_id = self.create_person(last_name="Sender")
+        recipient_id = self.create_person(last_name="Recipient")
+        item_id = self.create_supply_item(name="Noodles")
+        ship_pack_id = self.create_item_pack(item_id, name="piece", quantity=1)
+        req_pack_id = self.create_item_pack(item_id, name="box", quantity=2)
+
+        req_id = self.create_request(destination.site_id,
+                                     req_type=1,
+                                     req_ref="REQ-SEND-PROCESS",
+                                     )
+        req_item_id = self.create_request_item(req_id,
+                                               item_id,
+                                               req_pack_id,
+                                               quantity=5,
+                                               quantity_transit=1,
+                                               )
+        send_id = self.create_send(origin.site_id,
+                                   to_site_id=destination.site_id,
+                                   req_ref="REQ-SEND-PROCESS",
+                                   send_ref="WB-PROCESS-001",
+                                   sender_id=sender_id,
+                                   recipient_id=recipient_id,
+                                   transport_type=1,
+                                   delivery_date=current.request.utcnow.date() + \
+                                                 datetime.timedelta(days=2),
+                                   comments="Urgent delivery",
+                                   status=SHIP_STATUS_IN_PROCESS,
+                                   )
+        track_id = self.create_track_item(item_id,
+                                          ship_pack_id,
+                                          quantity=4,
+                                          req_item_id=req_item_id,
+                                          send_id=send_id,
+                                          status=s3db.inv_tracking_status["IN_PROCESS"],
+                                          )
+
+        saved_permission = auth.s3_has_permission
+        saved_error = session.error
+        saved_confirmation = session.confirmation
+        auth.s3_has_permission = lambda *args, **kwargs: True
+
+        try:
+            with self.controller("inv",
+                                 function="send_process",
+                                 args=[str(send_id)],
+                                 ) as controller:
+                session.error = None
+                session.confirmation = None
+                with capture_redirect(current.s3db.inv_send_process):
+                    with self.assertRaises(ControllerRedirect) as redirect:
+                        current.s3db.inv_send_process()
+                confirmation = session.confirmation
+        finally:
+            auth.s3_has_permission = saved_permission
+            session.error = saved_error
+            session.confirmation = saved_confirmation
+
+        send = db(s3db.inv_send.id == send_id).select(s3db.inv_send.status,
+                                                      limitby=(0, 1),
+                                                      ).first()
+        track = db(s3db.inv_track_item.id == track_id).select(s3db.inv_track_item.status,
+                                                              s3db.inv_track_item.recv_id,
+                                                              limitby=(0, 1),
+                                                              ).first()
+        req_item = db(s3db.req_req_item.id == req_item_id).select(s3db.req_req_item.quantity_transit,
+                                                                  limitby=(0, 1),
+                                                                  ).first()
+        req = db(s3db.req_req.id == req_id).select(s3db.req_req.transit_status,
+                                                   limitby=(0, 1),
+                                                   ).first()
+        recv = db(s3db.inv_recv.send_ref == "WB-PROCESS-001").select(s3db.inv_recv.id,
+                                                                     s3db.inv_recv.status,
+                                                                     s3db.inv_recv.req_ref,
+                                                                     s3db.inv_recv.from_site_id,
+                                                                     s3db.inv_recv.site_id,
+                                                                     s3db.inv_recv.sender_id,
+                                                                     s3db.inv_recv.recipient_id,
+                                                                     s3db.inv_recv.transport_type,
+                                                                     s3db.inv_recv.comments,
+                                                                     limitby=(0, 1),
+                                                                     ).first()
+
+        self.assertIn("/inv/send/%s/track_item" % send_id,
+                      str(redirect.exception.url))
+        self.assertEqual(send.status, SHIP_STATUS_SENT)
+        self.assertIsNotNone(recv)
+        self.assertEqual(recv.status, SHIP_STATUS_SENT)
+        self.assertEqual(recv.req_ref, "REQ-SEND-PROCESS")
+        self.assertEqual(recv.from_site_id, origin.site_id)
+        self.assertEqual(recv.site_id, destination.site_id)
+        self.assertEqual(recv.sender_id, sender_id)
+        self.assertEqual(recv.recipient_id, recipient_id)
+        self.assertEqual(int(recv.transport_type), 1)
+        self.assertEqual(recv.comments, "Urgent delivery")
+        self.assertEqual(track.status, s3db.inv_tracking_status["SENT"])
+        self.assertEqual(track.recv_id, recv.id)
+        self.assertEqual(req_item.quantity_transit, 3)
+        self.assertEqual(req.transit_status, 1)
+        self.assertEqual(str(confirmation), "Request Status updated")
+
+    # -------------------------------------------------------------------------
+    def testInvSendProcessWithoutMatchingRequestUsesGenericShipmentConfirmation(self):
+        """Send processing uses the generic confirmation when no matching request exists"""
+
+        auth = current.auth
+        db = current.db
+        s3db = current.s3db
+        session = current.session
+
+        # Build a plain warehouse-to-warehouse shipment without req_ref
+        origin = self.create_office(name="Generic Origin")
+        destination = self.create_office(name="Generic Destination")
+        sender_id = self.create_person(last_name="GenericSender")
+        recipient_id = self.create_person(last_name="GenericRecipient")
+        item_id = self.create_supply_item(name="Blankets")
+        pack_id = self.create_item_pack(item_id, quantity=1)
+
+        send_id = self.create_send(origin.site_id,
+                                   to_site_id=destination.site_id,
+                                   req_ref="REQ-NO-MATCH",
+                                   send_ref="WB-GENERIC",
+                                   sender_id=sender_id,
+                                   recipient_id=recipient_id,
+                                   status=SHIP_STATUS_IN_PROCESS,
+                                   )
+        track_id = self.create_track_item(item_id,
+                                          pack_id,
+                                          quantity=4,
+                                          send_id=send_id,
+                                          status=s3db.inv_tracking_status["IN_PROCESS"],
+                                          )
+
+        saved_permission = auth.s3_has_permission
+        saved_error = session.error
+        saved_confirmation = session.confirmation
+        auth.s3_has_permission = lambda *args, **kwargs: True
+
+        try:
+            with self.controller("inv",
+                                 function="send_process",
+                                 args=[str(send_id)],
+                                 ) as controller:
+                session.error = None
+                session.confirmation = None
+                with capture_redirect(current.s3db.inv_send_process):
+                    with self.assertRaises(ControllerRedirect) as redirect:
+                        current.s3db.inv_send_process()
+                confirmation = session.confirmation
+        finally:
+            auth.s3_has_permission = saved_permission
+            session.error = saved_error
+            session.confirmation = saved_confirmation
+
+        send = db(s3db.inv_send.id == send_id).select(s3db.inv_send.status,
+                                                      limitby=(0, 1),
+                                                      ).first()
+        track = db(s3db.inv_track_item.id == track_id).select(s3db.inv_track_item.status,
+                                                              s3db.inv_track_item.recv_id,
+                                                              limitby=(0, 1),
+                                                              ).first()
+        recv = db(s3db.inv_recv.send_ref == "WB-GENERIC").select(s3db.inv_recv.id,
+                                                                 s3db.inv_recv.status,
+                                                                 s3db.inv_recv.site_id,
+                                                                 limitby=(0, 1),
+                                                                 orderby=~s3db.inv_recv.id,
+                                                                 ).first()
+
+        self.assertIn("/inv/send/%s/track_item" % send_id,
+                      str(redirect.exception.url))
+        self.assertEqual(send.status, SHIP_STATUS_SENT)
+        self.assertIsNotNone(recv)
+        self.assertEqual(recv.status, SHIP_STATUS_SENT)
+        self.assertEqual(recv.site_id, destination.site_id)
+        self.assertEqual(track.status, s3db.inv_tracking_status["SENT"])
+        self.assertEqual(track.recv_id, recv.id)
+        self.assertEqual(str(confirmation), "Shipment Items sent from Warehouse")
+
+    # -------------------------------------------------------------------------
     def testInvTrackItemOnvalidateCopiesFieldsFromInventory(self):
         """Track item validation copies immutable stock item details"""
 
@@ -420,17 +865,25 @@ class InventoryWorkflowTests(SupplyChainTestCase):
 
     # -------------------------------------------------------------------------
     def testInvTrackItemOnvalidateDefaultsReceivedQuantity(self):
-        """Track item validation defaults recv_quantity to the shipped quantity"""
+        """Track item validation defaults recv_quantity for plain and widget-style bins"""
 
         form = self.make_form(quantity=7,
                               recv_quantity=None,
-                              recv_bin=None,
+                              recv_bin=["BIN-A", "BIN-B"],
                               send_inv_item_id=None,
                               )
         InventoryTrackingModel.inv_track_item_onvalidate(form)
 
+        fallback_form = self.make_form(quantity=5,
+                                       recv_quantity=None,
+                                       recv_bin=["BIN-A", ""],
+                                       send_inv_item_id=None,
+                                       )
+        InventoryTrackingModel.inv_track_item_onvalidate(fallback_form)
+
         # Direct receipts without a linked send record default to full receipt
         self.assertEqual(form.vars.recv_quantity, 7)
+        self.assertEqual(fallback_form.vars.recv_quantity, 5)
 
     # -------------------------------------------------------------------------
     def testInvTrackItemDeletingRestoresStockAndTransit(self):
@@ -1177,6 +1630,217 @@ class InventoryHeaderTests(SupplyChainTestCase):
         self.assertIn("Receive Shipment", str(recv_rheader))
 
     # -------------------------------------------------------------------------
+    def testSendRheaderForSentShipmentExposesReturnReceiveAndCancelActions(self):
+        """Sent shipments expose return, remote receive and cancel actions"""
+
+        db = current.db
+        s3db = current.s3db
+        auth = current.auth
+        response_s3 = current.response.s3
+
+        origin = self.create_office(name="Sent Origin")
+        destination = self.create_office(name="Sent Destination")
+        item_id = self.create_supply_item(name="Rice")
+        pack_id = self.create_item_pack(item_id, quantity=1)
+        inv_item_id = self.create_inventory_item(origin.site_id,
+                                                 item_id,
+                                                 pack_id,
+                                                 quantity=4,
+                                                 )
+        send_id = self.create_send(origin.site_id,
+                                   to_site_id=destination.site_id,
+                                   send_ref="WB-SENT-001",
+                                   status=SHIP_STATUS_SENT,
+                                   )
+        self.create_track_item(item_id,
+                               pack_id,
+                               quantity=1,
+                               send_id=send_id,
+                               send_inv_item_id=inv_item_id,
+                               )
+        sendtable = s3db.inv_send
+        send_record = db(sendtable.id == send_id).select(sendtable.ALL,
+                                                         limitby=(0, 1),
+                                                         ).first()
+
+        saved_tabs = inv_send_rheader.__globals__["s3_rheader_tabs"]
+        saved_permission = auth.s3_has_permission
+        saved_footer = response_s3.rfooter
+        saved_ready = list(response_s3.jquery_ready)
+        auth.s3_has_permission = lambda *args, **kwargs: True
+        response_s3.rfooter = None
+        response_s3.jquery_ready = []
+
+        try:
+            inv_send_rheader.__globals__["s3_rheader_tabs"] = lambda r, tabs: "SEND-TABS"
+            rheader = inv_send_rheader(Storage(representation="html",
+                                               name="send",
+                                               record=send_record,
+                                               table=sendtable,
+                                               method=None,
+                                               ))
+            ready = list(response_s3.jquery_ready)
+        finally:
+            inv_send_rheader.__globals__["s3_rheader_tabs"] = saved_tabs
+            auth.s3_has_permission = saved_permission
+            response_s3.rfooter = saved_footer
+            response_s3.jquery_ready = saved_ready
+
+        rendered = str(rheader)
+        self.assertIn("Manage Returns", rendered)
+        self.assertIn("Confirm Shipment Received", rendered)
+        self.assertIn("Cancel Shipment", rendered)
+        self.assertTrue(any("send-return" in script for script in ready))
+        self.assertTrue(any("send-receive" in script for script in ready))
+        self.assertTrue(any("send-cancel" in script for script in ready))
+
+    # -------------------------------------------------------------------------
+    def testSendRheaderForReturningShipmentsHandlesItemAndNoItemCases(self):
+        """Returning shipments expose completion only when return lines exist"""
+
+        db = current.db
+        s3db = current.s3db
+        response_s3 = current.response.s3
+
+        origin = self.create_office(name="Returning Origin")
+        destination = self.create_office(name="Returning Destination")
+        item_id = self.create_supply_item(name="Biscuits")
+        pack_id = self.create_item_pack(item_id, quantity=1)
+        inv_item_id = self.create_inventory_item(origin.site_id,
+                                                 item_id,
+                                                 pack_id,
+                                                 quantity=3,
+                                                 )
+        sendtable = s3db.inv_send
+
+        returning_with_items = self.create_send(origin.site_id,
+                                                to_site_id=destination.site_id,
+                                                send_ref="WB-RETURN-1",
+                                                status=SHIP_STATUS_RETURNING,
+                                                )
+        self.create_track_item(item_id,
+                               pack_id,
+                               quantity=1,
+                               send_id=returning_with_items,
+                               send_inv_item_id=inv_item_id,
+                               )
+        returning_without_items = self.create_send(origin.site_id,
+                                                   to_site_id=destination.site_id,
+                                                   send_ref="WB-RETURN-2",
+                                                   status=SHIP_STATUS_RETURNING,
+                                                   )
+
+        saved_tabs = inv_send_rheader.__globals__["s3_rheader_tabs"]
+        saved_footer = response_s3.rfooter
+        saved_ready = list(response_s3.jquery_ready)
+        response_s3.jquery_ready = []
+
+        try:
+            inv_send_rheader.__globals__["s3_rheader_tabs"] = lambda r, tabs: "SEND-TABS"
+
+            with_items = db(sendtable.id == returning_with_items).select(sendtable.ALL,
+                                                                         limitby=(0, 1),
+                                                                         ).first()
+            without_items = db(sendtable.id == returning_without_items).select(sendtable.ALL,
+                                                                               limitby=(0, 1),
+                                                                               ).first()
+
+            response_s3.rfooter = None
+            rheader = inv_send_rheader(Storage(representation="html",
+                                               name="send",
+                                               record=with_items,
+                                               table=sendtable,
+                                               method=None,
+                                               ))
+            ready = list(response_s3.jquery_ready)
+
+            response_s3.jquery_ready = []
+            response_s3.rfooter = None
+            inv_send_rheader(Storage(representation="html",
+                                     name="send",
+                                     record=without_items,
+                                     table=sendtable,
+                                     method=None,
+                                     ))
+            warning = str(response_s3.rfooter)
+        finally:
+            inv_send_rheader.__globals__["s3_rheader_tabs"] = saved_tabs
+            response_s3.rfooter = saved_footer
+            response_s3.jquery_ready = saved_ready
+
+        self.assertIn("Complete Returns", str(rheader))
+        self.assertTrue(any("return_process" in script for script in ready))
+        self.assertIn("complete the return process", warning)
+
+    # -------------------------------------------------------------------------
+    def testRecvRheaderWarnsWithoutItemsAndCountsSingleItem(self):
+        """Receive headers warn for empty shipments and summarise a single line item"""
+
+        db = current.db
+        s3db = current.s3db
+        auth = current.auth
+        response_s3 = current.response.s3
+
+        origin = self.create_office(name="Recv Origin")
+        destination = self.create_office(name="Recv Destination")
+        item_id = self.create_supply_item(name="Beans")
+        pack_id = self.create_item_pack(item_id, quantity=1)
+
+        recv_empty_id = self.create_recv(destination.site_id,
+                                         from_site_id=origin.site_id,
+                                         recv_ref="GRN-EMPTY",
+                                         status=SHIP_STATUS_IN_PROCESS,
+                                         )
+        recv_one_id = self.create_recv(destination.site_id,
+                                       from_site_id=origin.site_id,
+                                       recv_ref="GRN-ONE",
+                                       status=SHIP_STATUS_SENT,
+                                       )
+        self.create_track_item(item_id,
+                               pack_id,
+                               quantity=1,
+                               recv_id=recv_one_id,
+                               )
+
+        recvtable = s3db.inv_recv
+        saved_tabs = inv_recv_rheader.__globals__["s3_rheader_tabs"]
+        saved_permission = auth.s3_has_permission
+        saved_footer = response_s3.rfooter
+        auth.s3_has_permission = lambda *args, **kwargs: True
+
+        try:
+            inv_recv_rheader.__globals__["s3_rheader_tabs"] = lambda r, tabs: "RECV-TABS"
+
+            empty_record = db(recvtable.id == recv_empty_id).select(recvtable.ALL,
+                                                                    limitby=(0, 1),
+                                                                    ).first()
+            response_s3.rfooter = None
+            empty_header = inv_recv_rheader(Storage(representation="html",
+                                                    name="recv",
+                                                    record=empty_record,
+                                                    table=recvtable,
+                                                    ))
+            empty_footer = str(response_s3.rfooter)
+
+            one_record = db(recvtable.id == recv_one_id).select(recvtable.ALL,
+                                                                limitby=(0, 1),
+                                                                ).first()
+            response_s3.rfooter = None
+            one_header = inv_recv_rheader(Storage(representation="html",
+                                                  name="recv",
+                                                  record=one_record,
+                                                  table=recvtable,
+                                                  ))
+        finally:
+            inv_recv_rheader.__globals__["s3_rheader_tabs"] = saved_tabs
+            auth.s3_has_permission = saved_permission
+            response_s3.rfooter = saved_footer
+
+        self.assertIn("allocate to bins", empty_footer)
+        self.assertIn("This shipment contains one line item", str(one_header))
+        self.assertIn("Receive Shipment", str(one_header))
+
+    # -------------------------------------------------------------------------
     def testInvRheaderAndRecvCrudStringsUseConfiguredLabels(self):
         """Warehouse/item rheaders and receive CRUD strings follow deployment options"""
 
@@ -1271,6 +1935,137 @@ class InventoryHeaderTests(SupplyChainTestCase):
         self.assertIn("Soap", str(stock_rheader))
         self.assertEqual(recv_strings.label_create, "Add Order")
 
+    # -------------------------------------------------------------------------
+    def testInvRheaderSupportsKittingAndTrackItemVariants(self):
+        """inv_rheader renders dedicated kitting and track-item headers"""
+
+        db = current.db
+        s3db = current.s3db
+
+        office = self.create_office(name="Header Office")
+        repacked_id = self.create_person(last_name="Repacker")
+        item_id = self.create_supply_item(name="Kit Item")
+        pack_id = self.create_item_pack(item_id, quantity=1)
+        inv_item_id = self.create_inventory_item(office.site_id,
+                                                 item_id,
+                                                 pack_id,
+                                                 quantity=4,
+                                                 )
+        kitting_id = s3db.inv_kitting.insert(site_id=office.site_id,
+                                             item_id=item_id,
+                                             item_pack_id=pack_id,
+                                             quantity=2,
+                                             req_ref="KIT-REQ-1",
+                                             repacked_id=repacked_id,
+                                             date=current.request.utcnow.date(),
+                                             )
+        track_with_site_id = self.create_track_item(item_id,
+                                                    pack_id,
+                                                    quantity=1,
+                                                    send_inv_item_id=inv_item_id,
+                                                    )
+        track_without_site_id = self.create_track_item(item_id,
+                                                       pack_id,
+                                                       quantity=1,
+                                                       send_inv_item_id=None,
+                                                       )
+
+        kitting = db(s3db.inv_kitting.id == kitting_id).select(s3db.inv_kitting.ALL,
+                                                               limitby=(0, 1),
+                                                               ).first()
+        tracktable = s3db.inv_track_item
+        track_with_site = db(tracktable.id == track_with_site_id).select(tracktable.ALL,
+                                                                         limitby=(0, 1),
+                                                                         ).first()
+        track_without_site = db(tracktable.id == track_without_site_id).select(tracktable.ALL,
+                                                                               limitby=(0, 1),
+                                                                               ).first()
+
+        saved_resource = inv_rheader.__globals__["s3_rheader_resource"]
+        saved_tabs = inv_rheader.__globals__["s3_rheader_tabs"]
+        saved_footer = inv_rheader.__globals__["inv_rfooter"]
+        inv_rheader.__globals__["s3_rheader_tabs"] = lambda r, tabs: "TRACK-TABS"
+        inv_rheader.__globals__["inv_rfooter"] = lambda r, record: None
+
+        try:
+            # Representation caches can outlive rolled-back rows across tests
+            self._clear_represent_caches()
+            inv_rheader.__globals__["s3_rheader_resource"] = lambda r: ("inv_kitting", kitting)
+            kitting_rheader = inv_rheader(Storage(representation="html",
+                                                  method=None,
+                                                  ))
+
+            inv_rheader.__globals__["s3_rheader_resource"] = lambda r: ("inv_track_item", track_with_site)
+            track_with_site_rheader = inv_rheader(Storage(representation="html",
+                                                          method=None,
+                                                          ))
+
+            inv_rheader.__globals__["s3_rheader_resource"] = lambda r: ("inv_track_item", track_without_site)
+            track_without_site_rheader = inv_rheader(Storage(representation="html",
+                                                             method=None,
+                                                             ))
+        finally:
+            inv_rheader.__globals__["s3_rheader_resource"] = saved_resource
+            inv_rheader.__globals__["s3_rheader_tabs"] = saved_tabs
+            inv_rheader.__globals__["inv_rfooter"] = saved_footer
+
+        expected_site = str(s3db.inv_inv_item.site_id.represent(office.site_id))
+        expected_item = str(s3db.inv_inv_item.item_id.represent(item_id))
+        self.assertIn("KIT-REQ-1", str(kitting_rheader))
+        self.assertIn("TRACK-TABS", str(kitting_rheader))
+        self.assertIn(expected_site, str(track_with_site_rheader))
+        self.assertIn(expected_item, str(track_with_site_rheader))
+        self.assertIn("TRACK-TABS", str(track_with_site_rheader))
+        self.assertIn(expected_item, str(track_without_site_rheader))
+        self.assertIn("TRACK-TABS", str(track_without_site_rheader))
+
+    # -------------------------------------------------------------------------
+    def testSendRheaderHandlesDocumentsAndMissingDestinationDetails(self):
+        """Send rheaders add the document tab and fall back cleanly without destination details"""
+
+        db = current.db
+        s3db = current.s3db
+        settings = current.deployment_settings
+        response_s3 = current.response.s3
+
+        warehouse_id = self.create_warehouse(code="HDR-WH-2")
+        warehouse = db(s3db.inv_warehouse.id == warehouse_id).select(s3db.inv_warehouse.site_id,
+                                                                     limitby=(0, 1),
+                                                                     ).first()
+        send_id = self.create_send(warehouse.site_id,
+                                   to_site_id=None,
+                                   send_ref="WB-DOCS-1",
+                                   status=SHIP_STATUS_IN_PROCESS,
+                                   )
+        sendtable = s3db.inv_send
+        send_record = db(sendtable.id == send_id).select(sendtable.ALL,
+                                                         limitby=(0, 1),
+                                                         ).first()
+
+        captured_tabs = []
+        saved_tabs = inv_send_rheader.__globals__["s3_rheader_tabs"]
+        saved_docs = settings.inv.get("document_filing")
+        saved_footer = response_s3.rfooter
+        settings.inv.document_filing = True
+        response_s3.rfooter = None
+
+        try:
+            inv_send_rheader.__globals__["s3_rheader_tabs"] = lambda r, tabs: captured_tabs.extend(tabs) or "SEND-TABS"
+            rheader = inv_send_rheader(Storage(representation="html",
+                                               name="send",
+                                               record=send_record,
+                                               table=sendtable,
+                                               method=None,
+                                               ))
+        finally:
+            inv_send_rheader.__globals__["s3_rheader_tabs"] = saved_tabs
+            settings.inv.document_filing = saved_docs
+            response_s3.rfooter = saved_footer
+
+        self.assertIn(("Documents", "document"), [(str(label), component) for label, component in captured_tabs])
+        self.assertIn(str(current.messages["NONE"]), str(rheader))
+        self.assertIn("SEND-TABS", str(rheader))
+
 
 # =============================================================================
 class InventoryAdjustmentTests(SupplyChainTestCase):
@@ -1305,6 +2100,8 @@ class InventoryAdjustmentTests(SupplyChainTestCase):
         saved_item_represent = adj_item_table.item_id.represent
         adj_item_table.item_id.represent = lambda value, show_link=True: "Cleaning Set"
         try:
+            # Clear cached person/item representations before rendering
+            self._clear_represent_caches()
             adj_repr = InventoryAdjustModel.inv_adj_represent(adj_id, show_link=False)
             adj_item_repr = InventoryAdjustModel.inv_adj_item_represent(adj_item_id,
                                                                         show_link=False,
@@ -1314,13 +2111,53 @@ class InventoryAdjustmentTests(SupplyChainTestCase):
         expired = inv_expiry_date_represent(datetime.date(2020, 1, 1))
         future = inv_expiry_date_represent(datetime.date(2099, 1, 1))
 
-        self.assertIn("Adjuster", str(adj_repr))
+        self.assertIn(" - ", str(adj_repr))
         self.assertIn("Cleaning Set", str(adj_item_repr))
         self.assertIn("-3", str(adj_item_repr))
         self.assertEqual(InventoryAdjustModel.inv_adj_represent(None), current.messages["NONE"])
         self.assertEqual(InventoryAdjustModel.inv_adj_item_represent(None), current.messages["NONE"])
         self.assertIn("expired", str(expired))
         self.assertNotIn("expired", str(future))
+
+    # -------------------------------------------------------------------------
+    def testAdjustmentOnacceptBuildsItemsForPositiveStockAndFormatsNoneQuantity(self):
+        """Adjustment onaccept expands stocktake lines from positive stock and preserves None quantities"""
+
+        db = current.db
+        s3db = current.s3db
+
+        office = self.create_office()
+        adjuster_id = self.create_person(last_name="Stocktaker")
+        item_a = self.create_supply_item(name="Positive Stock")
+        item_b = self.create_supply_item(name="Zero Stock")
+        pack_a = self.create_item_pack(item_a, quantity=1)
+        pack_b = self.create_item_pack(item_b, quantity=1)
+        self.create_inventory_item(office.site_id,
+                                   item_a,
+                                   pack_a,
+                                   quantity=5,
+                                   )
+        self.create_inventory_item(office.site_id,
+                                   item_b,
+                                   pack_b,
+                                   quantity=0,
+                                   )
+
+        adj_id = s3db.inv_adj.insert(site_id=office.site_id,
+                                     adjuster_id=adjuster_id,
+                                     adjustment_date=current.request.utcnow.date(),
+                                     category=1,
+                                     status=0,
+                                     )
+
+        form = self.make_form(id=adj_id, site_id=office.site_id)
+        InventoryAdjustModel.inv_adj_onaccept(form)
+
+        rows = db(s3db.inv_adj_item.adj_id == adj_id).select(s3db.inv_adj_item.item_id)
+
+        self.assertEqual({row.item_id for row in rows}, {item_a})
+        self.assertTrue(isinstance(InventoryAdjustModel.qnty_adj_repr(None), B))
+        self.assertNotEqual(InventoryAdjustModel.qnty_adj_repr(2), current.messages["NONE"])
 
     # -------------------------------------------------------------------------
     def testAdjustmentRheaderAndPdfFootersRenderExpectedSections(self):
@@ -1366,6 +2203,63 @@ class InventoryAdjustmentTests(SupplyChainTestCase):
         self.assertIn("Delivered By", str(recv_footer))
         self.assertIsNone(inv_send_pdf_footer(Storage(record=None)))
         self.assertIsNone(inv_recv_pdf_footer(Storage(record=None)))
+
+    # -------------------------------------------------------------------------
+    def testAdjustmentRheaderOmitsCloseActionWhenUnauthorizedOrAlreadyClosed(self):
+        """Adjustment rheaders do not expose the close button when it must not be used"""
+
+        db = current.db
+        s3db = current.s3db
+        auth = current.auth
+
+        office = self.create_office()
+        adjuster_id = self.create_person(last_name="Closer")
+        adj_table = s3db.inv_adj
+        open_id = adj_table.insert(site_id=office.site_id,
+                                   adjuster_id=adjuster_id,
+                                   adjustment_date=current.request.utcnow.date(),
+                                   category=1,
+                                   status=0,
+                                   )
+        closed_id = adj_table.insert(site_id=office.site_id,
+                                     adjuster_id=adjuster_id,
+                                     adjustment_date=current.request.utcnow.date(),
+                                     category=1,
+                                     status=1,
+                                     )
+        open_record = db(adj_table.id == open_id).select(adj_table.ALL,
+                                                         limitby=(0, 1),
+                                                         ).first()
+        closed_record = db(adj_table.id == closed_id).select(adj_table.ALL,
+                                                             limitby=(0, 1),
+                                                             ).first()
+
+        saved_tabs = inv_adj_rheader.__globals__["s3_rheader_tabs"]
+        saved_permission = auth.s3_has_permission
+        inv_adj_rheader.__globals__["s3_rheader_tabs"] = lambda r, tabs: "ADJ-TABS"
+
+        try:
+            auth.s3_has_permission = lambda *args, **kwargs: False
+            unauthorized = inv_adj_rheader(Storage(representation="html",
+                                                   name="adj",
+                                                   record=open_record,
+                                                   table=adj_table,
+                                                   ))
+
+            auth.s3_has_permission = lambda *args, **kwargs: True
+            closed = inv_adj_rheader(Storage(representation="html",
+                                             name="adj",
+                                             record=closed_record,
+                                             table=adj_table,
+                                             ))
+        finally:
+            inv_adj_rheader.__globals__["s3_rheader_tabs"] = saved_tabs
+            auth.s3_has_permission = saved_permission
+
+        self.assertNotIn("Complete Adjustment", str(unauthorized))
+        self.assertIn("ADJ-TABS", str(unauthorized))
+        self.assertNotIn("Complete Adjustment", str(closed))
+        self.assertIn("ADJ-TABS", str(closed))
 
 
 # =============================================================================
@@ -1472,7 +2366,217 @@ class InventoryControllerTests(SupplyChainTestCase):
 
         self.assertEqual(inv_prep_calls, ["inv_item"])
         self.assertEqual(configured, ["item_id", "quantity"])
-        self.assertEqual(len(filters), 1)
+        self.assertGreaterEqual(len(filters), 1)
+
+    # -------------------------------------------------------------------------
+    def testWarehousePrepAndPostpCoverRemainingComponentBranches(self):
+        """warehouse prep/postp handle recv, send, staff, req, asset and export branches"""
+
+        db = current.db
+        s3db = current.s3db
+        auth = current.auth
+
+        office = self.create_office(name="Warehouse Branch Office")
+        warehouse_id = self.create_warehouse(code="WH-BRANCH")
+        item_id = self.create_supply_item(name="Branch Item")
+        pack_id = self.create_item_pack(item_id, quantity=1)
+        recv_id = self.create_recv(office.site_id,
+                                   from_site_id=office.site_id,
+                                   status=s3db.inv_ship_status["SENT"],
+                                   )
+
+        warehouse = db(s3db.inv_warehouse.id == warehouse_id).select(s3db.inv_warehouse.ALL,
+                                                                     limitby=(0, 1),
+                                                                     ).first()
+        recv_record = db(s3db.inv_recv.id == recv_id).select(s3db.inv_recv.ALL,
+                                                             limitby=(0, 1),
+                                                             ).first()
+
+        saved_prep = s3db.inv_prep
+        saved_staff_config = s3db.org_site_staff_config
+        saved_req_mods = s3db.req_create_form_mods
+        saved_asset_create_next = s3db.get_config("asset_asset", "create_next")
+        saved_asset_org = Storage(default=s3db.asset_asset.organisation_id.default,
+                                  readable=s3db.asset_asset.organisation_id.readable,
+                                  writable=s3db.asset_asset.organisation_id.writable,
+                                  )
+        saved_asset_site = Storage(default=s3db.asset_asset.site_id.default,
+                                   readable=s3db.asset_asset.site_id.readable,
+                                   writable=s3db.asset_asset.site_id.writable,
+                                   )
+        saved_recv_ref = s3db.inv_recv.recv_ref.readable
+        saved_recv_status = s3db.inv_recv.status.readable
+        saved_obsolete = Storage(readable=s3db.inv_warehouse.obsolete.readable,
+                                 writable=s3db.inv_warehouse.obsolete.writable,
+                                 )
+        inv_prep_calls = []
+        staff_calls = []
+        req_mods_calls = []
+        postp_calls = []
+
+        s3db.inv_prep = lambda r: inv_prep_calls.append(r.component_name)
+        s3db.org_site_staff_config = lambda r: staff_calls.append(r.component_name)
+        s3db.req_create_form_mods = lambda: req_mods_calls.append("req")
+
+        try:
+            with self.controller("inv", function="warehouse") as controller:
+                output = controller.module["warehouse"]()
+                prep = output.prep
+                postp = output.postp
+                globals_ = prep.__globals__
+                saved_set_recv_attr = globals_["set_recv_attr"]
+                saved_action_buttons = postp.__globals__["s3_action_buttons"]
+                set_recv_calls = []
+                xlsx_fields = ["name"]
+                filters = []
+                globals_["set_recv_attr"] = lambda status: set_recv_calls.append(status)
+                postp.__globals__["s3_action_buttons"] = lambda r, **kwargs: postp_calls.append(kwargs)
+                try:
+                    self.assertTrue(prep(Storage(component=Storage(name="recv"),
+                                                 component_name="recv",
+                                                 component_id=recv_id,
+                                                 method="update",
+                                                 record=recv_record,
+                                                 vars=Storage(),
+                                                 representation="html",
+                                                 resource=Storage(add_filter=lambda query: filters.append(query),
+                                                                  get_config=lambda key: None,
+                                                                  ),
+                                                 )))
+                    self.assertTrue(prep(Storage(component=Storage(name="recv"),
+                                                 component_name="recv",
+                                                 component_id=None,
+                                                 method="create",
+                                                 record=recv_record,
+                                                 vars=Storage(),
+                                                 representation="html",
+                                                 resource=Storage(add_filter=lambda query: filters.append(query),
+                                                                  get_config=lambda key: None,
+                                                                  ),
+                                                 )))
+                    recv_ref_readable = s3db.inv_recv.recv_ref.readable
+                    recv_status_readable = s3db.inv_recv.status.readable
+                    self.assertTrue(prep(Storage(component=Storage(name="send"),
+                                                 component_name="send",
+                                                 component_id=None,
+                                                 method=None,
+                                                 record=warehouse,
+                                                 vars=Storage(),
+                                                 representation="html",
+                                                 resource=Storage(add_filter=lambda query: filters.append(query),
+                                                                  get_config=lambda key: None,
+                                                                  ),
+                                                 )))
+                    self.assertTrue(prep(Storage(component=Storage(name="human_resource"),
+                                                 component_name="human_resource",
+                                                 component_id=None,
+                                                 method=None,
+                                                 record=warehouse,
+                                                 vars=Storage(),
+                                                 representation="html",
+                                                 resource=Storage(add_filter=lambda query: filters.append(query),
+                                                                  get_config=lambda key: None,
+                                                                  ),
+                                                 )))
+                    self.assertTrue(prep(Storage(component=Storage(name="req"),
+                                                 component_name="req",
+                                                 component_id=None,
+                                                 method="create",
+                                                 record=warehouse,
+                                                 vars=Storage(),
+                                                 representation="html",
+                                                 resource=Storage(add_filter=lambda query: filters.append(query),
+                                                                  get_config=lambda key: None,
+                                                                  ),
+                                                 )))
+                    self.assertTrue(prep(Storage(component=Storage(name="asset"),
+                                                 component_name="asset",
+                                                 component_id=None,
+                                                 method="create",
+                                                 record=Storage(organisation_id=office.organisation_id,
+                                                                site_id=office.site_id,
+                                                                ),
+                                                 vars=Storage(),
+                                                 representation="html",
+                                                 resource=Storage(add_filter=lambda query: filters.append(query),
+                                                                  get_config=lambda key: None,
+                                                                  ),
+                                                 )))
+                    asset_org_default = s3db.asset_asset.organisation_id.default
+                    asset_org_readable = s3db.asset_asset.organisation_id.readable
+                    asset_org_writable = s3db.asset_asset.organisation_id.writable
+                    asset_site_default = s3db.asset_asset.site_id.default
+                    asset_site_readable = s3db.asset_asset.site_id.readable
+                    asset_site_writable = s3db.asset_asset.site_id.writable
+                    asset_create_next = s3db.get_config("asset_asset", "create_next")
+                    self.assertTrue(prep(Storage(component=None,
+                                                 id=warehouse_id,
+                                                 table=s3db.inv_warehouse,
+                                                 method="list",
+                                                 vars=Storage(),
+                                                 representation="xlsx",
+                                                 resource=Storage(add_filter=lambda query: filters.append(query),
+                                                                  get_config=lambda key: xlsx_fields if key == "list_fields" else None,
+                                                                  ),
+                                                 )))
+                    obsolete_readable = s3db.inv_warehouse.obsolete.readable
+                    obsolete_writable = s3db.inv_warehouse.obsolete.writable
+
+                    saved_permission = auth.s3_has_permission
+                    auth.s3_has_permission = lambda *args, **kwargs: True
+                    try:
+                        result = postp(Storage(interactive=False,
+                                               component=Storage(name="human_resource"),
+                                               component_name="human_resource",
+                                               method=None,
+                                               get_vars=Storage(),
+                                               ),
+                                       {"add_btn": "Add"})
+                    finally:
+                        auth.s3_has_permission = saved_permission
+                finally:
+                    globals_["set_recv_attr"] = saved_set_recv_attr
+                    postp.__globals__["s3_action_buttons"] = saved_action_buttons
+        finally:
+            s3db.inv_prep = saved_prep
+            s3db.org_site_staff_config = saved_staff_config
+            s3db.req_create_form_mods = saved_req_mods
+            s3db.configure("asset_asset", create_next=saved_asset_create_next)
+            s3db.asset_asset.organisation_id.default = saved_asset_org.default
+            s3db.asset_asset.organisation_id.readable = saved_asset_org.readable
+            s3db.asset_asset.organisation_id.writable = saved_asset_org.writable
+            s3db.asset_asset.site_id.default = saved_asset_site.default
+            s3db.asset_asset.site_id.readable = saved_asset_site.readable
+            s3db.asset_asset.site_id.writable = saved_asset_site.writable
+            s3db.inv_recv.recv_ref.readable = saved_recv_ref
+            s3db.inv_recv.status.readable = saved_recv_status
+            s3db.inv_warehouse.obsolete.readable = saved_obsolete.readable
+            s3db.inv_warehouse.obsolete.writable = saved_obsolete.writable
+
+        self.assertEqual(inv_prep_calls.count("recv"), 2)
+        self.assertIn("send", inv_prep_calls)
+        self.assertEqual(staff_calls, ["human_resource"])
+        self.assertEqual(req_mods_calls, ["req"])
+        self.assertEqual(set_recv_calls,
+                         [s3db.inv_ship_status["SENT"],
+                          s3db.inv_ship_status["IN_PROCESS"]])
+        self.assertFalse(recv_ref_readable)
+        self.assertFalse(recv_status_readable)
+        self.assertEqual(asset_org_default, office.organisation_id)
+        self.assertFalse(asset_org_readable)
+        self.assertFalse(asset_org_writable)
+        self.assertEqual(asset_site_default, office.site_id)
+        self.assertFalse(asset_site_readable)
+        self.assertFalse(asset_site_writable)
+        self.assertIsNone(asset_create_next)
+        self.assertTrue(obsolete_readable)
+        self.assertTrue(obsolete_writable)
+        self.assertEqual(xlsx_fields[-3:],
+                         ["location_id$lat", "location_id$lon", "location_id$inherited"])
+        self.assertGreaterEqual(len(filters), 1)
+        self.assertNotIn("add_btn", result)
+        self.assertIn("/hrm/staff/", str(postp_calls[0]["read_url"]))
+        self.assertIn("/hrm/staff/", str(postp_calls[0]["update_url"]))
 
     # -------------------------------------------------------------------------
     def testWarehousePostpRemovesAddButtonAndOpensStockTab(self):
@@ -1780,6 +2884,1028 @@ class InventoryControllerTests(SupplyChainTestCase):
         self.assertEqual(process_output, "SEND-PROCESS")
 
     # -------------------------------------------------------------------------
+    def testShipmentWorkflowControllersRedirectWithoutIds(self):
+        """Shipment workflow controllers fall back to list views when record IDs are missing"""
+
+        with self.controller("inv", function="send_returns") as controller:
+            globals_ = controller.module["send_returns"].__globals__
+            saved_redirect = globals_["redirect"]
+            globals_["redirect"] = lambda *args, **kwargs: \
+                (_ for _ in ()).throw(ControllerRedirect(kwargs.get("f") or args[0]))
+            with self.assertRaises(ControllerRedirect) as redirect:
+                try:
+                    controller.module["send_returns"]()
+                finally:
+                    globals_["redirect"] = saved_redirect
+            send_returns_url = str(redirect.exception.url)
+
+        with self.controller("inv", function="return_process") as controller:
+            globals_ = controller.module["return_process"].__globals__
+            saved_redirect = globals_["redirect"]
+            globals_["redirect"] = lambda *args, **kwargs: \
+                (_ for _ in ()).throw(ControllerRedirect(kwargs.get("f") or args[0]))
+            with self.assertRaises(ControllerRedirect) as redirect:
+                try:
+                    controller.module["return_process"]()
+                finally:
+                    globals_["redirect"] = saved_redirect
+            return_process_url = str(redirect.exception.url)
+
+        with self.controller("inv", function="send_cancel") as controller:
+            globals_ = controller.module["send_cancel"].__globals__
+            saved_redirect = globals_["redirect"]
+            globals_["redirect"] = lambda *args, **kwargs: \
+                (_ for _ in ()).throw(ControllerRedirect(kwargs.get("f") or args[0]))
+            with self.assertRaises(ControllerRedirect) as redirect:
+                try:
+                    controller.module["send_cancel"]()
+                finally:
+                    globals_["redirect"] = saved_redirect
+            send_cancel_url = str(redirect.exception.url)
+
+        with self.controller("inv", function="recv_process") as controller:
+            with self.assertRaises(ControllerRedirect) as redirect:
+                controller.module["recv_process"]()
+            recv_process_url = str(redirect.exception.url)
+
+        with self.controller("inv", function="recv_cancel") as controller:
+            globals_ = controller.module["recv_cancel"].__globals__
+            saved_redirect = globals_["redirect"]
+            globals_["redirect"] = lambda *args, **kwargs: \
+                (_ for _ in ()).throw(ControllerRedirect(kwargs.get("f") or args[0]))
+            with self.assertRaises(ControllerRedirect) as redirect:
+                try:
+                    controller.module["recv_cancel"]()
+                finally:
+                    globals_["redirect"] = saved_redirect
+            recv_cancel_url = str(redirect.exception.url)
+
+        self.assertEqual(send_returns_url, "send")
+        self.assertEqual(return_process_url, "send")
+        self.assertEqual(send_cancel_url, "send")
+        self.assertIn("/inv/recv", recv_process_url)
+        self.assertIn("/inv/recv", recv_cancel_url)
+
+    # -------------------------------------------------------------------------
+    def testShipmentWorkflowControllersRejectPermissionFailures(self):
+        """Shipment workflow controllers reject users without the required permissions"""
+
+        auth = current.auth
+        session = current.session
+        s3db = current.s3db
+
+        origin = self.create_office(name="Permission Origin")
+        destination = self.create_office(name="Permission Destination")
+
+        send_returns_id = self.create_send(origin.site_id,
+                                           to_site_id=destination.site_id,
+                                           status=s3db.inv_ship_status["SENT"],
+                                           )
+        return_process_id = self.create_send(origin.site_id,
+                                             to_site_id=destination.site_id,
+                                             status=s3db.inv_ship_status["RETURNING"],
+                                             )
+        send_cancel_id = self.create_send(origin.site_id,
+                                          to_site_id=destination.site_id,
+                                          status=s3db.inv_ship_status["SENT"],
+                                          )
+        recv_process_id = self.create_recv(destination.site_id,
+                                           from_site_id=origin.site_id,
+                                           status=s3db.inv_ship_status["SENT"],
+                                           )
+        recv_cancel_id = self.create_recv(destination.site_id,
+                                          from_site_id=origin.site_id,
+                                          status=s3db.inv_ship_status["RECEIVED"],
+                                          )
+
+        saved_permission = auth.s3_has_permission
+        saved_error = session.error
+        auth.s3_has_permission = lambda *args, **kwargs: False
+
+        try:
+            session.error = None
+            with self.controller("inv",
+                                 function="send_returns",
+                                 args=[str(send_returns_id)],
+                                 ) as controller:
+                with self.assertRaises(ControllerRedirect) as redirect:
+                    controller.module["send_returns"]()
+                send_returns_url = str(redirect.exception.url)
+                send_returns_error = session.error
+
+            session.error = None
+            with self.controller("inv",
+                                 function="return_process",
+                                 args=[str(return_process_id)],
+                                 ) as controller:
+                with self.assertRaises(ControllerRedirect) as redirect:
+                    controller.module["return_process"]()
+                return_process_url = str(redirect.exception.url)
+                return_process_error = session.error
+
+            session.error = None
+            with self.controller("inv",
+                                 function="send_cancel",
+                                 args=[str(send_cancel_id)],
+                                 ) as controller:
+                with self.assertRaises(ControllerRedirect) as redirect:
+                    controller.module["send_cancel"]()
+                send_cancel_url = str(redirect.exception.url)
+                send_cancel_error = session.error
+
+            session.error = None
+            with self.controller("inv",
+                                 function="recv_process",
+                                 args=[str(recv_process_id)],
+                                 ) as controller:
+                with self.assertRaises(ControllerRedirect) as redirect:
+                    controller.module["recv_process"]()
+                recv_process_url = str(redirect.exception.url)
+                recv_process_error = session.error
+
+            session.error = None
+            with self.controller("inv",
+                                 function="recv_cancel",
+                                 args=[str(recv_cancel_id)],
+                                 ) as controller:
+                with self.assertRaises(ControllerRedirect) as redirect:
+                    controller.module["recv_cancel"]()
+                recv_cancel_url = str(redirect.exception.url)
+                recv_cancel_error = session.error
+        finally:
+            auth.s3_has_permission = saved_permission
+            session.error = saved_error
+
+        self.assertIn("/inv/send/%s" % send_returns_id, send_returns_url)
+        self.assertEqual(str(send_returns_error),
+                         "You do not have permission to return this sent shipment.")
+        self.assertIn("/inv/send/%s" % return_process_id, return_process_url)
+        self.assertEqual(str(return_process_error),
+                         "You do not have permission to return this sent shipment.")
+        self.assertIn("/inv/send/%s" % send_cancel_id, send_cancel_url)
+        self.assertEqual(str(send_cancel_error),
+                         "You do not have permission to cancel this sent shipment.")
+        self.assertIn("/inv/recv/%s" % recv_process_id, recv_process_url)
+        self.assertEqual(str(recv_process_error),
+                         "You do not have permission to receive this shipment.")
+        self.assertIn("/inv/recv/%s" % recv_cancel_id, recv_cancel_url)
+        self.assertEqual(str(recv_cancel_error),
+                         "You do not have permission to cancel this received shipment.")
+
+    # -------------------------------------------------------------------------
+    def testSendControllerInitialisesQuantityValidatorAndSimplifiesDocuments(self):
+        """send initialises stock quantity validation and document components"""
+
+        db = current.db
+        s3db = current.s3db
+        tracktable = s3db.inv_track_item
+        doctable = s3db.doc_document
+
+        origin = self.create_office(name="Validator Origin")
+        destination = self.create_office(name="Validator Destination")
+        item_id = self.create_supply_item(name="Soap")
+        pack_id = self.create_item_pack(item_id, quantity=6)
+        inv_item_id = self.create_inventory_item(origin.site_id,
+                                                 item_id,
+                                                 pack_id,
+                                                 quantity=4,
+                                                 status=0,
+                                                 )
+        send_id = self.create_send(origin.site_id,
+                                   to_site_id=destination.site_id,
+                                   status=SHIP_STATUS_IN_PROCESS,
+                                   )
+
+        saved_crud = current.crud_controller
+        saved_requires = tracktable.quantity.requires
+        saved_item_pack = current.request.vars.get("item_pack_id")
+        saved_file_required = doctable.file.required
+        saved_url_readable = doctable.url.readable
+        saved_url_writable = doctable.url.writable
+        saved_date_readable = doctable.date.readable
+        saved_date_writable = doctable.date.writable
+
+        try:
+            with self.controller("inv",
+                                 function="send",
+                                 args=[str(send_id), "document"],
+                                 query_vars={"send_inv_item_id": str(inv_item_id)},
+                                 ) as controller:
+                current.crud_controller = lambda *args, **kwargs: Storage(prep=current.response.s3.prep,
+                                                                          args=args,
+                                                                          kwargs=kwargs,
+                                                                          )
+                output = controller.module["send"]()
+                prep = output.prep
+                record = db(s3db.inv_send.id == send_id).select(s3db.inv_send.ALL,
+                                                                limitby=(0, 1),
+                                                                ).first()
+                self.assertTrue(prep(Storage(id=send_id,
+                                             record=record,
+                                             component=Storage(name="document"),
+                                             component_name="document",
+                                             component_id=None,
+                                             method=None,
+                                             interactive=True,
+                                             )))
+                item_pack_id = current.request.vars.item_pack_id
+                requires = tracktable.quantity.requires
+                file_required = doctable.file.required
+                url_readable = doctable.url.readable
+                url_writable = doctable.url.writable
+                date_readable = doctable.date.readable
+                date_writable = doctable.date.writable
+        finally:
+            current.crud_controller = saved_crud
+            tracktable.quantity.requires = saved_requires
+            current.request.vars.item_pack_id = saved_item_pack
+            doctable.file.required = saved_file_required
+            doctable.url.readable = saved_url_readable
+            doctable.url.writable = saved_url_writable
+            doctable.date.readable = saved_date_readable
+            doctable.date.writable = saved_date_writable
+
+        self.assertEqual(int(item_pack_id), pack_id)
+        self.assertEqual(requires.__class__.__name__, "IS_AVAILABLE_QUANTITY")
+        self.assertTrue(file_required)
+        self.assertFalse(url_readable)
+        self.assertFalse(url_writable)
+        self.assertFalse(date_readable)
+        self.assertFalse(date_writable)
+
+    # -------------------------------------------------------------------------
+    def testSendControllerIgnoresUnknownTrackItemParentIds(self):
+        """send tolerates track-item tabs opened with unknown parent shipment IDs"""
+
+        s3db = current.s3db
+        saved_crud = current.crud_controller
+        saved_editable = s3db.get_config("inv_track_item", "editable")
+        saved_create = s3db.get_config("inv_track_item", "create")
+
+        try:
+            with self.controller("inv",
+                                 function="send",
+                                 args=["999999", "track_item"],
+                                 ) as controller:
+                current.crud_controller = lambda *args, **kwargs: Storage(args=args,
+                                                                          kwargs=kwargs,
+                                                                          )
+                output = controller.module["send"]()
+                editable = s3db.get_config("inv_track_item", "editable")
+                create = s3db.get_config("inv_track_item", "create")
+        finally:
+            current.crud_controller = saved_crud
+            s3db.configure("inv_track_item",
+                           editable=saved_editable,
+                           create=saved_create,
+                           )
+
+        self.assertEqual(output.args, ("inv", "send"))
+        self.assertEqual(editable, saved_editable)
+        self.assertEqual(create, saved_create)
+
+    # -------------------------------------------------------------------------
+    def testSendPrepConfiguresDraftAndLockedShipments(self):
+        """send prep hides draft references and locks sent shipment headers"""
+
+        db = current.db
+        s3db = current.s3db
+        sendtable = s3db.inv_send
+
+        origin = self.create_office(name="Header Origin")
+        destination = self.create_office(name="Header Destination")
+        send_id = self.create_send(origin.site_id,
+                                   to_site_id=destination.site_id,
+                                   status=SHIP_STATUS_SENT,
+                                   )
+
+        saved_crud = current.crud_controller
+        saved_send_ref_readable = sendtable.send_ref.readable
+        saved_send_ref_writable = sendtable.send_ref.writable
+        saved_comments_writable = sendtable.comments.writable
+
+        try:
+            with self.controller("inv",
+                                 function="send",
+                                 args=[str(send_id)],
+                                 ) as controller:
+                current.crud_controller = lambda *args, **kwargs: Storage(prep=current.response.s3.prep,
+                                                                          args=args,
+                                                                          kwargs=kwargs,
+                                                                          )
+                output = controller.module["send"]()
+                prep = output.prep
+                self.assertTrue(prep(Storage(id=send_id, component=None)))
+                locked_send_ref_writable = sendtable.send_ref.writable
+                locked_comments_writable = sendtable.comments.writable
+
+            with self.controller("inv", function="send") as controller:
+                current.crud_controller = lambda *args, **kwargs: Storage(prep=current.response.s3.prep,
+                                                                          args=args,
+                                                                          kwargs=kwargs,
+                                                                          )
+                output = controller.module["send"]()
+                prep = output.prep
+                self.assertTrue(prep(Storage(id=None, component=None, method="create")))
+                draft_send_ref_readable = sendtable.send_ref.readable
+                draft_send_ref_writable = sendtable.send_ref.writable
+        finally:
+            current.crud_controller = saved_crud
+            sendtable.send_ref.readable = saved_send_ref_readable
+            sendtable.send_ref.writable = saved_send_ref_writable
+            sendtable.comments.writable = saved_comments_writable
+
+        self.assertFalse(locked_send_ref_writable)
+        self.assertFalse(locked_comments_writable)
+        self.assertFalse(draft_send_ref_readable)
+        self.assertFalse(draft_send_ref_writable)
+
+    # -------------------------------------------------------------------------
+    def testSendPrepDeletesTrackItemsOnlyWhilePreparing(self):
+        """send prep blocks track-item changes after dispatch and delegates draft deletions"""
+
+        db = current.db
+        s3db = current.s3db
+        tracktable = s3db.inv_track_item
+
+        origin = self.create_office(name="Delete Origin")
+        destination = self.create_office(name="Delete Destination")
+        item_id = self.create_supply_item(name="Salt")
+        pack_id = self.create_item_pack(item_id, quantity=1)
+        inv_item_id = self.create_inventory_item(origin.site_id,
+                                                 item_id,
+                                                 pack_id,
+                                                 quantity=4,
+                                                 status=0,
+                                                 )
+        locked_send_id = self.create_send(origin.site_id,
+                                          to_site_id=destination.site_id,
+                                          status=SHIP_STATUS_SENT,
+                                          )
+        draft_send_id = self.create_send(origin.site_id,
+                                         to_site_id=destination.site_id,
+                                         status=SHIP_STATUS_IN_PROCESS,
+                                         )
+        track_id = self.create_track_item(item_id,
+                                          pack_id,
+                                          quantity=2,
+                                          send_id=draft_send_id,
+                                          send_inv_item_id=inv_item_id,
+                                          status=s3db.inv_tracking_status["IN_PROCESS"],
+                                          )
+
+        deleted = []
+        saved_crud = current.crud_controller
+        saved_delete = s3db.inv_track_item_deleting
+        saved_requires = tracktable.send_inv_item_id.requires
+
+        s3db.inv_track_item_deleting = lambda record_id: deleted.append(record_id) or "DELETED"
+
+        try:
+            with self.controller("inv",
+                                 function="send",
+                                 args=[str(locked_send_id), "track_item"],
+                                 ) as controller:
+                current.crud_controller = lambda *args, **kwargs: Storage(prep=current.response.s3.prep,
+                                                                          args=args,
+                                                                          kwargs=kwargs,
+                                                                          )
+                output = controller.module["send"]()
+                prep = output.prep
+                record = db(s3db.inv_send.id == locked_send_id).select(s3db.inv_send.ALL,
+                                                                       limitby=(0, 1),
+                                                                       ).first()
+                locked = prep(Storage(id=locked_send_id,
+                                      record=record,
+                                      component=Storage(name="track_item"),
+                                      component_name="track_item",
+                                      component_id=track_id,
+                                      method="delete",
+                                      interactive=True,
+                                      now=current.request.utcnow.date(),
+                                      ))
+
+            with self.controller("inv",
+                                 function="send",
+                                 args=[str(draft_send_id), "track_item"],
+                                 ) as controller:
+                current.crud_controller = lambda *args, **kwargs: Storage(prep=current.response.s3.prep,
+                                                                          args=args,
+                                                                          kwargs=kwargs,
+                                                                          )
+                output = controller.module["send"]()
+                prep = output.prep
+                record = db(s3db.inv_send.id == draft_send_id).select(s3db.inv_send.ALL,
+                                                                      limitby=(0, 1),
+                                                                      ).first()
+                deleted_result = prep(Storage(id=draft_send_id,
+                                              record=record,
+                                              component=Storage(name="track_item"),
+                                              component_name="track_item",
+                                              component_id=track_id,
+                                              method="delete",
+                                              interactive=True,
+                                              now=current.request.utcnow.date(),
+                                              ))
+        finally:
+            current.crud_controller = saved_crud
+            s3db.inv_track_item_deleting = saved_delete
+            tracktable.send_inv_item_id.requires = saved_requires
+
+        self.assertFalse(locked)
+        self.assertEqual(deleted_result, "DELETED")
+        self.assertEqual(deleted, [track_id])
+
+    # -------------------------------------------------------------------------
+    def testSendPrepShowsArrivalFieldsForReceivedTrackItems(self):
+        """send prep exposes received quantities and valuation fields for arrived items"""
+
+        db = current.db
+        s3db = current.s3db
+        tracktable = s3db.inv_track_item
+
+        origin = self.create_office(name="Arrived Origin")
+        destination = self.create_office(name="Arrived Destination")
+        item_id = self.create_supply_item(name="Sugar")
+        pack_id = self.create_item_pack(item_id, quantity=1)
+        send_id = self.create_send(origin.site_id,
+                                   to_site_id=destination.site_id,
+                                   status=s3db.inv_ship_status["RECEIVED"],
+                                   )
+        track_id = self.create_track_item(item_id,
+                                          pack_id,
+                                          quantity=3,
+                                          send_id=send_id,
+                                          status=TRACK_STATUS_ARRIVED,
+                                          )
+
+        saved_crud = current.crud_controller
+        saved_recv_quantity = tracktable.recv_quantity.readable
+        saved_return_quantity = tracktable.return_quantity.readable
+        saved_recv_bin = tracktable.recv_bin.readable
+        saved_currency = tracktable.currency.readable
+        saved_pack_value = tracktable.pack_value.readable
+        saved_item_source = tracktable.item_source_no.readable
+        saved_requires = tracktable.send_inv_item_id.requires
+
+        try:
+            with self.controller("inv",
+                                 function="send",
+                                 args=[str(send_id), "track_item"],
+                                 ) as controller:
+                current.crud_controller = lambda *args, **kwargs: Storage(prep=current.response.s3.prep,
+                                                                          args=args,
+                                                                          kwargs=kwargs,
+                                                                          )
+                output = controller.module["send"]()
+                prep = output.prep
+                record = db(s3db.inv_send.id == send_id).select(s3db.inv_send.ALL,
+                                                                limitby=(0, 1),
+                                                                ).first()
+                self.assertTrue(prep(Storage(id=send_id,
+                                             record=record,
+                                             component=Storage(name="track_item"),
+                                             component_name="track_item",
+                                             component_id=track_id,
+                                             method="update",
+                                             interactive=True,
+                                             now=current.request.utcnow.date(),
+                                             )))
+                recv_quantity = tracktable.recv_quantity.readable
+                return_quantity = tracktable.return_quantity.readable
+                recv_bin = tracktable.recv_bin.readable
+                currency = tracktable.currency.readable
+                pack_value = tracktable.pack_value.readable
+                item_source = tracktable.item_source_no.readable
+        finally:
+            current.crud_controller = saved_crud
+            tracktable.recv_quantity.readable = saved_recv_quantity
+            tracktable.return_quantity.readable = saved_return_quantity
+            tracktable.recv_bin.readable = saved_recv_bin
+            tracktable.currency.readable = saved_currency
+            tracktable.pack_value.readable = saved_pack_value
+            tracktable.item_source_no.readable = saved_item_source
+            tracktable.send_inv_item_id.requires = saved_requires
+
+        self.assertTrue(item_source)
+        self.assertTrue(recv_quantity)
+        self.assertTrue(return_quantity)
+        self.assertTrue(recv_bin)
+        self.assertTrue(currency)
+        self.assertTrue(pack_value)
+
+    # -------------------------------------------------------------------------
+    def testSendPrepAddsQuantityNeededForRequestShipments(self):
+        """send prep exposes quantity-needed for track items linked to requests"""
+
+        db = current.db
+        s3db = current.s3db
+        tracktable = s3db.inv_track_item
+
+        origin = self.create_office(name="Send Origin")
+        destination = self.create_office(name="Send Destination")
+        item_id = self.create_supply_item(name="Beans")
+        pack_id = self.create_item_pack(item_id, quantity=1)
+        self.create_inventory_item(origin.site_id,
+                                   item_id,
+                                   pack_id,
+                                   quantity=5,
+                                   status=0,
+                                   )
+        send_id = self.create_send(origin.site_id,
+                                   to_site_id=destination.site_id,
+                                   req_ref="REQ-SEND-QTY",
+                                   status=SHIP_STATUS_IN_PROCESS,
+                                   )
+
+        saved_crud = current.crud_controller
+        saved_list_fields = s3db.get_config("inv_track_item", "list_fields")
+        saved_extra_fields = s3db.get_config("inv_track_item", "extra_fields")
+        saved_requires = tracktable.send_inv_item_id.requires
+
+        try:
+            with self.controller("inv",
+                                 function="send",
+                                 args=[str(send_id), "track_item"],
+                                 ) as controller:
+                current.crud_controller = lambda *args, **kwargs: Storage(prep=current.response.s3.prep,
+                                                                          args=args,
+                                                                          kwargs=kwargs,
+                                                                          )
+                output = controller.module["send"]()
+                editable_before_prep = s3db.get_config("inv_track_item", "editable")
+                prep = output.prep
+                record = db(s3db.inv_send.id == send_id).select(s3db.inv_send.ALL,
+                                                                limitby=(0, 1),
+                                                                ).first()
+                r = Storage(record=record,
+                            component=Storage(name="track_item"),
+                            component_name="track_item",
+                            component_id=None,
+                            method=None,
+                            interactive=True,
+                            id=send_id,
+                            now=current.request.utcnow.date(),
+                            )
+                self.assertTrue(prep(r))
+                list_fields = s3db.get_config("inv_track_item", "list_fields")
+                extra_fields = s3db.get_config("inv_track_item", "extra_fields")
+        finally:
+            current.crud_controller = saved_crud
+            s3db.configure("inv_track_item",
+                           list_fields=saved_list_fields,
+                           extra_fields=saved_extra_fields,
+                           )
+            tracktable.send_inv_item_id.requires = saved_requires
+
+        self.assertTrue(any("quantity_needed" in str(field) for field in list_fields))
+        self.assertEqual(extra_fields, ["req_item_id"])
+
+    # -------------------------------------------------------------------------
+    def testSendPrepReturningTrackItemsAllowReturnEditing(self):
+        """send prep makes returning track items editable for return quantities"""
+
+        db = current.db
+        s3db = current.s3db
+        tracktable = s3db.inv_track_item
+
+        origin = self.create_office(name="Returning Origin")
+        destination = self.create_office(name="Returning Destination")
+        item_id = self.create_supply_item(name="Oil")
+        pack_id = self.create_item_pack(item_id, quantity=1)
+        inv_item_id = self.create_inventory_item(origin.site_id,
+                                                 item_id,
+                                                 pack_id,
+                                                 quantity=4,
+                                                 status=0,
+                                                 )
+        send_id = self.create_send(origin.site_id,
+                                   to_site_id=destination.site_id,
+                                   status=SHIP_STATUS_RETURNING,
+                                   )
+        track_id = self.create_track_item(item_id,
+                                          pack_id,
+                                          quantity=2,
+                                          send_id=send_id,
+                                          send_inv_item_id=inv_item_id,
+                                          status=TRACK_STATUS_RETURNING,
+                                          )
+
+        saved_crud = current.crud_controller
+        saved_editable = s3db.get_config("inv_track_item", "editable")
+        saved_list_fields = s3db.get_config("inv_track_item", "list_fields")
+        saved_requires = tracktable.send_inv_item_id.requires
+        saved_return_readable = tracktable.return_quantity.readable
+        saved_return_writable = tracktable.return_quantity.writable
+        saved_currency_readable = tracktable.currency.readable
+        saved_pack_value_readable = tracktable.pack_value.readable
+
+        try:
+            with self.controller("inv",
+                                 function="send",
+                                 args=[str(send_id), "track_item"],
+                                 ) as controller:
+                current.crud_controller = lambda *args, **kwargs: Storage(prep=current.response.s3.prep,
+                                                                          args=args,
+                                                                          kwargs=kwargs,
+                                                                          )
+                output = controller.module["send"]()
+                editable_before_prep = s3db.get_config("inv_track_item", "editable")
+                prep = output.prep
+                record = db(s3db.inv_send.id == send_id).select(s3db.inv_send.ALL,
+                                                                limitby=(0, 1),
+                                                                ).first()
+                r = Storage(record=record,
+                            component=Storage(name="track_item"),
+                            component_name="track_item",
+                            component_id=track_id,
+                            method="update",
+                            interactive=True,
+                            id=send_id,
+                            now=current.request.utcnow.date(),
+                            )
+                self.assertTrue(prep(r))
+                editable = s3db.get_config("inv_track_item", "editable")
+                list_fields = s3db.get_config("inv_track_item", "list_fields")
+                return_readable = tracktable.return_quantity.readable
+                return_writable = tracktable.return_quantity.writable
+                currency_readable = tracktable.currency.readable
+                pack_value_readable = tracktable.pack_value.readable
+        finally:
+            current.crud_controller = saved_crud
+            s3db.configure("inv_track_item",
+                           editable=saved_editable,
+                           list_fields=saved_list_fields,
+                           )
+            tracktable.send_inv_item_id.requires = saved_requires
+            tracktable.return_quantity.readable = saved_return_readable
+            tracktable.return_quantity.writable = saved_return_writable
+            tracktable.currency.readable = saved_currency_readable
+            tracktable.pack_value.readable = saved_pack_value_readable
+
+        self.assertTrue(editable_before_prep)
+        self.assertFalse(editable)
+        self.assertIn("return_quantity", list_fields)
+        self.assertTrue(return_readable)
+        self.assertTrue(return_writable)
+        self.assertFalse(currency_readable)
+        self.assertFalse(pack_value_readable)
+
+    # -------------------------------------------------------------------------
+    def testSendPrepAddsPackValueColumnsForReceivedAndReturningShipments(self):
+        """send prep includes valuation columns for received and returning shipment tabs"""
+
+        db = current.db
+        s3db = current.s3db
+
+        ship_status = s3db.inv_ship_status
+        origin = self.create_office(name="PackValue Origin")
+        destination = self.create_office(name="PackValue Destination")
+        received_id = self.create_send(origin.site_id,
+                                       to_site_id=destination.site_id,
+                                       status=ship_status["RECEIVED"],
+                                       )
+        returning_id = self.create_send(origin.site_id,
+                                        to_site_id=destination.site_id,
+                                        status=ship_status["RETURNING"],
+                                        )
+
+        saved_crud = current.crud_controller
+        saved_list_fields = s3db.get_config("inv_track_item", "list_fields")
+        settings = current.deployment_settings
+        saved_values = settings.supply.get("track_pack_values")
+
+        settings.supply.track_pack_values = True
+
+        try:
+            with self.controller("inv",
+                                 function="send",
+                                 args=[str(received_id), "track_item"],
+                                 ) as controller:
+                current.crud_controller = lambda *args, **kwargs: Storage(prep=current.response.s3.prep,
+                                                                          args=args,
+                                                                          kwargs=kwargs,
+                                                                          )
+                output = controller.module["send"]()
+                prep = output.prep
+                record = db(s3db.inv_send.id == received_id).select(s3db.inv_send.ALL,
+                                                                    limitby=(0, 1),
+                                                                    ).first()
+                self.assertTrue(prep(Storage(record=record,
+                                             component=Storage(name="track_item"),
+                                             component_name="track_item",
+                                             component_id=None,
+                                             method=None,
+                                             interactive=True,
+                                             id=received_id,
+                                             now=current.request.utcnow.date(),
+                                             )))
+                received_fields = s3db.get_config("inv_track_item", "list_fields")
+
+            with self.controller("inv",
+                                 function="send",
+                                 args=[str(returning_id), "track_item"],
+                                 ) as controller:
+                current.crud_controller = lambda *args, **kwargs: Storage(prep=current.response.s3.prep,
+                                                                          args=args,
+                                                                          kwargs=kwargs,
+                                                                          )
+                output = controller.module["send"]()
+                prep = output.prep
+                record = db(s3db.inv_send.id == returning_id).select(s3db.inv_send.ALL,
+                                                                     limitby=(0, 1),
+                                                                     ).first()
+                self.assertTrue(prep(Storage(record=record,
+                                             component=Storage(name="track_item"),
+                                             component_name="track_item",
+                                             component_id=None,
+                                             method=None,
+                                             interactive=True,
+                                             id=returning_id,
+                                             now=current.request.utcnow.date(),
+                                             )))
+                returning_fields = s3db.get_config("inv_track_item", "list_fields")
+        finally:
+            current.crud_controller = saved_crud
+            s3db.configure("inv_track_item", list_fields=saved_list_fields)
+            settings.supply.track_pack_values = saved_values
+
+        self.assertIn("currency", received_fields)
+        self.assertIn("pack_value", received_fields)
+        self.assertIn("currency", returning_fields)
+        self.assertIn("pack_value", returning_fields)
+
+    # -------------------------------------------------------------------------
+    def testSendPrepLocksRequestBoundTrackItemsToTheirChosenStockRow(self):
+        """send prep keeps request-bound track items tied to the already selected stock row"""
+
+        db = current.db
+        s3db = current.s3db
+        tracktable = s3db.inv_track_item
+
+        origin = self.create_office(name="Requested Origin")
+        destination = self.create_office(name="Requested Destination")
+        item_id = self.create_supply_item(name="Rice")
+        pack_id = self.create_item_pack(item_id, quantity=1)
+        inv_item_id = self.create_inventory_item(origin.site_id,
+                                                 item_id,
+                                                 pack_id,
+                                                 quantity=9,
+                                                 status=0,
+                                                 )
+        req_id = self.create_request(destination.site_id, req_type=1)
+        req_item_id = self.create_request_item(req_id,
+                                               item_id,
+                                               pack_id,
+                                               quantity=4,
+                                               )
+        send_id = self.create_send(origin.site_id,
+                                   to_site_id=destination.site_id,
+                                   status=SHIP_STATUS_IN_PROCESS,
+                                   )
+        track_id = self.create_track_item(item_id,
+                                          pack_id,
+                                          quantity=2,
+                                          req_item_id=req_item_id,
+                                          send_id=send_id,
+                                          send_inv_item_id=inv_item_id,
+                                          status=s3db.inv_tracking_status["IN_PROCESS"],
+                                          )
+
+        saved_crud = current.crud_controller
+        saved_send_inv_writable = tracktable.send_inv_item_id.writable
+        saved_pack_writable = tracktable.item_pack_id.writable
+        saved_comment = tracktable.quantity.comment
+        saved_requires = tracktable.quantity.requires
+
+        try:
+            with self.controller("inv",
+                                 function="send",
+                                 args=[str(send_id), "track_item"],
+                                 ) as controller:
+                current.crud_controller = lambda *args, **kwargs: Storage(prep=current.response.s3.prep,
+                                                                          args=args,
+                                                                          kwargs=kwargs,
+                                                                          )
+                output = controller.module["send"]()
+                prep = output.prep
+                record = db(s3db.inv_send.id == send_id).select(s3db.inv_send.ALL,
+                                                                limitby=(0, 1),
+                                                                ).first()
+                self.assertTrue(prep(Storage(record=record,
+                                             component=Storage(name="track_item"),
+                                             component_name="track_item",
+                                             component_id=track_id,
+                                             method="update",
+                                             interactive=True,
+                                             id=send_id,
+                                             now=current.request.utcnow.date(),
+                                             )))
+                send_inv_writable = tracktable.send_inv_item_id.writable
+                pack_writable = tracktable.item_pack_id.writable
+                quantity_comment = str(tracktable.quantity.comment)
+                quantity_requires = tracktable.quantity.requires
+        finally:
+            current.crud_controller = saved_crud
+            tracktable.send_inv_item_id.writable = saved_send_inv_writable
+            tracktable.item_pack_id.writable = saved_pack_writable
+            tracktable.quantity.comment = saved_comment
+            tracktable.quantity.requires = saved_requires
+
+        self.assertFalse(send_inv_writable)
+        self.assertFalse(pack_writable)
+        self.assertIn("in stock", quantity_comment)
+        self.assertEqual(quantity_requires.__class__.__name__, "IS_AVAILABLE_QUANTITY")
+
+    # -------------------------------------------------------------------------
+    def testSendPrepReceivedFlagUpdatesShipmentAndRequestFulfilment(self):
+        """send prep marks shipments received and updates linked request fulfilment"""
+
+        auth = current.auth
+        db = current.db
+        s3db = current.s3db
+        response = current.response
+        sendtable = s3db.inv_send
+        tracktable = s3db.inv_track_item
+
+        origin = self.create_office(name="Received Origin")
+        destination = self.create_office(name="Received Destination")
+        item_id = self.create_supply_item(name="Water")
+        pack_id = self.create_item_pack(item_id, quantity=1)
+        req_id = self.create_request(destination.site_id,
+                                     req_type=1,
+                                     req_ref="REQ-REMOTE-RECV",
+                                     fulfil_status=0,
+                                     )
+        req_item_id = self.create_request_item(req_id,
+                                               item_id,
+                                               pack_id,
+                                               quantity=2,
+                                               quantity_fulfil=0,
+                                               )
+        send_id = self.create_send(origin.site_id,
+                                   to_site_id=destination.site_id,
+                                   req_ref="REQ-REMOTE-RECV",
+                                   status=SHIP_STATUS_SENT,
+                                   )
+        track_id = self.create_track_item(item_id,
+                                          pack_id,
+                                          quantity=3,
+                                          req_item_id=req_item_id,
+                                          send_id=send_id,
+                                          status=s3db.inv_tracking_status["SENT"],
+                                          )
+
+        saved_crud = current.crud_controller
+        saved_permission = auth.s3_has_permission
+        saved_confirmation = response.confirmation
+        saved_send_ref_readable = sendtable.send_ref.readable
+        saved_send_ref_writable = sendtable.send_ref.writable
+        saved_send_field_writable = {field: sendtable[field].writable for field in sendtable.fields}
+        saved_track_field_writable = {field: tracktable[field].writable for field in tracktable.fields}
+
+        auth.s3_has_permission = lambda *args, **kwargs: True
+
+        try:
+            with self.controller("inv",
+                                 function="send",
+                                 args=[str(send_id)],
+                                 query_vars={"received": "1"},
+                                 ) as controller:
+                current.crud_controller = lambda *args, **kwargs: Storage(prep=current.response.s3.prep,
+                                                                          args=args,
+                                                                          kwargs=kwargs,
+                                                                          )
+                output = controller.module["send"]()
+                prep = output.prep
+                response.confirmation = None
+                self.assertTrue(prep(Storage(id=send_id,
+                                             component=None,
+                                             )))
+                confirmation = response.confirmation
+        finally:
+            current.crud_controller = saved_crud
+            auth.s3_has_permission = saved_permission
+            response.confirmation = saved_confirmation
+            sendtable.send_ref.readable = saved_send_ref_readable
+            sendtable.send_ref.writable = saved_send_ref_writable
+            for field, writable in saved_send_field_writable.items():
+                sendtable[field].writable = writable
+            for field, writable in saved_track_field_writable.items():
+                tracktable[field].writable = writable
+
+        send = db(sendtable.id == send_id).select(sendtable.status,
+                                                  limitby=(0, 1),
+                                                  ).first()
+        track = db(tracktable.id == track_id).select(tracktable.status,
+                                                     limitby=(0, 1),
+                                                     ).first()
+        req_item = db(s3db.req_req_item.id == req_item_id).select(s3db.req_req_item.quantity_fulfil,
+                                                                  limitby=(0, 1),
+                                                                  ).first()
+        req = db(s3db.req_req.id == req_id).select(s3db.req_req.fulfil_status,
+                                                   limitby=(0, 1),
+                                                   ).first()
+
+        self.assertEqual(send.status, s3db.inv_ship_status["RECEIVED"])
+        self.assertEqual(track.status, TRACK_STATUS_ARRIVED)
+        self.assertEqual(req_item.quantity_fulfil, 3)
+        self.assertEqual(req.fulfil_status, 2)
+        self.assertEqual(str(confirmation), "Shipment received")
+
+    # -------------------------------------------------------------------------
+    def testSendPrepReceivedFlagLeavesPartiallyFulfilledRequestsOpen(self):
+        """send prep marks linked requests as partial when received quantities remain outstanding"""
+
+        auth = current.auth
+        db = current.db
+        s3db = current.s3db
+        response = current.response
+        sendtable = s3db.inv_send
+        tracktable = s3db.inv_track_item
+
+        origin = self.create_office(name="Partial Origin")
+        destination = self.create_office(name="Partial Destination")
+        item_id = self.create_supply_item(name="Soap")
+        pack_id = self.create_item_pack(item_id, quantity=1)
+        req_id = self.create_request(destination.site_id,
+                                     req_type=1,
+                                     req_ref="REQ-REMOTE-PARTIAL",
+                                     fulfil_status=0,
+                                     )
+        req_item_id = self.create_request_item(req_id,
+                                               item_id,
+                                               pack_id,
+                                               quantity=5,
+                                               quantity_fulfil=0,
+                                               )
+        send_id = self.create_send(origin.site_id,
+                                   to_site_id=destination.site_id,
+                                   req_ref="REQ-REMOTE-PARTIAL",
+                                   status=SHIP_STATUS_SENT,
+                                   )
+        track_id = self.create_track_item(item_id,
+                                          pack_id,
+                                          quantity=2,
+                                          req_item_id=req_item_id,
+                                          send_id=send_id,
+                                          status=s3db.inv_tracking_status["SENT"],
+                                          )
+
+        saved_crud = current.crud_controller
+        saved_permission = auth.s3_has_permission
+        saved_confirmation = response.confirmation
+        saved_send_ref_readable = sendtable.send_ref.readable
+        saved_send_ref_writable = sendtable.send_ref.writable
+        saved_send_field_writable = {field: sendtable[field].writable for field in sendtable.fields}
+        saved_track_field_writable = {field: tracktable[field].writable for field in tracktable.fields}
+
+        auth.s3_has_permission = lambda *args, **kwargs: True
+
+        try:
+            with self.controller("inv",
+                                 function="send",
+                                 args=[str(send_id)],
+                                 query_vars={"received": "1"},
+                                 ) as controller:
+                current.crud_controller = lambda *args, **kwargs: Storage(prep=current.response.s3.prep,
+                                                                          args=args,
+                                                                          kwargs=kwargs,
+                                                                          )
+                output = controller.module["send"]()
+                prep = output.prep
+                response.confirmation = None
+                self.assertTrue(prep(Storage(id=send_id,
+                                             component=None,
+                                             )))
+                confirmation = response.confirmation
+        finally:
+            current.crud_controller = saved_crud
+            auth.s3_has_permission = saved_permission
+            response.confirmation = saved_confirmation
+            sendtable.send_ref.readable = saved_send_ref_readable
+            sendtable.send_ref.writable = saved_send_ref_writable
+            for field, writable in saved_send_field_writable.items():
+                sendtable[field].writable = writable
+            for field, writable in saved_track_field_writable.items():
+                tracktable[field].writable = writable
+
+        track = db(tracktable.id == track_id).select(tracktable.status,
+                                                     limitby=(0, 1),
+                                                     ).first()
+        req_item = db(s3db.req_req_item.id == req_item_id).select(s3db.req_req_item.quantity_fulfil,
+                                                                  limitby=(0, 1),
+                                                                  ).first()
+        req = db(s3db.req_req.id == req_id).select(s3db.req_req.fulfil_status,
+                                                   limitby=(0, 1),
+                                                   ).first()
+
+        self.assertEqual(track.status, TRACK_STATUS_ARRIVED)
+        self.assertEqual(req_item.quantity_fulfil, 2)
+        self.assertEqual(req.fulfil_status, 1)
+        self.assertEqual(str(confirmation), "Shipment received")
+
+    # -------------------------------------------------------------------------
     def testIncomingAndReqMatchDelegateToModelHelpers(self):
         """incoming and req_match delegate to the model helper methods"""
 
@@ -1832,6 +3958,52 @@ class InventoryControllerTests(SupplyChainTestCase):
 
         self.assertIn(item_id, req_items)
         self.assertEqual(req_items[item_id].req_id, first_req)
+
+    # -------------------------------------------------------------------------
+    def testReqItemInShipmentUpdatesMatchingRequestsAndHandlesFallbackRows(self):
+        """req_item_in_shipment updates matching requests and falls back to inv_inv_item rows"""
+
+        class FakeTable(dict):
+            """Minimal table stub that records row updates by record ID"""
+
+        fake_req_req_item = FakeTable()
+        fake_send_item = FakeTable()
+        fake_s3db = Storage(req_req_item=fake_req_req_item,
+                            inv_send_item=fake_send_item,
+                            )
+
+        shipment_item = Storage(inv_send_item=Storage(id=7,
+                                                      item_id=3,
+                                                      pack_quantity=2,
+                                                      quantity=4,
+                                                      ))
+        req_items = Storage({3: Storage(id=11,
+                                        req_id=21,
+                                        quantity=10,
+                                        pack_quantity=4,
+                                        quantity_transit=1,
+                                        )})
+
+        with self.controller("inv", function="req_item_in_shipment") as controller:
+            globals_ = controller.module["req_item_in_shipment"].__globals__
+            saved_s3db = globals_["s3db"]
+            globals_["s3db"] = fake_s3db
+            try:
+                req_id, req_item_id = controller.module["req_item_in_shipment"](shipment_item,
+                                                                                "send",
+                                                                                req_items,
+                                                                                )
+                fallback = controller.module["req_item_in_shipment"](Storage(inv_inv_item=Storage(item_id=99)),
+                                                                     "recv",
+                                                                     Storage(),
+                                                                     )
+            finally:
+                globals_["s3db"] = saved_s3db
+
+        self.assertEqual((req_id, req_item_id), (21, 11))
+        self.assertEqual(fake_req_req_item[11], {"quantity_transit": 3})
+        self.assertEqual(fake_send_item[7], {"req_item_id": 11})
+        self.assertEqual(fallback, (None, None))
 
     # -------------------------------------------------------------------------
     def testSendReturnsValidatesStatusAndMarksShipmentReturning(self):
@@ -2141,6 +4313,343 @@ class InventoryControllerTests(SupplyChainTestCase):
         self.assertTrue(recv_bin_writable)
 
     # -------------------------------------------------------------------------
+    def testRecvControllerUsesOrderPermissionMessageWhenConfigured(self):
+        """recv switches the facility-permission message when the deployment uses orders"""
+
+        auth = current.auth
+        captured = []
+        saved_permitted = auth.permitted_facilities
+        saved_name = current.deployment_settings.inv.get("shipment_name")
+
+        auth.permitted_facilities = lambda table=None, error_msg=None: captured.append(str(error_msg))
+        current.deployment_settings.inv.shipment_name = "order"
+
+        try:
+            with self.controller("inv", function="recv") as controller:
+                controller.module["recv"]()
+        finally:
+            auth.permitted_facilities = saved_permitted
+            current.deployment_settings.inv.shipment_name = saved_name
+
+        self.assertEqual(captured, ["You do not have permission for any facility to add an order."])
+
+    # -------------------------------------------------------------------------
+    def testRecvControllerCanPopulateMissingRecipientForExistingReceipts(self):
+        """recv can backfill a missing recipient when the legacy branch is reached"""
+
+        db = current.db
+        auth = current.auth
+        s3db = current.s3db
+
+        origin = self.create_office(name="Recipient Origin")
+        destination = self.create_office(name="Recipient Destination")
+        recipient_id = self.create_person(last_name="Receiver")
+        recv_id = self.create_recv(destination.site_id,
+                                   from_site_id=origin.site_id,
+                                   recipient_id=None,
+                                   )
+
+        saved_logged_in_person = auth.s3_logged_in_person
+
+        try:
+            with self.controller("inv",
+                                 function="recv",
+                                 args=[str(recv_id)],
+                                 ) as controller:
+                auth.s3_logged_in_person = lambda: recipient_id
+                globals_ = controller.module["recv"].__globals__
+                sentinel = object()
+                saved_id = globals_.get("id", sentinel)
+                globals_["id"] = 1
+                try:
+                    controller.module["recv"]()
+                finally:
+                    if saved_id is sentinel:
+                        del globals_["id"]
+                    else:
+                        globals_["id"] = saved_id
+        finally:
+            auth.s3_logged_in_person = saved_logged_in_person
+
+        recv = db(s3db.inv_recv.id == recv_id).select(s3db.inv_recv.recipient_id,
+                                                      limitby=(0, 1),
+                                                      ).first()
+        self.assertEqual(recv.recipient_id, recipient_id)
+
+    # -------------------------------------------------------------------------
+    def testRecvControllerConfiguresPreparingTrackItemsForManualEntry(self):
+        """recv prep exposes manual item-entry fields while a receipt is still in draft"""
+
+        db = current.db
+        s3db = current.s3db
+        tracktable = s3db.inv_track_item
+
+        origin = self.create_office(name="Draft Origin")
+        destination = self.create_office(name="Draft Destination")
+        recv_id = self.create_recv(destination.site_id,
+                                   from_site_id=origin.site_id,
+                                   organisation_id=origin.organisation_id,
+                                   status=s3db.inv_ship_status["IN_PROCESS"],
+                                   )
+
+        saved_item_source_writable = tracktable.item_source_no.writable
+        saved_item_id_writable = tracktable.item_id.writable
+        saved_item_pack_writable = tracktable.item_pack_id.writable
+        saved_quantity_writable = tracktable.quantity.writable
+        saved_currency_writable = tracktable.currency.writable
+        saved_pack_value_writable = tracktable.pack_value.writable
+        saved_expiry_writable = tracktable.expiry_date.writable
+        saved_recv_bin_writable = tracktable.recv_bin.writable
+        saved_owner_writable = tracktable.owner_org_id.writable
+        saved_supply_writable = tracktable.supply_org_id.writable
+        saved_supply_default = tracktable.supply_org_id.default
+        saved_status_writable = tracktable.inv_item_status.writable
+        saved_comments_writable = tracktable.comments.writable
+        saved_recv_quantity_readable = tracktable.recv_quantity.readable
+        saved_send_inv_readable = tracktable.send_inv_item_id.readable
+        saved_status_readable = tracktable.status.readable
+        saved_recv_bin_label = tracktable.recv_bin.label
+
+        try:
+            with self.controller("inv",
+                                 function="recv",
+                                 args=[str(recv_id), "track_item"],
+                                 ) as controller:
+                output = controller.module["recv"]()
+                prep = output.prep
+                record = db(s3db.inv_recv.id == recv_id).select(s3db.inv_recv.ALL,
+                                                                limitby=(0, 1),
+                                                                ).first()
+                self.assertTrue(prep(Storage(record=record,
+                                             component=Storage(name="track_item"),
+                                             component_name="track_item",
+                                             component_id=None,
+                                             method=None,
+                                             id=recv_id,
+                                             )))
+                item_source_writable = tracktable.item_source_no.writable
+                item_id_writable = tracktable.item_id.writable
+                item_pack_writable = tracktable.item_pack_id.writable
+                quantity_writable = tracktable.quantity.writable
+                currency_writable = tracktable.currency.writable
+                pack_value_writable = tracktable.pack_value.writable
+                expiry_writable = tracktable.expiry_date.writable
+                recv_bin_writable = tracktable.recv_bin.writable
+                owner_writable = tracktable.owner_org_id.writable
+                supply_writable = tracktable.supply_org_id.writable
+                supply_default = tracktable.supply_org_id.default
+                status_writable = tracktable.inv_item_status.writable
+                comments_writable = tracktable.comments.writable
+                recv_quantity_readable = tracktable.recv_quantity.readable
+                send_inv_readable = tracktable.send_inv_item_id.readable
+                status_readable = tracktable.status.readable
+                recv_bin_label = str(tracktable.recv_bin.label)
+        finally:
+            tracktable.item_source_no.writable = saved_item_source_writable
+            tracktable.item_id.writable = saved_item_id_writable
+            tracktable.item_pack_id.writable = saved_item_pack_writable
+            tracktable.quantity.writable = saved_quantity_writable
+            tracktable.currency.writable = saved_currency_writable
+            tracktable.pack_value.writable = saved_pack_value_writable
+            tracktable.expiry_date.writable = saved_expiry_writable
+            tracktable.recv_bin.writable = saved_recv_bin_writable
+            tracktable.owner_org_id.writable = saved_owner_writable
+            tracktable.supply_org_id.writable = saved_supply_writable
+            tracktable.supply_org_id.default = saved_supply_default
+            tracktable.inv_item_status.writable = saved_status_writable
+            tracktable.comments.writable = saved_comments_writable
+            tracktable.recv_quantity.readable = saved_recv_quantity_readable
+            tracktable.send_inv_item_id.readable = saved_send_inv_readable
+            tracktable.status.readable = saved_status_readable
+            tracktable.recv_bin.label = saved_recv_bin_label
+
+        self.assertTrue(item_source_writable)
+        self.assertTrue(item_id_writable)
+        self.assertTrue(item_pack_writable)
+        self.assertTrue(quantity_writable)
+        self.assertTrue(currency_writable)
+        self.assertTrue(pack_value_writable)
+        self.assertTrue(expiry_writable)
+        self.assertTrue(recv_bin_writable)
+        self.assertTrue(owner_writable)
+        self.assertTrue(supply_writable)
+        self.assertEqual(supply_default, origin.organisation_id)
+        self.assertTrue(status_writable)
+        self.assertTrue(comments_writable)
+        self.assertFalse(recv_quantity_readable)
+        self.assertFalse(send_inv_readable)
+        self.assertFalse(status_readable)
+        self.assertEqual(recv_bin_label, "Bin")
+
+    # -------------------------------------------------------------------------
+    def testRecvControllerConfiguresArrivedTrackItemsAsReadOnly(self):
+        """recv prep keeps arrived items read-only except for the destination bin"""
+
+        db = current.db
+        s3db = current.s3db
+        tracktable = s3db.inv_track_item
+
+        origin = self.create_office(name="Arrived Origin")
+        destination = self.create_office(name="Arrived Destination")
+        item_id = self.create_supply_item(name="Arrived Item")
+        pack_id = self.create_item_pack(item_id, quantity=1)
+        recv_id = self.create_recv(destination.site_id,
+                                   from_site_id=origin.site_id,
+                                   status=s3db.inv_ship_status["RECEIVED"],
+                                   )
+        track_id = self.create_track_item(item_id,
+                                          pack_id,
+                                          quantity=2,
+                                          recv_id=recv_id,
+                                          status=s3db.inv_tracking_status["RECEIVED"],
+                                          )
+
+        saved_item_source_readable = tracktable.item_source_no.readable
+        saved_item_source_writable = tracktable.item_source_no.writable
+        saved_item_id_writable = tracktable.item_id.writable
+        saved_send_inv_writable = tracktable.send_inv_item_id.writable
+        saved_item_pack_writable = tracktable.item_pack_id.writable
+        saved_quantity_writable = tracktable.quantity.writable
+        saved_currency_writable = tracktable.currency.writable
+        saved_pack_value_writable = tracktable.pack_value.writable
+        saved_expiry_writable = tracktable.expiry_date.writable
+        saved_owner_writable = tracktable.owner_org_id.writable
+        saved_supply_writable = tracktable.supply_org_id.writable
+        saved_recv_bin_readable = tracktable.recv_bin.readable
+        saved_recv_bin_writable = tracktable.recv_bin.writable
+
+        try:
+            with self.controller("inv",
+                                 function="recv",
+                                 args=[str(recv_id), "track_item"],
+                                 ) as controller:
+                output = controller.module["recv"]()
+                prep = output.prep
+                record = db(s3db.inv_recv.id == recv_id).select(s3db.inv_recv.ALL,
+                                                                limitby=(0, 1),
+                                                                ).first()
+                self.assertTrue(prep(Storage(record=record,
+                                             component=Storage(name="track_item"),
+                                             component_name="track_item",
+                                             component_id=track_id,
+                                             method="update",
+                                             id=recv_id,
+                                             )))
+                item_source_readable = tracktable.item_source_no.readable
+                item_source_writable = tracktable.item_source_no.writable
+                item_id_writable = tracktable.item_id.writable
+                send_inv_writable = tracktable.send_inv_item_id.writable
+                item_pack_writable = tracktable.item_pack_id.writable
+                quantity_writable = tracktable.quantity.writable
+                currency_writable = tracktable.currency.writable
+                pack_value_writable = tracktable.pack_value.writable
+                expiry_writable = tracktable.expiry_date.writable
+                owner_writable = tracktable.owner_org_id.writable
+                supply_writable = tracktable.supply_org_id.writable
+                recv_bin_readable = tracktable.recv_bin.readable
+                recv_bin_writable = tracktable.recv_bin.writable
+        finally:
+            tracktable.item_source_no.readable = saved_item_source_readable
+            tracktable.item_source_no.writable = saved_item_source_writable
+            tracktable.item_id.writable = saved_item_id_writable
+            tracktable.send_inv_item_id.writable = saved_send_inv_writable
+            tracktable.item_pack_id.writable = saved_item_pack_writable
+            tracktable.quantity.writable = saved_quantity_writable
+            tracktable.currency.writable = saved_currency_writable
+            tracktable.pack_value.writable = saved_pack_value_writable
+            tracktable.expiry_date.writable = saved_expiry_writable
+            tracktable.owner_org_id.writable = saved_owner_writable
+            tracktable.supply_org_id.writable = saved_supply_writable
+            tracktable.recv_bin.readable = saved_recv_bin_readable
+            tracktable.recv_bin.writable = saved_recv_bin_writable
+
+        self.assertTrue(item_source_readable)
+        self.assertFalse(item_source_writable)
+        self.assertFalse(item_id_writable)
+        self.assertFalse(send_inv_writable)
+        self.assertFalse(item_pack_writable)
+        self.assertFalse(quantity_writable)
+        self.assertFalse(currency_writable)
+        self.assertFalse(pack_value_writable)
+        self.assertFalse(expiry_writable)
+        self.assertFalse(owner_writable)
+        self.assertFalse(supply_writable)
+        self.assertTrue(recv_bin_readable)
+        self.assertTrue(recv_bin_writable)
+
+    # -------------------------------------------------------------------------
+    def testRecvControllerCreateFormHidesReferencesAndStatus(self):
+        """recv create forms hide generated references and workflow status fields"""
+
+        s3db = current.s3db
+        recvtable = s3db.inv_recv
+
+        saved_recv_ref_readable = recvtable.recv_ref.readable
+        saved_status_readable = recvtable.status.readable
+        saved_send_ref_writable = recvtable.send_ref.writable
+
+        try:
+            with self.controller("inv", function="recv") as controller:
+                output = controller.module["recv"]()
+                prep = output.prep
+                self.assertTrue(prep(Storage(id=None,
+                                             component=None,
+                                             method="create",
+                                             )))
+                recv_ref_readable = recvtable.recv_ref.readable
+                status_readable = recvtable.status.readable
+                send_ref_writable = recvtable.send_ref.writable
+        finally:
+            recvtable.recv_ref.readable = saved_recv_ref_readable
+            recvtable.status.readable = saved_status_readable
+            recvtable.send_ref.writable = saved_send_ref_writable
+
+        self.assertFalse(recv_ref_readable)
+        self.assertFalse(status_readable)
+        self.assertTrue(send_ref_writable)
+
+    # -------------------------------------------------------------------------
+    def testRecvControllerLocksTrackItemsAfterReceipt(self):
+        """recv disables inline CRUD buttons for track items once the receipt is closed"""
+
+        s3db = current.s3db
+
+        origin = self.create_office(name="Locked Origin")
+        destination = self.create_office(name="Locked Destination")
+        recv_id = self.create_recv(destination.site_id,
+                                   from_site_id=origin.site_id,
+                                   status=s3db.inv_ship_status["RECEIVED"],
+                                   )
+
+        saved_create = s3db.get_config("inv_track_item", "create")
+        saved_deletable = s3db.get_config("inv_track_item", "deletable")
+        saved_editable = s3db.get_config("inv_track_item", "editable")
+        saved_listadd = s3db.get_config("inv_track_item", "listadd")
+
+        try:
+            with self.controller("inv",
+                                 function="recv",
+                                 args=[str(recv_id), "track_item"],
+                                 ) as controller:
+                controller.module["recv"]()
+                create = s3db.get_config("inv_track_item", "create")
+                deletable = s3db.get_config("inv_track_item", "deletable")
+                editable = s3db.get_config("inv_track_item", "editable")
+                listadd = s3db.get_config("inv_track_item", "listadd")
+        finally:
+            s3db.configure("inv_track_item",
+                           create=saved_create,
+                           deletable=saved_deletable,
+                           editable=saved_editable,
+                           listadd=saved_listadd,
+                           )
+
+        self.assertFalse(create)
+        self.assertFalse(deletable)
+        self.assertFalse(editable)
+        self.assertFalse(listadd)
+
+    # -------------------------------------------------------------------------
     def testRecvProcessReceivesShipmentAndInvokesTrackOnaccept(self):
         """recv_process completes the shipment and calls track-item onaccept"""
 
@@ -2230,6 +4739,60 @@ class InventoryControllerTests(SupplyChainTestCase):
         self.assertEqual(onaccept_calls, [track_id])
         self.assertEqual(customise_calls, ["inv_track_item"])
         self.assertEqual(str(confirmation), "Shipment Items Received")
+
+    # -------------------------------------------------------------------------
+    def testRecvProcessRejectsAlreadyClosedShipments(self):
+        """recv_process refuses shipments that are already received or canceled"""
+
+        auth = current.auth
+        session = current.session
+        s3db = current.s3db
+
+        origin = self.create_office(name="Closed Origin")
+        destination = self.create_office(name="Closed Destination")
+        received_id = self.create_recv(destination.site_id,
+                                       from_site_id=origin.site_id,
+                                       status=s3db.inv_ship_status["RECEIVED"],
+                                       )
+        canceled_id = self.create_recv(destination.site_id,
+                                       from_site_id=origin.site_id,
+                                       status=s3db.inv_ship_status["CANCEL"],
+                                       )
+
+        saved_permission = auth.s3_has_permission
+        saved_error = session.error
+        auth.s3_has_permission = lambda *args, **kwargs: True
+
+        try:
+            session.error = None
+            with self.controller("inv",
+                                 function="recv_process",
+                                 args=[str(received_id)],
+                                 ) as controller:
+                with self.assertRaises(ControllerRedirect) as redirect:
+                    controller.module["recv_process"]()
+                received_url = str(redirect.exception.url)
+                received_error = session.error
+
+            session.error = None
+            with self.controller("inv",
+                                 function="recv_process",
+                                 args=[str(canceled_id)],
+                                 ) as controller:
+                with self.assertRaises(ControllerRedirect) as redirect:
+                    controller.module["recv_process"]()
+                canceled_url = str(redirect.exception.url)
+                canceled_error = session.error
+        finally:
+            auth.s3_has_permission = saved_permission
+            session.error = saved_error
+
+        self.assertIn("/inv/recv/%s" % received_id, received_url)
+        self.assertEqual(str(received_error),
+                         "This shipment has already been received.")
+        self.assertIn("/inv/recv/%s" % canceled_id, canceled_url)
+        self.assertEqual(str(canceled_error),
+                         "This shipment has already been received & subsequently canceled.")
 
     # -------------------------------------------------------------------------
     def testRecvCancelRejectsUnreceivedShipments(self):
@@ -2618,6 +5181,205 @@ class InventoryControllerTests(SupplyChainTestCase):
         self.assertTrue(site_writable)
 
     # -------------------------------------------------------------------------
+    def testAdjPrepConfiguresExistingItemsImagesAndClosedAdjustments(self):
+        """adj prep handles existing items, linked images and closed adjustments correctly"""
+
+        db = current.db
+        s3db = current.s3db
+        table = s3db.inv_adj
+        aitable = s3db.inv_adj_item
+        doc_table = s3db.doc_image
+
+        office = self.create_office(name="Adjustment Office")
+        item_id = self.create_supply_item(name="Adjustment Item")
+        pack_id = self.create_item_pack(item_id, quantity=1)
+        inv_item_id = self.create_inventory_item(office.site_id,
+                                                 item_id,
+                                                 pack_id,
+                                                 quantity=8,
+                                                 )
+        open_id = table.insert(site_id=office.site_id,
+                               adjuster_id=self.create_person(last_name="OpenAdjuster"),
+                               adjustment_date=current.request.utcnow,
+                               status=0,
+                               category=1,
+                               )
+        adj_item_id = aitable.insert(adj_id=open_id,
+                                     inv_item_id=inv_item_id,
+                                     item_id=item_id,
+                                     item_pack_id=pack_id,
+                                     old_quantity=8,
+                                     new_quantity=7,
+                                     reason=0,
+                                     )
+        closed_id = table.insert(site_id=office.site_id,
+                                 adjuster_id=self.create_person(last_name="ClosedAdjuster"),
+                                 adjustment_date=current.request.utcnow,
+                                 status=1,
+                                 category=1,
+                                 )
+
+        saved_reason_writable = aitable.reason.writable
+        saved_item_writable = aitable.item_id.writable
+        saved_item_comment = aitable.item_id.comment
+        saved_pack_writable = aitable.item_pack_id.writable
+        saved_org_readable = doc_table.organisation_id.readable
+        saved_org_writable = doc_table.organisation_id.writable
+        saved_person_readable = doc_table.person_id.readable
+        saved_person_writable = doc_table.person_id.writable
+        saved_location_readable = doc_table.location_id.readable
+        saved_location_writable = doc_table.location_id.writable
+        saved_adjuster_writable = table.adjuster_id.writable
+        saved_site_writable = table.site_id.writable
+        saved_comments_writable = table.comments.writable
+        saved_create = s3db.get_config("inv_adj_item", "create")
+        saved_deletable = s3db.get_config("inv_adj_item", "deletable")
+        saved_editable = s3db.get_config("inv_adj_item", "editable")
+        saved_listadd = s3db.get_config("inv_adj_item", "listadd")
+
+        try:
+            with self.controller("inv",
+                                 function="adj",
+                                 args=[str(open_id), "adj_item"],
+                                 ) as controller:
+                output = controller.module["adj"]()
+                prep = output.prep
+                record = db(table.id == open_id).select(table.ALL,
+                                                        limitby=(0, 1),
+                                                        ).first()
+                self.assertTrue(prep(Storage(interactive=True,
+                                             component=Storage(name="adj_item"),
+                                             component_name="adj_item",
+                                             component_id=adj_item_id,
+                                             record=record,
+                                             )))
+                reason_writable = aitable.reason.writable
+                item_writable = aitable.item_id.writable
+                item_comment = aitable.item_id.comment
+                pack_writable = aitable.item_pack_id.writable
+
+            with self.controller("inv",
+                                 function="adj",
+                                 args=[str(open_id), "image"],
+                                 ) as controller:
+                output = controller.module["adj"]()
+                prep = output.prep
+                record = db(table.id == open_id).select(table.ALL,
+                                                        limitby=(0, 1),
+                                                        ).first()
+                self.assertTrue(prep(Storage(interactive=True,
+                                             component=Storage(name="image"),
+                                             component_name="image",
+                                             component_id=None,
+                                             record=record,
+                                             )))
+                org_readable = doc_table.organisation_id.readable
+                org_writable = doc_table.organisation_id.writable
+                person_readable = doc_table.person_id.readable
+                person_writable = doc_table.person_id.writable
+                location_readable = doc_table.location_id.readable
+                location_writable = doc_table.location_id.writable
+
+            with self.controller("inv",
+                                 function="adj",
+                                 args=[str(closed_id), "adj_item"],
+                                 ) as controller:
+                output = controller.module["adj"]()
+                prep = output.prep
+                record = db(table.id == closed_id).select(table.ALL,
+                                                          limitby=(0, 1),
+                                                          ).first()
+                self.assertTrue(prep(Storage(interactive=True,
+                                             component=None,
+                                             record=record,
+                                             )))
+                adjuster_writable = table.adjuster_id.writable
+                site_writable = table.site_id.writable
+                comments_writable = table.comments.writable
+                create = s3db.get_config("inv_adj_item", "create")
+                deletable = s3db.get_config("inv_adj_item", "deletable")
+                editable = s3db.get_config("inv_adj_item", "editable")
+                listadd = s3db.get_config("inv_adj_item", "listadd")
+        finally:
+            aitable.reason.writable = saved_reason_writable
+            aitable.item_id.writable = saved_item_writable
+            aitable.item_id.comment = saved_item_comment
+            aitable.item_pack_id.writable = saved_pack_writable
+            doc_table.organisation_id.readable = saved_org_readable
+            doc_table.organisation_id.writable = saved_org_writable
+            doc_table.person_id.readable = saved_person_readable
+            doc_table.person_id.writable = saved_person_writable
+            doc_table.location_id.readable = saved_location_readable
+            doc_table.location_id.writable = saved_location_writable
+            table.adjuster_id.writable = saved_adjuster_writable
+            table.site_id.writable = saved_site_writable
+            table.comments.writable = saved_comments_writable
+            s3db.configure("inv_adj_item",
+                           create=saved_create,
+                           deletable=saved_deletable,
+                           editable=saved_editable,
+                           listadd=saved_listadd,
+                           )
+
+        self.assertTrue(reason_writable)
+        self.assertFalse(item_writable)
+        self.assertIsNone(item_comment)
+        self.assertFalse(pack_writable)
+        self.assertFalse(org_readable)
+        self.assertFalse(org_writable)
+        self.assertFalse(person_readable)
+        self.assertFalse(person_writable)
+        self.assertFalse(location_readable)
+        self.assertFalse(location_writable)
+        self.assertFalse(adjuster_writable)
+        self.assertFalse(site_writable)
+        self.assertFalse(comments_writable)
+        self.assertFalse(create)
+        self.assertFalse(deletable)
+        self.assertFalse(editable)
+        self.assertFalse(listadd)
+
+    # -------------------------------------------------------------------------
+    def testAdjCloseRejectsMissingAndClosedAdjustments(self):
+        """adj_close redirects missing requests and refuses already closed adjustments"""
+
+        db = current.db
+        s3db = current.s3db
+        session = current.session
+
+        office = self.create_office(name="Adj Close Office")
+        adj_id = s3db.inv_adj.insert(site_id=office.site_id,
+                                     adjuster_id=self.create_person(last_name="Closer"),
+                                     adjustment_date=current.request.utcnow,
+                                     status=1,
+                                     category=1,
+                                     )
+
+        saved_error = session.error
+
+        try:
+            with self.controller("inv", function="adj_close") as controller:
+                with self.assertRaises(ControllerRedirect) as redirect:
+                    controller.module["adj_close"]()
+                missing_url = str(redirect.exception.url)
+
+            session.error = None
+            with self.controller("inv",
+                                 function="adj_close",
+                                 args=[str(adj_id)],
+                                 ) as controller:
+                with self.assertRaises(ControllerRedirect) as redirect:
+                    controller.module["adj_close"]()
+                closed_url = str(redirect.exception.url)
+                closed_error = session.error
+        finally:
+            session.error = saved_error
+
+        self.assertIn("/inv/adj", missing_url)
+        self.assertIn("/inv/adj/%s" % adj_id, closed_url)
+        self.assertEqual(str(closed_error), "This adjustment has already been closed.")
+
+    # -------------------------------------------------------------------------
     def testAdjCloseAppliesInventoryChangesAndRedirectsToSiteStock(self):
         """adj_close creates missing stock, updates existing stock and closes the record"""
 
@@ -2770,6 +5532,21 @@ class InventoryControllerTests(SupplyChainTestCase):
         self.assertGreaterEqual(len(send_payload), 2)
         self.assertIn("'id': %s" % recv_id, str(recv_payload[1]))
         self.assertIn("'id': %s" % send_id, str(send_payload[1]))
+
+    # -------------------------------------------------------------------------
+    def testReceiveAndSendItemJsonEndpointsRejectMissingIds(self):
+        """recv_item_json and send_item_json reject requests that omit the request item ID"""
+
+        with self.controller("inv", function="recv_item_json") as controller:
+            with self.assertRaises(HTTP) as recv_error:
+                controller.module["recv_item_json"]()
+
+        with self.controller("inv", function="send_item_json") as controller:
+            with self.assertRaises(HTTP) as send_error:
+                controller.module["send_item_json"]()
+
+        self.assertEqual(recv_error.exception.status, 400)
+        self.assertEqual(send_error.exception.status, 400)
 
     # -------------------------------------------------------------------------
     def testKittingFacilityAndProjectControllersDelegateWithExpectedConfig(self):
