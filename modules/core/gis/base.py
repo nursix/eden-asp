@@ -1513,7 +1513,6 @@ class GIS:
                     if len(pes) == 1:
                         query |= (ctable.pe_id == pes[0])
                     else:
-                        pes = [int(i) for i in pes if i]
                         query |= (ctable.pe_id.belongs(pes))
 
                     # Order by pe_type (defined in gis_config)

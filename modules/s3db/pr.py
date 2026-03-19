@@ -7967,7 +7967,6 @@ def pr_group_update_affiliations(record):
     for m in current_memberships:
         group, person = m
         pr_add_affiliation(group, person, role=MEMBERS, role_type=OU)
-    return
 
 # =============================================================================
 def pr_human_resource_update_affiliations(person_id):
@@ -8219,9 +8218,8 @@ def pr_get_pe_id(entity, record_id=None):
                                                       ).first()
             else:
                 return None
-    if record:
-        return record.pe_id
-    return None
+
+    return record.pe_id if record else None
 
 # =============================================================================
 # Back-end Role Tools
@@ -8258,7 +8256,8 @@ def pr_define_role(pe_id,
             "role": role,
             "role_type": role_type,
             "entity_type": entity_type,
-            "sub_type": sub_type}
+            "sub_type": sub_type,
+            }
 
     rtable = s3db.pr_role
     if role:
@@ -8310,7 +8309,8 @@ def pr_add_to_role(role_id, pe_id):
     query = (atable.role_id == role_id) & \
             (atable.pe_id == pe_id)
     affiliation = current.db(query).select(atable.id,
-                                           limitby=(0, 1)).first()
+                                           limitby = (0, 1),
+                                           ).first()
     if affiliation is None:
         # Insert affiliation record
         atable.insert(role_id=role_id, pe_id=pe_id)
@@ -8340,7 +8340,8 @@ def pr_remove_from_role(role_id, pe_id):
         data = {"deleted": True,
                 "role_id": None,
                 "pe_id": None,
-                "deleted_fk": json.dumps(deleted_fk)}
+                "deleted_fk": json.dumps(deleted_fk),
+                }
         affiliation.update_record(**data)
 
         # Clear descendant paths
@@ -8363,7 +8364,7 @@ def pr_get_role_paths(pe_id, roles=None, role_types=None):
             role_types: list of role types to limit the search
 
         Reutrns:
-            a Storage() of S3MultiPaths with the role names as keys
+            a dict of S3MultiPaths with the role names as keys
 
         Note:
             role_types is ignored if roles gets specified
@@ -8393,7 +8394,7 @@ def pr_get_role_paths(pe_id, roles=None, role_types=None):
                                     rtable.pe_id,
                                     )
 
-    role_paths = Storage()
+    role_paths = {}
     for role in rows:
         name = role.role
         if name in role_paths:
@@ -8505,6 +8506,7 @@ def pr_get_path(pe_id):
         path.extend(role.pe_id, ppath, cut=pe_id)
         for p in path.paths:
             append(p)
+
     return multipath.clean()
 
 # =============================================================================
@@ -8544,9 +8546,8 @@ def pr_get_ancestors(pe_id):
             ppath = S3MultiPath(role.path)
         path.extend(role.pe_id, ppath, cut=pe_id)
         append(path)
-    ancestors = S3MultiPath.all_nodes(paths)
 
-    return ancestors
+    return [int(n) for n in S3MultiPath.all_nodes(paths)]
 
 # =============================================================================
 def pr_instance_type(pe_id):
@@ -8557,14 +8558,17 @@ def pr_instance_type(pe_id):
             pe_id: the PE ID
     """
 
+    instance_type = None
+
     if pe_id:
         etable = current.s3db.pr_pentity
         row = current.db(etable.pe_id == pe_id).select(etable.instance_type,
-                                                       limitby = (0, 1)
+                                                       limitby = (0, 1),
                                                        ).first()
         if row:
-            return row.instance_type
-    return None
+            instance_type = row.instance_type
+
+    return instance_type
 
 # =============================================================================
 def pr_default_realms(entity):
@@ -8587,8 +8591,8 @@ def pr_default_realms(entity):
             (rtable.deleted != True) & \
             (rtable.role_type == OU)
     rows = current.db(query).select(rtable.pe_id)
-    realms = [row.pe_id for row in rows]
-    return realms
+
+    return [row.pe_id for row in rows]
 
 # =============================================================================
 def pr_realm_users(realm, roles=None, role_types=OU):
@@ -8635,10 +8639,8 @@ def pr_realm_users(realm, roles=None, role_types=OU):
                  (ltable.user_id == utable.id) & \
                  (utable.deleted != True)
     rows = current.db(query).select(utable.id, utable[userfield])
-    if rows:
-        return Storage([(row.id, row[userfield]) for row in rows])
-    else:
-        return Storage()
+
+    return {row.id: row[userfield] for row in rows}
 
 # =============================================================================
 def pr_ancestors(entities):
@@ -8650,11 +8652,12 @@ def pr_ancestors(entities):
             entities: List of PE IDs
 
         Returns:
-            Storage of lists of PE IDs
+            dict of lists of PE IDs
     """
 
     if not entities:
-        return Storage()
+        return {}
+    ancestors = {pe_id: [] for pe_id in entities}
 
     s3db = current.s3db
     atable = s3db.pr_affiliation
@@ -8668,8 +8671,8 @@ def pr_ancestors(entities):
                                     rtable.pe_id,
                                     rtable.path,
                                     rtable.role_type,
-                                    atable.pe_id)
-    ancestors = Storage([(pe_id, []) for pe_id in entities])
+                                    atable.pe_id,
+                                    )
     r = rtable._tablename
     a = atable._tablename
     for row in rows:
@@ -8684,7 +8687,7 @@ def pr_ancestors(entities):
         path.extend(role.pe_id, ppath, cut=pe_id)
         paths.append(path)
     for pe_id in ancestors:
-        ancestors[pe_id] = S3MultiPath.all_nodes(ancestors[pe_id])
+        ancestors[pe_id] = [int(n) for n in S3MultiPath.all_nodes(ancestors[pe_id])]
     return ancestors
 
 # =============================================================================
@@ -8706,9 +8709,7 @@ def pr_descendants(pe_ids, skip=None, root=True):
     if skip is None:
         skip = set()
 
-    # We still need to support Py 2.6
-    #pe_ids = {i for i in pe_ids if i not in skip}
-    pe_ids = set(i for i in pe_ids if i not in skip)
+    pe_ids = {i for i in pe_ids if i not in skip}
     if not pe_ids:
         return {}
 
@@ -8723,26 +8724,21 @@ def pr_descendants(pe_ids, skip=None, root=True):
     query = (q & (rtable.role_type == OU) & (rtable.deleted != True)) & \
             ((atable.role_id == rtable.id) & (atable.deleted != True)) & \
             (etable.pe_id == atable.pe_id)
-
     rows = current.db(query).select(rtable.pe_id,
                                     atable.pe_id,
-                                    etable.instance_type)
+                                    etable.instance_type,
+                                    )
     r = rtable._tablename
     e = etable._tablename
     a = atable._tablename
 
     nodes = set()
-    ogetattr = object.__getattribute__
-
     result = {}
 
     skip.update(pe_ids)
     for row in rows:
-
-        parent = ogetattr(ogetattr(row, r), "pe_id")
-        child = ogetattr(ogetattr(row, a), "pe_id")
-        instance_type = ogetattr(ogetattr(row, e), "instance_type")
-        if instance_type != "pr_person":
+        parent, child = row[r].pe_id, row[a].pe_id
+        if row[e].instance_type != "pr_person":
             if parent not in result:
                 result[parent] = []
             result[parent].append(child)
@@ -8822,7 +8818,8 @@ def pr_get_descendants(pe_ids, entity_types=None, skip=None, ids=True):
         descendants = pr_get_descendants(node_ids,
                                          skip = skip,
                                          entity_types = entity_types,
-                                         ids = False)
+                                         ids = False,
+                                         )
         result.update(descendants)
 
     if ids:
@@ -8863,7 +8860,8 @@ def pr_rebuild_path(pe_id, clear=False):
     roles = db(query).select(rtable.id,
                              rtable.pe_id,
                              rtable.path,
-                             rtable.role_type)
+                             rtable.role_type,
+                             )
     for role in roles:
         if role.path is None:
             pr_role_rebuild_path(role, clear=clear)
