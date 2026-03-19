@@ -52,7 +52,6 @@ __all__ = (# PR Base Entities
 
            # S3 Models
            "PRImageLibraryModel",
-           "PRSavedFilterModel",
 
            # Representation Methods
            "pr_get_entities",
@@ -5767,91 +5766,6 @@ class PRImageLibraryModel(DataModel):
         dbset = db(table.original_name == original_image_name)
         dbset.delete_uploaded_files()
         dbset.delete()
-
-# =============================================================================
-class PRSavedFilterModel(DataModel):
-    """ Saved Filters """
-
-    # DEPRECATED
-    # TODO Remove after transition to usr_filter
-
-    names = ("pr_filter",
-             "pr_filter_id",
-             )
-
-    def model(self):
-
-        T = current.T
-
-        # ---------------------------------------------------------------------
-        tablename = "pr_filter"
-        self.define_table(tablename,
-                          self.super_link("pe_id", "pr_pentity"),
-                          Field("title"),
-                          # Controller/Function/Resource/URL are used just
-                          # for Saved Filters
-                          Field("controller"),
-                          Field("function"),
-                          Field("resource"), # tablename
-                          Field("url"),
-                          Field("description", "text"),
-                          # Query is used for both Saved Filters and Subscriptions
-                          # Can use a Context to have this work across multiple
-                          # resources if a simple selector is insufficient
-                          Field("query", "text"),
-                          Field("serverside", "json",
-                                readable = False,
-                                writable = False,
-                                ),
-                          CommentsField(),
-                          )
-
-        represent = S3Represent(lookup=tablename, fields=["title"])
-        filter_id = FieldTemplate("filter_id", "reference %s" % tablename,
-                                  label = T("Filter"),
-                                  ondelete = "SET NULL",
-                                  represent = represent,
-                                  requires = IS_EMPTY_OR(
-                                                IS_ONE_OF(current.db, "pr_filter.id",
-                                                          represent,
-                                                          orderby="pr_filter.title",
-                                                          sort=True,
-                                                          )),
-                                  )
-
-        self.configure(tablename,
-                       listadd = False,
-                       list_fields = ["title",
-                                      "resource",
-                                      "url",
-                                      "query",
-                                      ],
-                       # list_layout = pr_filter_list_layout,
-                       onvalidation = self.pr_filter_onvalidation,
-                       orderby = "pr_filter.resource",
-                       )
-
-        # ---------------------------------------------------------------------
-        # Pass names back to global scope (s3.*)
-        #
-        return {"pr_filter_id": filter_id,
-                }
-
-    # -------------------------------------------------------------------------
-    @staticmethod
-    def pr_filter_onvalidation(form):
-        """
-            Ensure that JSON can be loaded by json.loads()
-        """
-
-        query = form.vars.get("query", None)
-        if query:
-            query = query.replace("'", "\"")
-            try:
-                json.loads(query)
-            except ValueError as e:
-                form.errors.query = "%s: %s" % (current.T("Query invalid"), e)
-            form.vars.query = query
 
 # =============================================================================
 # Representation Methods

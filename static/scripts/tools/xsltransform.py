@@ -52,7 +52,7 @@ def main(argv):
         except:
             tree = transform(tree, xslpath)
 
-    sys.stdout.write(etree.tostring(tree, pretty_print=True))
+    sys.stdout.write(etree.tostring(tree, pretty_print=True).decode('utf-8'))
 
 if __name__ == "__main__":
     sys.exit(main(sys.argv[1:]))
