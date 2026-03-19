@@ -1524,11 +1524,6 @@ class CMSNewsletterModel(DataModel):
         define_table(tablename,
                      Field("newsletter_id", "reference cms_newsletter"),
                      self.usr_filter_id("saved_filter_id"),
-                     # TODO deprecate:
-                     self.pr_filter_id(
-                         readable = False,
-                         writable = False,
-                         ),
                      )
 
         # ---------------------------------------------------------------------
