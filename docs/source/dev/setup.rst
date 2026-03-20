@@ -13,6 +13,9 @@ application development on your computer.
    general guideline, but commands may be different, and additional installation
    steps could be required.
 
+   You can use a docker container for development and testing. This is described
+   here.
+
 .. note::
 
    This guide further assumes that you have *Python* (version 3.9 or later)
@@ -86,6 +89,8 @@ To install Eden, clone it directly from GitHub:
 .. tip::
    You can of course choose any other target location than *~/eden* for
    the clone - just remember to use the correct path in subsequent commands.
+
+.. _entrance-docker-setup:
 
 Configure Eden as a web2py application by adding a symbolic link
 to the *eden* directory under *web2py/applications*:
