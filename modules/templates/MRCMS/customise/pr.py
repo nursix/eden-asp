@@ -384,6 +384,10 @@ def configure_inline_shelter_registration(component, shelters, person_id=None):
         field.comment = None
         field.widget = None
 
+        ctable = s3db.cr_shelter
+        dbset = db(ctable.id.belongs(shelters))
+        field.requires = IS_ONE_OF(dbset, "cr_shelter.id", field.represent)
+
         if len(shelters) > 1:
             # Configure dynamic options filter for shelter unit
             script = '''
