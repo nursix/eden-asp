@@ -17,6 +17,8 @@ Models in templates
 Re-routing controllers
 ----------------------
 
+ .. _docker:
+ 
 Development with Docker container
 ---------------------------------
 

@@ -14,7 +14,7 @@ application development on your computer.
    steps could be required.
 
    You can use a docker container for development and testing. This is described
-   here.
+   :ref:`here <docker>`.
 
 .. note::
 
