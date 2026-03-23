@@ -18,7 +18,7 @@ Re-routing controllers
 ----------------------
 
  .. _docker:
- 
+
 Development with Docker container
 ---------------------------------
 
@@ -116,11 +116,12 @@ Afterwards clone the Eden repo into your folder:
 
 Your folder should now look like this:
 
-.. treeview::
-   - :dir:`folder` Your folder
-      - :dir:`folder` eden
-      - :dir:`file` Dockerfile
-      - :dir:`file` docker-compose.yml
+.. code-block:: text
+
+   Your folder/                 
+   ├── eden/	# The eden repository must be cloned here
+   ├── Dockerfile
+   └── docker-compose.yml
 
 Now from inside of your folder you can build your image and your container:
 
