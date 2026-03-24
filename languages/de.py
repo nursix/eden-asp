@@ -956,6 +956,7 @@
 'Cannot certify result [%(reason)s]': 'Ergebnis kann nicht zertifiziert werden [%(reason)s]',
 'Cannot create appointment for cases from multiple organisations': 'Termine können nicht für Fälle mehrerer Organisationen angelegt werden',
 'Cannot disable your own account!': 'Eigenes Konto kann nicht deaktiviert werden.',
+'Cannot re-open a defunct shelter': 'Eine stillgelegte Unterkunft kann nicht wiedereröffnet werden',
 'Capacity (Max Persons)': 'Kapazität (Maximale Zahl von Personen)',
 'Capacity (m3)': 'Kapazität (m3)',
 'Capacity / Occupancy': 'Kapazität / Belegung',
