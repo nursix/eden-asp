@@ -3490,20 +3490,9 @@ Please go to %(url)s to approve this user."""
         htablename = "hrm_human_resource"
         htable = s3db.table(htablename)
 
-        if not htable or (not organisation_id and \
-                          settings.get_hrm_org_required()):
+        if not htable or (not organisation_id and settings.get_hrm_org_required()):
             # Module disabled or no user organisation set
             return None
-
-        def customise(hr_id):
-            """ Customise hrm_human_resource """
-            customise = settings.customise_resource(htablename)
-            if customise:
-                request = CRUDRequest("hrm", "human_resource",
-                                      current.request,
-                                      args = [str(hr_id)] if hr_id else [],
-                                      )
-                customise(request, htablename)
 
         # Determine the site ID
         site_id = user.site_id if hr_type == 1 else None
@@ -3527,7 +3516,6 @@ Please go to %(url)s to approve this user."""
             hr_id = record.id
 
             # Update the record
-            customise(hr_id)
             db(htable.id == hr_id).update(organisation_id = organisation_id,
                                           site_id = site_id,
                                           )
@@ -3543,7 +3531,6 @@ Please go to %(url)s to approve this user."""
                                      )
         else:
             # Multiple or no HR records of this type
-
             if rows:
                 # Multiple records
                 # => check if there is one for this organisation and site
@@ -3566,7 +3553,6 @@ Please go to %(url)s to approve this user."""
 
             else:
                 # Create new HR record
-                customise(hr_id = None)
                 record = Storage(person_id = person_id,
                                  organisation_id = organisation_id,
                                  site_id = site_id,
@@ -3587,6 +3573,14 @@ Please go to %(url)s to approve this user."""
             self.s3_set_record_owner(htable, hr_id, force_update=True)
 
             # Run onaccept
+            # - run resource customisation first to configure custom-callbacks
+            customise = settings.customise_resource(htablename)
+            if customise:
+                request = CRUDRequest("hrm", "human_resource",
+                                      current.request,
+                                      args = [str(hr_id)] if accepted=="update" else None,
+                                      )
+                customise(request, htablename)
             s3db.onaccept(htablename, record, method=accepted)
 
         return hr_id
