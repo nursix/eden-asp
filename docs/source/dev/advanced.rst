@@ -104,8 +104,7 @@ files in it:
 			volumes:
 				- ./eden:/workspace/eden
 			ports:
-				- "8000:8000"
-				- "5432:5432"
+				- "18000:8000"
 			tty: true
 			stdin_open: true
 
