@@ -52,6 +52,7 @@ files in it:
 			curl \
 			wget \
 			build-essential \
+			openssl \ 
 			libxml2 \
 			libxslt1.1 \
 			libgeos-c1v5 \
