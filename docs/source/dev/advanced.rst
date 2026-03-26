@@ -17,6 +17,8 @@ Models in templates
 Re-routing controllers
 ----------------------
 
+ .. _docker:
+
 Development with Docker container
 ---------------------------------
 
@@ -50,6 +52,7 @@ files in it:
 			curl \
 			wget \
 			build-essential \
+			openssl \ 
 			libxml2 \
 			libxslt1.1 \
 			libgeos-c1v5 \
@@ -101,8 +104,7 @@ files in it:
 			volumes:
 				- ./eden:/workspace/eden
 			ports:
-				- "8000:8000"
-				- "5432:5432"
+				- "18000:8000"
 			tty: true
 			stdin_open: true
 
@@ -114,11 +116,12 @@ Afterwards clone the Eden repo into your folder:
 
 Your folder should now look like this:
 
-.. treeview::
-   - :dir:`folder` Your folder
-      - :dir:`folder` eden
-      - :dir:`file` Dockerfile
-      - :dir:`file` docker-compose.yml
+.. code-block:: text
+
+   Your folder/                 
+   ├── eden/	# The eden repository must be cloned here
+   ├── Dockerfile
+   └── docker-compose.yml
 
 Now from inside of your folder you can build your image and your container:
 
