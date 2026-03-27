@@ -14,13 +14,12 @@ application development on your computer.
    steps could be required.
 
    You can use a docker container for development and testing. This is described
-   :ref:`here <docker>`.
+   :doc:`here <docker>`.
 
 .. note::
 
-   This guide further assumes that you have *Python* (version 3.9 or later)
-   installed, which comes bundled with the *pip* package installer - and that
-   you are familiar with the Python programming language.
+   This guide further assumes that you have *Python* (version 3.11 or later)
+   installed, and that you are familiar with the Python programming language.
 
    Additionally, you will need to have `git <https://git-scm.com/downloads>`_
    installed.
@@ -28,32 +27,34 @@ application development on your computer.
 Prerequisites
 -------------
 
-Eden requires a couple of Python libraries, which can be installed
-with the *pip* installer.
+Eden requires a couple of Python libraries - which you should install using
+the packet manager of your OS (e.g. *apt* on Debian).
 
-As a minimum, *lxml* and *python-dateutil* must be installed:
+.. note::
+
+   Alternatively, you can use *pip* to install the libraries. On newer
+   versions of your Linux distribution, you may have to use a virtual
+   environment in this case.
+
+As a minimum, *lxml* and *dateutil* must be installed:
 
 .. code-block:: bash
 
-   sudo pip install lxml python-dateutil
+   sudo apt install python3-lxml python3-dateutil
 
 The following are also required for normal operation:
 
 .. code-block:: bash
 
-   sudo pip install pyparsing requests xlrd xlwt openpyxl reportlab shapely geopy
+   sudo apt install python3-pyparsing python3-requests python3-reportlab
+   sudo apt install python3-shapely python3-geopy
+   sudo apt install python3-xlrd python3-xlwt python3-openpyxl
 
-Some specialist functionality may require additional libraries, e.g.:
+.. note::
 
-.. code-block:: bash
-
-   sudo pip install qrcode docx-mailmerge
-
-.. tip::
-
-   The above commands use `sudo pip` to install the libraries globally.
-   If you want to install them only in your home directory, you can
-   omit `sudo`.
+   Certain specialist functionality may require additional libraries, e.g.
+   python3-qrcode. Check the system messages during the first run for such
+   optional dependencies.
 
 Installing web2py
 -----------------
@@ -69,13 +70,19 @@ To install web2py, clone it directly from GitHub:
    the clone - just remember to use the correct path in subsequent commands.
 
 Change into the *web2py* directory, and reset the repository (including
-all submodules) to the supported stable version (currently 2.27.1):
+all submodules) to the supported stable version (currently 3.1.1):
 
 .. code-block:: bash
 
    cd ~/web2py
-   git reset --hard 49bb23c4
+   git reset --hard d6dcbef
    git submodule update --init --recursive
+
+.. note::
+
+   Certain versions of web2py+PyDAL may need patching in order to work
+   correctly. If a patch is required, it will be published alongside
+   the latest Sahana Eden release on `GitHub <https://github.com/sahana/eden/releases>`_.
 
 Installing Eden
 ---------------

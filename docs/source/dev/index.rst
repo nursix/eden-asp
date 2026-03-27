@@ -6,6 +6,7 @@ Building Applications
    :caption: Contents:
 
    Setting up for Development <setup>
+   Using Docker <docker>
    About Templates <settings>
    About Controllers <controller>
    Implementing Templates <templates>
