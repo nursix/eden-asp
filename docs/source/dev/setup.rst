@@ -30,11 +30,15 @@ Prerequisites
 Eden requires a couple of Python libraries - which you should install using
 the packet manager of your OS (e.g. *apt* on Debian).
 
+Alternatively, where no suitable package exists for your distribution, you
+can use *pip* to install the library.
+
 .. note::
 
-   Alternatively, you can use *pip* to install the libraries. On newer
-   versions of your Linux distribution, you may have to use a virtual
-   environment in this case.
+   On newer OS versions, installation with *pip* is discouraged as the
+   pip-installed packages could interfere with system dependencies. In
+   this case, you may have to either use a virtual environment - or run
+   pip with ``--break-system-packages``.
 
 As a minimum, *lxml* and *dateutil* must be installed:
 
@@ -46,15 +50,16 @@ The following are also required for normal operation:
 
 .. code-block:: bash
 
-   sudo apt install python3-pyparsing python3-requests python3-reportlab
+   sudo apt install python3-requests python3-pyparsing
    sudo apt install python3-shapely python3-geopy
    sudo apt install python3-xlrd python3-xlwt python3-openpyxl
+   sudo apt install python3-reportlab
 
 .. note::
 
-   Certain specialist functionality may require additional libraries, e.g.
-   python3-qrcode. Check the system messages during the first run for such
-   optional dependencies.
+   Certain specialist functionality may require additional libraries (e.g.
+   *python3-qrcode*). Check the system messages during the first run for
+   such optional dependencies.
 
 Installing web2py
 -----------------

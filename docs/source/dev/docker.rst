@@ -127,7 +127,8 @@ The folder `eden` from your project folder is mounted on your container to
 here will also change the files in your local eden folder and the other way around.
 This way you can work locally with the IDE of your choice on the Eden project.
 
-From here you can follow the main documentation for configuring Eden as a web2py application as described :ref:`here <entrance-docker-setup>`.
+From here you can follow the main documentation for configuring Eden as a
+web2py application as described :ref:`here <entrance-docker-setup>`.
 
 .. note::
 
