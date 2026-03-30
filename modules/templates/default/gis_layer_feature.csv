@@ -15,7 +15,6 @@ Shelters,All Active Shelters,cr,shelter,shelter,Campground,{name} (T('Shelter'))
 Staff,All Active Staff,hrm,staff,staff,"Contact, Dreadlocks",{person_id} (T('Staff'))<br />{job_title_id}<br />{organisation_id},"person_id,job_title_id,organisation_id",~.status=1,,True,True,,,,False,,,
 Stock Items,Used for Search Results,inv,inv_item,,,{item_id} (T('Stock Item'))<br />{site_id}<br />{quantity} {item_pack_id}<br />T('Expires') {expiry_date},"item_id,site_id,quantity,item_pack_id,expiry_date",,,,,,,,False,False,,
 Training Events,Used for Search Results,hrm,training_event,,,{course_id} (T('Training Event'))<br />{site_id}<br />{start_date},"course_id,site_id,start_date",,,True,,,,,False,False,,
-Tweets,All Tweets,msg,twitter_result,twitter,,{body},body,,,True,,,,,False,,,
 Vehicles,,vehicle,vehicle,vehicle,Car,{number} (T('Vehicle'))<br />{person_id},"number,person_id",,,True,True,,,,False,,,
 Volunteers,All Active Volunteers,vol,volunteer,volunteer,"Contact, Dreadlocks",{person_id} (T('Volunteer'))<br />{organisation_id},"person_id,organisation_id",~.status=1,,True,True,,,,False,,,
 Warehouses,All Active Warehouses,inv,warehouse,warehouse,Building,{name} (T('Warehouse'))<br />{organisation_id},"name,organisation_id",~.obsolete=False,,True,,,,,False,,,

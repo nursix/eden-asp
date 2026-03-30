@@ -206,10 +206,6 @@ if len(pop_list) > 0:
                           delete_from_server = False
                           )
         update_super(table, dict(id=id))
-        # Need entries for the Settings/1/Update URLs to work
-        #table = db.msg_twitter_channel
-        #id = table.insert(enabled = False, default=True)
-        #update_super(table, dict(id=id))
 
     # Budget Module
     if has_module("budget"):

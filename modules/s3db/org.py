@@ -4250,7 +4250,7 @@ class OrgFacilityModel(DataModel):
     names = ("org_facility_type",
              "org_facility",
              "org_site_facility_type",
-             "org_facility_type_id", # Passed to global for s3translate
+             "org_facility_type_id",
              "org_facility_geojson",
              )
 

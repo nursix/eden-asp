@@ -245,36 +245,10 @@
             <!-- Other Parameters -->
             <xsl:apply-templates select="../resource[@name='cap_info_parameter'][reference[@field='info_id' and @uuid=$uuid]]"/>
 
-            <!-- Tweet & SMS -->
+            <!-- SMS -->
             <xsl:variable name="EventTypeName" select="reference[@field='event_type_id']/text()"/>
             <xsl:variable name="Headline" select="data[@field='headline']/text()"/>
             <xsl:variable name="AreaName" select="../resource[@name='cap_area']/data[@field='name']/text()"/>
-
-            <parameter>
-                <valueName>layer:tweet</valueName>
-                <value>
-                    <xsl:value-of select="translate(../data[@field='status']/@value, '&quot;', '')"/>
-                    <xsl:text>&#160;</xsl:text>
-                    <xsl:apply-templates select="../data[@field='msg_type']"/>
-                    <xsl:text>: </xsl:text>
-                    <xsl:choose>
-                        <xsl:when test="$Headline!=''">
-                            <xsl:value-of select="concat($Headline, '!')"/>
-                        </xsl:when>
-                        <xsl:when test="$EventTypeName!=''">
-                            <xsl:value-of select="concat($EventTypeName, '!')"/>
-                        </xsl:when>
-                    </xsl:choose>
-                    <xsl:text>&#x0A;</xsl:text>
-                    <xsl:text>Sender: </xsl:text>
-                    <xsl:value-of select="../data[@field='sender']/text()"/>
-                    <xsl:if test="$Web!=''">
-                        <xsl:text>&#x0A;</xsl:text>
-                        <xsl:text>Website: </xsl:text>
-                        <xsl:value-of select="$Web"/>
-                    </xsl:if>
-                </value>
-            </parameter>
 
             <parameter>
                 <valueName>layer:sms</valueName>
