@@ -35,7 +35,7 @@ from gluon.fileutils import parse_version
 class UpdateCheck:
 
     # This is the current version of requirements
-    REQUIREMENTS = 6
+    REQUIREMENTS = 7
 
     # This is the required version of models/000_config.py
     CONFIG = 1
@@ -90,7 +90,7 @@ class UpdateCheck:
                 tuple of lists of strings (errors, warnings)
         """
 
-        supported_versions = ("2.27.1", "3.1.1")
+        supported_versions = ("3.1.1", "3.2.2")
 
         version_ok = True
         try:
@@ -188,7 +188,7 @@ class UpdateCheck:
         edited_pattern = r"FINISHED_EDITING_\w*\s*=\s*(True|False)"
         edited_matcher = re.compile(edited_pattern).match
         has_edited = False
-        with open(dst_path) as f:
+        with open(dst_path, encoding="utf-8") as f:
             for line in f:
                 edited_result = edited_matcher(line)
                 if edited_result:
@@ -203,7 +203,7 @@ class UpdateCheck:
         version_pattern = r"VERSION =\s*([0-9]+)"
         version_matcher = re.compile(version_pattern).match
         has_version = False
-        with open(dst_path) as f:
+        with open(dst_path, encoding="utf-8") as f:
             for line in f:
                 version_result = version_matcher(line)
                 if version_result:
@@ -232,7 +232,7 @@ class UpdateCheck:
         """
 
         try:
-            with open(path) as f:
+            with open(path, encoding="utf-8") as f:
                 dependencies = f.read().splitlines()
                 msg = ""
                 for dependency in dependencies:
@@ -271,8 +271,8 @@ class UpdateCheck:
                 dst_path: the destination path
         """
 
-        with open(src_path) as src:
-            with open(dst_path, "w") as dst:
+        with open(src_path, encoding="utf-8") as src:
+            with open(dst_path, "w", encoding="utf-8") as dst:
                 for line in src:
                     if "akeytochange" in line:
                         # Generate a random hmac_key to secure the passwords in case

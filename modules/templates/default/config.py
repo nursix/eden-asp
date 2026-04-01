@@ -103,7 +103,7 @@ def config(settings):
     #settings.auth.registration_requests_image = True
     # Uncomment this to direct newly-registered users to their volunteer page to be able to add extra details
     # NB This requires Verification/Approval to be Off
-    # @ToDo: Extend to all optional Profile settings: Homepage, Twitter, Facebook, Mobile Phone, Image
+    # @ToDo: Extend to all optional Profile settings: Homepage, Facebook, Mobile Phone, Image
     #settings.auth.registration_volunteer = True
     # Terms of Service to be able to Register on the system
     # https://termsfeed.com/terms-conditions/generator/

@@ -1204,22 +1204,15 @@ class OptionsMenu:
                         #M("Facebook", f="facebook_inbox"),
                         M("RSS", f="rss"),
                         M("SMS", f="sms_inbox"),
-                        M("Twitter", f="twitter_inbox"),
                     ),
                     M("Outbox", f="outbox")(
                         M("Email", f="email_outbox"),
                         M("Facebook", f="facebook_outbox"),
                         M("SMS", f="sms_outbox"),
-                        M("Twitter", f="twitter_outbox"),
                     ),
                     M("Message Log", f="message"),
                     M("Distribution groups", f="group")(
                         M("Group Memberships", f="group_membership"),
-                    ),
-                    M("Twitter Search", f="twitter_result")(
-                       M("Search Queries", f="twitter_search"),
-                       M("Results", f="twitter_result"),
-                       # @ToDo KeyGraph Results
                     ),
                     M("Administration", restrict=[ADMIN], link=False)(
                         M("Email Channels (Inbound)", c="msg", f="email_channel"),
@@ -1231,7 +1224,6 @@ class OptionsMenu:
                         M("SMS WebAPI Channels", c="msg", f="sms_webapi_channel"),
                         M("Mobile Commons Channels", c="msg", f="mcommons_channel"),
                         M("Twilio Channels", c="msg", f="twilio_channel"),
-                        M("Twitter Channels", c="msg", f="twitter_channel"),
                         M("Parsers", c="msg", f="parser"),
                         ),
                     )

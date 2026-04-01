@@ -41,7 +41,6 @@
         Phone...................org_organisation.phone
         Phone2..................pr_contact.value
         Facebook................pr_contact.value
-        Twitter.................pr_contact.value
         Logo....................org_organisation.logo
         Year....................org_organisation.year
         KV:XX...................org_organisation_tag Key,Value (Key = XX in column name, value = cell in row. Multiple allowed)
@@ -524,17 +523,6 @@
                         <data field="contact_method">FACEBOOK</data>
                         <data field="value">
                             <xsl:value-of select="$Facebook"/>
-                        </data>
-                    </resource>
-                </xsl:if>
-
-                <!-- Twitter -->
-                <xsl:variable name="Twitter" select="col[@field='Twitter']/text()"/>
-                <xsl:if test="$Twitter!=''">
-                    <resource name="pr_contact">
-                        <data field="contact_method">TWITTER</data>
-                        <data field="value">
-                            <xsl:value-of select="$Twitter"/>
                         </data>
                     </resource>
                 </xsl:if>

@@ -200,47 +200,6 @@ if has_module("msg"):
     tasks["msg_process_outbox"] = msg_process_outbox
 
     # -------------------------------------------------------------------------
-    def msg_twitter_search(search_id, user_id=None):
-        """
-            Perform a Search of Twitter
-            - will normally be done Asynchronously if there is a worker alive
-
-            @param search_id: one of s3db.msg_twitter_search.id
-            @param user_id: calling request's auth.user.id or None
-
-        """
-        if user_id:
-            # Authenticate
-            auth.s3_impersonate(user_id)
-
-        # Run the Task & return the result
-        result = msg.twitter_search(search_id)
-        db.commit()
-        return result
-
-    tasks["msg_twitter_search"] = msg_twitter_search
-
-    # -------------------------------------------------------------------------
-    def msg_process_keygraph(search_id, user_id=None):
-        """
-            Process Twitter Search Results with KeyGraph
-            - will normally be done Asynchronously if there is a worker alive
-
-            @param search_id: one of s3db.msg_twitter_search.id
-            @param user_id: calling request's auth.user.id or None
-        """
-        if user_id:
-            # Authenticate
-            auth.s3_impersonate(user_id)
-
-        # Run the Task & return the result
-        result = msg.process_keygraph(search_id)
-        db.commit()
-        return result
-
-    tasks["msg_process_keygraph"] = msg_process_keygraph
-
-    # -------------------------------------------------------------------------
     def msg_poll(tablename, channel_id, user_id=None):
         """
             Poll an inbound channel

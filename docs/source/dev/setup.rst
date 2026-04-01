@@ -14,13 +14,12 @@ application development on your computer.
    steps could be required.
 
    You can use a docker container for development and testing. This is described
-   :ref:`here <docker>`.
+   :doc:`here <docker>`.
 
 .. note::
 
-   This guide further assumes that you have *Python* (version 3.9 or later)
-   installed, which comes bundled with the *pip* package installer - and that
-   you are familiar with the Python programming language.
+   This guide further assumes that you have *Python* (version 3.11 or later)
+   installed, and that you are familiar with the Python programming language.
 
    Additionally, you will need to have `git <https://git-scm.com/downloads>`_
    installed.
@@ -28,32 +27,39 @@ application development on your computer.
 Prerequisites
 -------------
 
-Eden requires a couple of Python libraries, which can be installed
-with the *pip* installer.
+Eden requires a couple of Python libraries - which you should install using
+the packet manager of your OS (e.g. *apt* on Debian).
 
-As a minimum, *lxml* and *python-dateutil* must be installed:
+Alternatively, where no suitable package exists for your distribution, you
+can use *pip* to install the library.
+
+.. note::
+
+   On newer OS versions, installation with *pip* is discouraged as the
+   pip-installed packages could interfere with system dependencies. In
+   this case, you may have to either use a virtual environment - or run
+   pip with ``--break-system-packages``.
+
+As a minimum, *lxml* and *dateutil* must be installed:
 
 .. code-block:: bash
 
-   sudo pip install lxml python-dateutil
+   sudo apt install python3-lxml python3-dateutil
 
 The following are also required for normal operation:
 
 .. code-block:: bash
 
-   sudo pip install pyparsing requests xlrd xlwt openpyxl reportlab shapely geopy
+   sudo apt install python3-requests python3-pyparsing
+   sudo apt install python3-shapely python3-geopy
+   sudo apt install python3-xlrd python3-xlwt python3-openpyxl
+   sudo apt install python3-reportlab
 
-Some specialist functionality may require additional libraries, e.g.:
+.. note::
 
-.. code-block:: bash
-
-   sudo pip install qrcode docx-mailmerge
-
-.. tip::
-
-   The above commands use `sudo pip` to install the libraries globally.
-   If you want to install them only in your home directory, you can
-   omit `sudo`.
+   Certain specialist functionality may require additional libraries (e.g.
+   *python3-qrcode*). Check the system messages during the first run for
+   such optional dependencies.
 
 Installing web2py
 -----------------
@@ -69,13 +75,19 @@ To install web2py, clone it directly from GitHub:
    the clone - just remember to use the correct path in subsequent commands.
 
 Change into the *web2py* directory, and reset the repository (including
-all submodules) to the supported stable version (currently 2.27.1):
+all submodules) to the supported stable version (currently 3.2.2):
 
 .. code-block:: bash
 
    cd ~/web2py
-   git reset --hard 49bb23c4
+   git reset --hard a7330a2
    git submodule update --init --recursive
+
+.. note::
+
+   Certain versions of web2py+PyDAL may need patching in order to work
+   correctly. If a patch is required, it will be published alongside
+   the latest Sahana Eden release on `GitHub <https://github.com/sahana/eden/releases>`_.
 
 Installing Eden
 ---------------
@@ -156,33 +168,31 @@ This will give a console output similar to this:
    :caption: Console output during first run
 
    WARNING:  S3Msg unresolved dependency: pyserial required for Serial port modem usage
-   WARNING:  Setup unresolved dependency: ansible required for Setup Module
-   WARNING: Error when loading optional dependency: google-api-python-client
-   WARNING: Error when loading optional dependency: translate-toolkit
+   WARNING:  S3MSG unresolved dependency: sgmllib3k required for Feed import on Python 3.x
 
    *** FIRST RUN - SETTING UP DATABASE ***
 
    Setting Up System Roles...
    Setting Up Scheduler Tasks...
    Creating Database Tables (this can take a minute)...
-   Database Tables Created. (3.74 sec)
+   Database Tables Created. (7.41 sec)
 
    Please be patient whilst the database is populated...
 
    Importing default/base...
-   Imports for default/base complete (1.99 sec)
+   Imports for default/base complete (1.88 sec)
 
    Importing default...
-   Imports for default complete (5.20 sec)
+   Imports for default complete (1.61 sec)
 
    Importing default/users...
-   Imports for default/users complete (0.04 sec)
+   Imports for default/users complete (0.05 sec)
 
    Updating database...
-   Location Tree update completed (0.63 sec)
-   Demographic Data aggregation completed (0.01 sec)
+   Location Tree update completed (0.39 sec)
+   Demographic Data aggregation completed (0.02 sec)
 
-   Pre-populate complete (7.90 sec)
+   Pre-populate complete (3.96 sec)
 
    Creating indexes...
 
@@ -210,13 +220,13 @@ Once the server is running, it will give you a localhost URL to access it:
    :caption: Console output of web2py after launch
 
    web2py Web Framework
-   Created by Massimo Di Pierro, Copyright 2007-2023
-   Version 2.27.1-stable+timestamp.2023.11.15.23.33.20
+   Created by Massimo Di Pierro, Copyright 2007-2026
+   3.2.2-stable+timestamp.2026.03.02.22.10.15
    Database drivers available: sqlite3, psycopg2, imaplib, pymysql, pyodbc
 
    please visit:
-           http://127.0.0.1:8000/
-   use "kill -SIGTERM 28254" to shutdown the web2py server
+         http://127.0.0.1:8000/
+   use "kill -SIGTERM 2827" to shutdown the web2py server
 
 Append the application name *eden* to the URL (http://127.0.0.1:8000/eden),
 and open that address in your web browser to access Eden.

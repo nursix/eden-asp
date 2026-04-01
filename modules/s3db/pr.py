@@ -253,13 +253,6 @@ class PRPersonEntityModel(DataModel):
                                           "contact_method": "FACEBOOK",
                                           },
                                       },
-                                     # Twitter:
-                                     {"name": "twitter",
-                                      "joinby": pe_id,
-                                      "filterby": {
-                                          "contact_method": "TWITTER",
-                                          },
-                                      },
                                      ),
                        pr_contact_emergency = pe_id,
                        pr_contact_person = pe_id,
@@ -3629,7 +3622,7 @@ class PRContactModel(DataModel):
                            readable = False,
                            writable = False,
                            ),
-                     # Used to determine whether an RSS/Facebook/Twitter feed should be imported into the main newsfeed
+                     # Used to determine whether an RSS/Facebook feed should be imported into the main newsfeed
                      # (usually used for Organisational ones)
                      Field("poll", "boolean",
                            default = False,
@@ -6609,7 +6602,7 @@ class pr_ContactRepresent(S3Represent):
                  show_link = True,
                  ):
         """
-            Show a Contact with appropriate hyperlinks if Facebook or Twitter
+            Show a Contact with appropriate hyperlinks
 
             Args:
                 see super
@@ -6647,10 +6640,7 @@ class pr_ContactRepresent(S3Represent):
             return A(v, _href=v)
 
         contact_method = row.contact_method
-        if contact_method == "TWITTER":
-            url = "http://twitter.com/%s" % v
-            return A(v, _href=url)
-        elif contact_method == "FACEBOOK":
+        if contact_method == "FACEBOOK":
             url = "http://%s" % v
             return A(v, _href=url)
         else:
@@ -7360,7 +7350,6 @@ class pr_Contacts(CRUDMethod):
                 "HOME_PHONE": 4,
                 "SKYPE": 5,
                 "RADIO": 6,
-                "TWITTER": 7,
                 "FACEBOOK": 8,
                 "WHATSAPP": 9,
                 "FAX": 10,
@@ -9206,8 +9195,6 @@ def pr_contact_list_layout(list_id, item_id, resource, rfields, record):
         icon = "skype"
     elif contact_method == "FACEBOOK":
         icon = "facebook"
-    elif contact_method == "TWITTER":
-        icon = "twitter"
     elif contact_method == "RADIO":
         icon = "microphone"
     elif contact_method == "RSS":

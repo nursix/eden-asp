@@ -181,7 +181,6 @@ class ICON(I):
             "th": "fa-th",
             "time": "fa-time",
             "truck": "fa-truck",
-            "twitter": "fa-twitter",
             "undo": "fa-undo",
             "unsent": "fa-times",
             "up": "fa-caret-up",
@@ -272,7 +271,6 @@ class ICON(I):
             "tags": "fi-pricetag-multiple",
             "tasks": "fi-clipboard-notes",
             "time": "fi-clock",
-            "twitter": "fi-social-twitter",
             "undo": "fi-arrow-left",
             "unsent": "fi-x",
             "upload": "fi-upload",
@@ -366,7 +364,6 @@ class ICON(I):
             "tasks": "icon-tasks",
             "time": "icon-time",
             "truck": "icon-truck",
-            "twitter": "icon-twitter",
             "undo": "icon-undo",
             "unsent": "icon-remove",
             "up": "icon-caret-up",
@@ -387,7 +384,7 @@ class ICON(I):
         """
 
         self.name = name
-        super(ICON, self).__init__(" ", **attr)
+        super().__init__(" ", **attr)
 
     # -------------------------------------------------------------------------
     def xml(self):
@@ -405,7 +402,7 @@ class ICON(I):
         if css_class:
             self.add_class(css_class)
 
-        return super(ICON, self).xml()
+        return super().xml()
 
     # -------------------------------------------------------------------------
     @classmethod
