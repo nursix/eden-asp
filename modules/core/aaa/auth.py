@@ -656,7 +656,7 @@ Thank you"""
 
             form = SQLFORM(utable,
                            fields = [userfield, passfield],
-                           hidden = {"_next": request.vars._next},
+                           hidden = {"_next": self.get_vars_next()},
                            showid = settings.showid,
                            submit_button = T("Login"),
                            delete_label = messages.delete_label,
@@ -847,7 +847,7 @@ Thank you"""
             else:
                 # We need to pass through login again before going on
                 if next is DEFAULT:
-                    next = request.vars._next or deployment_settings.get_auth_login_next()
+                    next = self.get_vars_next() or deployment_settings.get_auth_login_next()
                 next = "%s?_next=%s" % (URL(r=request), next)
                 redirect(cas.login_url(next))
 
@@ -883,7 +883,7 @@ Thank you"""
                     if callable(next):
                         next = next()
                 else:
-                    next = request.vars.get("_next")
+                    next = self.get_vars_next()
                     if not next:
                         next = deployment_settings.get_auth_login_next()
                         if callable(next):
@@ -1271,18 +1271,17 @@ Thank you"""
 
         T = current.T
 
-        request = current.request
         response = current.response
         session = current.session
         settings = current.deployment_settings
 
-        next_url = request.get_vars.get("_next")
+        next_url = current.auth.get_vars_next()
         if not next_url:
             next_url = settings.get_auth_login_next()
             if callable(next_url):
                 next_url = next_url()
         if not next_url:
-            next_url = URL(c = "default", f = "index")
+            next_url = URL(c="default", f="index")
 
         session.s3.pending_consent = False
 
@@ -1335,7 +1334,7 @@ Thank you"""
         response.form_label_separator = ""
         form = SQLFORM.factory(table_name = "auth_consent",
                                record = None,
-                               hidden = {"_next": request.vars._next},
+                               hidden = {"_next": self.get_vars_next()},
                                labels = labels,
                                separator = "",
                                showid = False,
@@ -1414,7 +1413,7 @@ $('form.auth_consent').submit(S3ClearNavigateAwayConfirm);''')
             redirect(settings.logged_url)
 
         if next == DEFAULT:
-            next = request.vars._next or settings.register_next
+            next = self.get_vars_next() or settings.register_next
         if onvalidation == DEFAULT:
             onvalidation = settings.register_onvalidation
         if onaccept == DEFAULT:
@@ -1439,7 +1438,7 @@ $('form.auth_consent').submit(S3ClearNavigateAwayConfirm);''')
                    ]
         current.response.form_label_separator = ""
         form = SQLFORM(utable,
-                       hidden = {"_next": request.vars._next},
+                       hidden = {"_next": self.get_vars_next()},
                        labels = labels,
                        separator = "",
                        showid = settings.showid,
@@ -1792,7 +1791,7 @@ $('form.auth_consent').submit(S3ClearNavigateAwayConfirm);''')
         response.form_label_separator = ""
         form = SQLFORM.factory(table_name = "auth_user",
                                record = None,
-                               hidden = {"_next": request.vars._next,
+                               hidden = {"_next": self.get_vars_next(),
                                          "registration_key": key,
                                          },
                                separator = ":",
@@ -1890,11 +1889,8 @@ $('form.auth_consent').submit(S3ClearNavigateAwayConfirm);''')
         ## Only allowed to select Orgs that the user has update access to
         #utable.organisation_id.requires = \
         #    current.s3db.org_organisation_requires(updateable = True)
-
         if next == DEFAULT:
-            next = request.get_vars._next \
-                or request.post_vars._next \
-                or settings.profile_next
+            next = self.get_vars_next() or settings.profile_next
         if onvalidation == DEFAULT:
             onvalidation = settings.profile_onvalidation
         if onaccept == DEFAULT:

@@ -186,7 +186,7 @@ class TestResultRegistration(CRUDMethod):
         response.form_label_separator = ""
         form = SQLFORM.factory(table_name = "test_result",
                                record = None,
-                               hidden = {"_next": request.vars._next},
+                               hidden = {"_next": auth.get_vars_next()},
                                labels = labels,
                                separator = "",
                                showid = False,

@@ -976,7 +976,7 @@ class register(CustomController):
         response.form_label_separator = ""
         form = SQLFORM.factory(table_name = utable._tablename,
                                record = None,
-                               hidden = {"_next": request.vars._next},
+                               hidden = {"_next": auth.get_vars_next()},
                                labels = labels,
                                separator = "",
                                showid = False,
@@ -1019,7 +1019,7 @@ class register(CustomController):
                 formvars["organisation_id"] = organisation_id
 
             # Create the user record
-            user_id = utable.insert(**filter_fields(utable, formvars, id=False))
+            user_id = utable.insert(**filter_fields(utable, formvars, allow_id=False))
             formvars.id = user_id
 
             # Set org_group
@@ -1073,14 +1073,14 @@ class register(CustomController):
                 if "language" not in form.vars:
                     # Was missing from login form
                     form.vars.language = T.accepted_language
-                user = Storage(filter_fields(utable, form.vars, id=True))
+                user = Storage(filter_fields(utable, form.vars, allow_id=True))
                 auth.login_user(user)
 
                 # Send welcome email
                 auth.s3_send_welcome_email(form.vars)
 
                 # Where to go next?
-                register_next = request.vars._next or auth_settings.register_next
+                register_next = auth.get_vars_next() or auth_settings.register_next
 
             else:
                 # Request User Verify their Email
@@ -1588,7 +1588,7 @@ class verify_email(CustomController):
         response.form_label_separator = ""
         form = SQLFORM.factory(table_name = "auth_user",
                                record = None,
-                               hidden = {"_next": request.vars._next,
+                               hidden = {"_next": current.auth.get_vars_next(),
                                          "registration_key": key,
                                          },
                                separator = ":",
@@ -1907,7 +1907,7 @@ class register_invited(CustomController):
         response.form_label_separator = ""
         form = SQLFORM.factory(table_name = utable._tablename,
                                record = None,
-                               hidden = {"_next": request.vars._next},
+                               hidden = {"_next": auth.get_vars_next()},
                                labels = labels,
                                separator = "",
                                showid = False,
@@ -1933,7 +1933,7 @@ class register_invited(CustomController):
 
             # Get the account
             account = self.account(key, form_vars.code)
-            account.update_record(**filter_fields(utable, form_vars, id=False))
+            account.update_record(**filter_fields(utable, form_vars, allow_id=False))
 
             del session.s3["invite_key"]
 
@@ -1958,7 +1958,7 @@ class register_invited(CustomController):
             self.send_welcome_email(account)
 
             # Log them in
-            user = Storage(filter_fields(utable, account, id=True))
+            user = Storage(filter_fields(utable, account, allow_id=True))
             auth.login_user(user)
 
             auth_messages = auth.messages

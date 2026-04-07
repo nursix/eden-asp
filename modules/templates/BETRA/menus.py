@@ -110,10 +110,8 @@ class MainMenu(default.MainMenu):
         if not auth.is_logged_in():
             request = current.request
             login_next = URL(args=request.args, vars=request.get_vars)
-            if request.controller == "default" and \
-               request.function == "user" and \
-               "_next" in request.get_vars:
-                login_next = request.get_vars["_next"]
+            if request.controller == "default" and request.function == "user":
+                login_next = auth.get_vars_next() or login_next
 
             #self_registration = settings.get_security_self_registration()
             menu_personal = MP()(
