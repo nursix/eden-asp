@@ -1078,14 +1078,14 @@ def configure_case_file(r, privileged=False, administration=False):
                                        privileged = privileged,
                                        )
 
-            # Configure case reports
-            configure_case_reports(resource)
-
         # Configure case list fields (must be outside of r.interactive)
         configure_case_list_fields(resource,
                                    privileged = privileged,
                                    fmt = r.representation,
                                    )
+
+        # Configure case reports (must be outside of r.interactive)
+        configure_case_reports(resource)
 
         # Apply absence filter
         if not record:
