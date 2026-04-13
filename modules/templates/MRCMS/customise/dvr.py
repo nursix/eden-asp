@@ -393,6 +393,43 @@ def configure_response_action_reports(r,
                            )
 
 # -------------------------------------------------------------------------
+def response_action_staff_filter_options():
+    """
+        Reverse lookup for staff filter options in response action list
+
+        Returns:
+            dict of filter options {human_resource_id: full_name}
+    """
+
+    db = current.db
+    s3db = current.s3db
+    auth = current.auth
+
+    rtable = s3db.dvr_response_action
+    htable = s3db.hrm_human_resource
+    ptable = s3db.pr_person
+
+    # Sub-select distinct human_resource_ids in accessible response actions
+    query = auth.s3_accessible_query("read", rtable) & \
+            (rtable.human_resource_id != None)
+    responders = db(query).nested_select(rtable.human_resource_id,
+                                         distinct = True,
+                                         ).with_alias("responders")
+
+    # Select all staff options matching this set, avoiding
+    query = auth.s3_accessible_query("read", htable)
+    join = [responders.on(responders.human_resource_id == htable.id),
+            ptable.on(ptable.id == htable.person_id),
+            ]
+    rows = db(query).select(htable.id,
+                            ptable.first_name,
+                            ptable.last_name,
+                            join = join,
+                            )
+
+    return {row.hrm_human_resource.id: s3_fullname(row.pr_person) for row in rows}
+
+# -------------------------------------------------------------------------
 def configure_response_action_filters(r,
                                       on_tab = None,
                                       multiple_orgs = False,
@@ -412,7 +449,6 @@ def configure_response_action_filters(r,
     T = current.T
 
     s3db = current.s3db
-    table = s3db.dvr_response_action
 
     if on_tab is None:
         resource = r.resource
@@ -483,6 +519,11 @@ def configure_response_action_filters(r,
                                                        org_filter = True,
                                                        ),
                           ),
+            OptionsFilter("human_resource_id",
+                          header = True,
+                          hidden = True,
+                          options = response_action_staff_filter_options,
+                          ),
             ]
 
         if multiple_orgs:
@@ -499,22 +540,6 @@ def configure_response_action_filters(r,
             filter_widgets.insert(1, OptionsFilter("person_id$dvr_case.organisation_id",
                                                    options = org_filter_opts,
                                                    ))
-
-        # Filter by person responsible
-        field = table.human_resource_id
-        try:
-            hr_filter_opts = field.requires.options()
-        except AttributeError:
-            pass
-        else:
-            hr_filter_opts = dict(hr_filter_opts)
-            hr_filter_opts.pop('', None)
-        if hr_filter_opts:
-            filter_widgets.append(OptionsFilter("human_resource_id",
-                                                header = True,
-                                                hidden = True,
-                                                options = hr_filter_opts,
-                                                ))
 
     s3db.configure("dvr_response_action",
                    filter_widgets = filter_widgets,
