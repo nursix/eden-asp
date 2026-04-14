@@ -75,12 +75,12 @@ To install web2py, clone it directly from GitHub:
    the clone - just remember to use the correct path in subsequent commands.
 
 Change into the *web2py* directory, and reset the repository (including
-all submodules) to the supported stable version (currently 3.2.2):
+all submodules) to the supported stable version (currently 3.3.1):
 
 .. code-block:: bash
 
    cd ~/web2py
-   git reset --hard a7330a2
+   git reset --hard 98caf78
    git submodule update --init --recursive
 
 .. note::
