@@ -90,7 +90,7 @@ class UpdateCheck:
                 tuple of lists of strings (errors, warnings)
         """
 
-        supported_versions = ("3.1.1", "3.2.2")
+        supported_versions = ("3.1.1", "3.2.2", "3.3.1")
 
         version_ok = True
         try:
