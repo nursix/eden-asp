@@ -457,13 +457,16 @@ class DocumentModel(DataModel):
             return
 
         if not document:
-            encoded_file = form_vars.get("imagecrop-data", None)
+            encoded_file = form_vars.get("imagecrop-data")
             if encoded_file:
                 # S3ImageCropWidget
                 import base64
-                metadata, encoded_file = encoded_file.split(",")
-                #filename, datatype, enctype = metadata.split(";")
-                filename = metadata.split(";", 1)[0]
+                try:
+                    metadata, encoded_file = encoded_file.split(",")
+                    filename = metadata.split(";", 1)[0]
+                except ValueError:
+                    form.errors.file = current.T("Invalid image data")
+                    return
                 f = Storage()
                 f.filename = uuid4().hex + filename
                 f.file = BytesIO(base64.b64decode(encoded_file))
