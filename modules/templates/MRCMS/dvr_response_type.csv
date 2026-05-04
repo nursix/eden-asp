@@ -1,10 +1,10 @@
-Type,SubType,Default,Consultation,Comments
-Persönliches Gespräch,Erstgespräch,false,true,Initial Consultation
-Persönliches Gespräch,Erstgespräch mit Dolmetscher,false,true,Initial Consultation with Interpreter
-Persönliches Gespräch,Folgegespräch,true,true,Follow-up Consultation
-Persönliches Gespräch,Folgegespräch mit Dolmetscher,false,true,Follow-up Consultation with Interpreter
-Sonstiger Kontakt,Sonstiger Kontakt mit Klient,false,false,Other Contact with Client
-Sonstiger Kontakt,Sonstiger Kontakt mit Umfeld,false,false,Other Contact
-Vulnerabilitäten,Meldebogen BAMF,false,false,Vulnerabilities reported to BAMF
-Vulnerabilitäten,Meldung an Aufnahmeeinrichtung,false,false,Vulnerabilities reported to reception facility
-Vulnerabilitäten,Weiterleitung an Beratungsstelle,false,false,Client referred to counsel
+Type,SubType,Code,Default,Consultation,Comments
+Persönliches Gespräch,Erstgespräch,INI,false,true,Initial Consultation
+Persönliches Gespräch,Erstgespräch mit Dolmetscher,INI+I,false,true,Initial Consultation with Interpreter
+Persönliches Gespräch,Folgegespräch,FUP,true,true,Follow-up Consultation
+Persönliches Gespräch,Folgegespräch mit Dolmetscher,FUP+I,false,true,Follow-up Consultation with Interpreter
+Sonstiger Kontakt,Sonstiger Kontakt mit Klient,OCC,false,false,Other Contact with Client
+Sonstiger Kontakt,Sonstiger Kontakt mit Umfeld,OCE,false,false,Other Contact
+Vulnerabilitäten,Meldebogen BAMF,VRBAMF,false,false,Vulnerabilities reported to BAMF
+Vulnerabilitäten,Meldung an Aufnahmeeinrichtung,VRRP,false,false,Vulnerabilities reported to reception facility
+Vulnerabilitäten,Weiterleitung an Beratungsstelle,REF,false,false,Client referred to counsel

@@ -341,6 +341,14 @@ def dvr_case_activity_controller(**attr):
     return attr
 
 # -------------------------------------------------------------------------
+def dvr_response_type_resource(r, tablename):
+
+    # Enable use of codes for statistics/reports
+    table = current.s3db.dvr_response_type
+    field = table.code
+    field.readable = field.writable = True
+
+# -------------------------------------------------------------------------
 def configure_response_action_reports(r,
                                       multiple_orgs = False,
                                       ):
@@ -368,6 +376,7 @@ def configure_response_action_reports(r,
             "response_type_id",
             (T("Theme"), "response_action_theme.theme_id"),
             (T("Need Type"), "response_action_theme.theme_id$need_id"),
+            (T("Vulnerability addressed"), "vulnerability.vulnerability_type_id"),
             "response_action_theme.theme_id$sector_id",
             "human_resource_id",
             ]

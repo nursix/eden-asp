@@ -409,6 +409,7 @@ def config(settings):
                                dvr_need_resource, \
                                dvr_case_activity_resource, \
                                dvr_case_activity_controller, \
+                               dvr_response_type_resource, \
                                dvr_response_action_resource, \
                                dvr_response_action_controller, \
                                dvr_case_appointment_resource, \
@@ -425,21 +426,25 @@ def config(settings):
 
     settings.customise_dvr_home = dvr_home
     settings.customise_dvr_case_resource = dvr_case_resource
+
     settings.customise_dvr_need_resource = dvr_need_resource
     settings.customise_dvr_case_activity_resource = dvr_case_activity_resource
     settings.customise_dvr_case_activity_controller = dvr_case_activity_controller
+
+    settings.customise_dvr_response_type_resource = dvr_response_type_resource
     settings.customise_dvr_response_action_resource = dvr_response_action_resource
     settings.customise_dvr_response_action_controller = dvr_response_action_controller
+
     settings.customise_dvr_case_appointment_resource = dvr_case_appointment_resource
     settings.customise_dvr_case_appointment_controller = dvr_case_appointment_controller
+
+    settings.customise_dvr_case_event_type_resource = dvr_case_event_type_resource
+    settings.customise_dvr_case_event_type_controller = dvr_case_event_type_controller
     settings.customise_dvr_case_event_resource = dvr_case_event_resource
     settings.customise_dvr_case_event_controller = dvr_case_event_controller
 
     settings.customise_dvr_case_appointment_type_controller = dvr_case_appointment_type_controller
-    settings.customise_dvr_case_event_type_resource = dvr_case_event_type_resource
-    settings.customise_dvr_case_event_type_controller = dvr_case_event_type_controller
     settings.customise_dvr_case_flag_controller = dvr_case_flag_controller
-
     settings.customise_dvr_note_resource = dvr_note_resource
     settings.customise_dvr_task_controller = dvr_task_controller
     settings.customise_dvr_service_contact_resource = dvr_service_contact_resource
