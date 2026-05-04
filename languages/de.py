@@ -7053,6 +7053,7 @@
 'Vulnerability Type': 'Vulnerabilitätstyp',
 'Vulnerability Types': 'Vulnerabilitätstypen',
 'Vulnerability added': 'Vulnerabilität hinzugefügt',
+'Vulnerability addressed': 'Vulnerabilitätsbezug',
 'Vulnerability deleted': 'Vulnerabilität gelöscht',
 'Vulnerability updated': 'Vulnerabilität aktualisiert',
 'WASH': 'WASH',
