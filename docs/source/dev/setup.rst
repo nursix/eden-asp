@@ -75,12 +75,12 @@ To install web2py, clone it directly from GitHub:
    the clone - just remember to use the correct path in subsequent commands.
 
 Change into the *web2py* directory, and reset the repository (including
-all submodules) to the supported stable version (currently 3.3.1):
+all submodules) to the supported stable version (currently 3.3.3):
 
 .. code-block:: bash
 
    cd ~/web2py
-   git reset --hard 98caf78
+   git reset --hard a729b84
    git submodule update --init --recursive
 
 .. note::
@@ -221,12 +221,12 @@ Once the server is running, it will give you a localhost URL to access it:
 
    web2py Web Framework
    Created by Massimo Di Pierro, Copyright 2007-2026
-   3.2.2-stable+timestamp.2026.03.02.22.10.15
+   3.3.3-stable+timestamp.2026.04.28.08.03.04
    Database drivers available: sqlite3, psycopg2, imaplib, pymysql, pyodbc
 
    please visit:
          http://127.0.0.1:8000/
-   use "kill -SIGTERM 2827" to shutdown the web2py server
+   use "kill -SIGTERM 9630" to shutdown the web2py server
 
 Append the application name *eden* to the URL (http://127.0.0.1:8000/eden),
 and open that address in your web browser to access Eden.
