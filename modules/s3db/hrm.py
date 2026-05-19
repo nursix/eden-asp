@@ -4856,7 +4856,7 @@ class HRProgrammeModel(DataModel):
 
         label_create = crud_strings[tablename].label_create
         if is_admin:
-            filter_opts = ()
+            filter_opts = None
         elif root_org:
             filter_opts = (root_org, None)
         else:
