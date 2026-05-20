@@ -10,7 +10,7 @@
 $(function() {
     var contact_method = $('#msg_outbox_contact_method');
     if (contact_method.val() != 'EMAIL') {
-        // SMS/Tweets don't have subjects
+        // SMS don't have subjects
         $('#msg_log_subject__row').hide();
     }
     contact_method.on('change', function() {

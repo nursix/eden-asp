@@ -34,7 +34,6 @@
          Home Phone.....................optional.....home phone number
          Office Phone...................optional.....office phone number
          Skype..........................optional.....person skype ID
-         Twitter........................optional.....person Twitter handle
          Callsign.......................optional.....person Radio Callsign
          Emergency Contact Name.........optional.....pr_contact_emergency name
          Emergency Contact Relationship.optional.....pr_contact_emergency relationship

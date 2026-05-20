@@ -2434,7 +2434,6 @@
 'Tsunami': 'ဆုနာမီ',
 'Tuesday': 'အဂၤါေန႔',
 'Twilio Channels': 'Twilio လမ္းေၾကာင္းမ်ား',
-'Twitter Settings': 'Twitter အျပင္အဆင္မ်ား',
 'Type': 'အမ်ဳိးအစား',
 'Types': 'အမ်ဳိးအစားမ်ား',
 'UN agency': 'UN ေအဂ်င္စီ',

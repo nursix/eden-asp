@@ -384,6 +384,10 @@ def configure_inline_shelter_registration(component, shelters, person_id=None):
         field.comment = None
         field.widget = None
 
+        ctable = s3db.cr_shelter
+        dbset = db(ctable.id.belongs(shelters))
+        field.requires = IS_ONE_OF(dbset, "cr_shelter.id", field.represent)
+
         if len(shelters) > 1:
             # Configure dynamic options filter for shelter unit
             script = '''
@@ -1074,14 +1078,14 @@ def configure_case_file(r, privileged=False, administration=False):
                                        privileged = privileged,
                                        )
 
-            # Configure case reports
-            configure_case_reports(resource)
-
         # Configure case list fields (must be outside of r.interactive)
         configure_case_list_fields(resource,
                                    privileged = privileged,
                                    fmt = r.representation,
                                    )
+
+        # Configure case reports (must be outside of r.interactive)
+        configure_case_reports(resource)
 
         # Apply absence filter
         if not record:

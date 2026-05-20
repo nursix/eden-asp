@@ -1828,7 +1828,7 @@ class S3EmbeddedComponentWidget(EdenFormWidget):
         formrows = TAG[""](formrows)
 
         # Divider
-        divider = widgetstyle("", "", DIV(_class="subheading"), "")
+        divider = widgetstyle("", "", "", "")
         divider.add_class("box_bottom embedded")
 
         # Widget script

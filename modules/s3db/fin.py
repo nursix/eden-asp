@@ -3675,7 +3675,7 @@ class fin_VoucherCancelDebit(CRUDMethod):
         response.form_label_separator = ""
         form = SQLFORM.factory(table_name = "fin_voucher_debit",
                                record = None,
-                               hidden = {"_next": r.vars._next},
+                               hidden = {"_next": auth.get_vars_next()},
                                labels = labels,
                                separator = "",
                                showid = False,

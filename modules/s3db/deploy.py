@@ -874,8 +874,6 @@ class DeployAlertModel(DataModel):
 
         contact_method_opts = {1: T("Email"),
                                2: T("SMS"),
-                               #3: T("Twitter"),
-                               #9: T("All"),
                                9: T("Both"),
                                }
 
@@ -1271,19 +1269,6 @@ class DeployAlertModel(DataModel):
                                   message = message,
                                   from_address = from_address,
                                   )
-
-        if settings.get_deploy_post_to_twitter():
-            # Post Alert to Twitter
-            try:
-                import tweepy
-            except ImportError:
-                current.log.debug("tweepy module needed for sending tweets")
-            else:
-                # @ToDo: Handle the multi-message nicely?
-                try:
-                    msg.send_tweet(text=message)
-                except tweepy.error.TweepError as e:
-                    current.log.debug("Sending tweets failed: %s" % e)
 
         # Update the Alert to show it's been Sent
         data = {"message_id": message_id}

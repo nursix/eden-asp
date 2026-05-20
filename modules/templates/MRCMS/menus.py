@@ -170,11 +170,11 @@ class MainMenu(default.MainMenu):
                                  ),
                               )
         else:
-            s3_has_role = auth.s3_has_role
-            is_user_admin = lambda i: \
-                            s3_has_role(sr.ORG_ADMIN, include_admin=False) or \
-                            s3_has_role(sr.ORG_GROUP_ADMIN, include_admin=False)
-
+            has_role = auth.s3_has_role
+            is_user_admin = lambda i: not has_role(ADMIN) and (
+                                        has_role(sr.ORG_ADMIN, include_admin=False) or \
+                                        has_role(sr.ORG_GROUP_ADMIN, include_admin=False)
+                                        )
             menu_personal = MP()(
                         MP("Administration", c="admin", f="index",
                            restrict = ADMIN,

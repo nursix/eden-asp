@@ -100,201 +100,6 @@ class S3Parser:
             return reply
 
     # -------------------------------------------------------------------------
-    @staticmethod
-    def parse_twitter(message):
-        """
-            Filter unstructured tweets
-        """
-
-        db = current.db
-        s3db = current.s3db
-        cache = s3db.cache
-
-        # Start with a base priority
-        priority = 0
-
-        # Default Category
-        category = "Unknown"
-
-        # Lookup the channel type
-        #ctable = s3db.msg_channel
-        #channel = db(ctable.channel_id == message.channel_id).select(ctable.instance_type,
-        #                                                             limitby=(0, 1)
-        #                                                             ).first()
-        #service = channel.instance_type.split("_", 2)[1]
-        #if service in ("mcommons", "tropo", "twilio"):
-        #    service = "sms"
-        #if service == "twitter":
-        #    priority -= 1
-        #elif service == "sms":
-        #    priority += 1
-        service = "twitter"
-
-        # Lookup trusted senders
-        # - these could be trained or just trusted
-        table = s3db.msg_sender
-        ctable = s3db.pr_contact
-        query = (table.deleted == False) & \
-                (ctable.pe_id == table.pe_id) & \
-                (ctable.contact_method == "TWITTER")
-        senders = db(query).select(table.priority,
-                                   ctable.value,
-                                   cache=cache)
-        for s in senders:
-            if sender == s[ctable].value:
-                priority += s[table].priority
-                break
-
-        # If Anonymous, check their history
-        # - within our database
-        # if service == "twitter":
-        #     # Check Followers
-        #     # Check Retweets
-        #     # Check when account was created
-        # (Note that it is still possible to game this - plausible accounts can be purchased)
-
-        ktable = s3db.msg_keyword
-        keywords = db(ktable.deleted == False).select(ktable.id,
-                                                      ktable.keyword,
-                                                      ktable.incident_type_id,
-                                                      cache=cache)
-        incident_type_represent = S3Represent(lookup="event_incident_type")
-        if NLTK:
-            # Lookup synonyms
-            # @ToDo: Cache
-            synonyms = {}
-            for kw in keywords:
-                syns = []
-                try:
-                    synsets = wn.synsets(kw.keyword)
-                    for synset in synsets:
-                        syns += [lemma.name for lemma in synset.lemmas]
-                except LookupError:
-                    nltk.download("wordnet")
-                    synsets = wn.synsets(kw.keyword)
-                    for synset in synsets:
-                        syns += [lemma.name for lemma in synset.lemmas]
-                synonyms[kw.keyword.lower()] = syns
-
-        ltable = s3db.gis_location
-        query = (ltable.deleted != True) & \
-                (ltable.name != None)
-        locs = db(query).select(ltable.id,
-                                ltable.name,
-                                cache=cache)
-        lat = lon = None
-        location_id = None
-        loc_matches = 0
-
-        # Split message into words
-        words = message.split(" ")
-
-        index = 0
-        max_index = len(words) - 1
-        for word in words:
-            word = word.lower()
-            if word.endswith(".") or \
-               word.endswith(":") or \
-               word.endswith(","):
-                word = word[:-1]
-
-            skip = False
-
-            if word in ("safe", "ok"):
-                priority -= 1
-            elif word in ("help"):
-                priority += 1
-            elif service == "twitter" and \
-                 word == "RT":
-                # @ToDo: Increase priority of the original message
-                priority -= 1
-                skip = True
-
-            # Look for URL
-            if word.startswith("http://"):
-                priority += 1
-                skip = True
-                # @ToDo: Follow URL to see if we can find an image
-                #try:
-                #    page = fetch(word)
-                #except urllib2.HTTPError:
-                #    pass
-                # Check returned str for image like IS_IMAGE()
-
-            if (index < max_index):
-                if word == "lat":
-                    skip = True
-                    try:
-                        lat = words[index + 1]
-                        lat = float(lat)
-                    except:
-                        pass
-                elif word == "lon":
-                    skip = True
-                    try:
-                        lon = words[index + 1]
-                        lon = float(lon)
-                    except:
-                        pass
-
-            if not skip:
-                for kw in keywords:
-                    _word = kw.keyword.lower()
-                    if _word == word:
-                        # Check for negation
-                        if index and words[index - 1].lower() == "no":
-                            pass
-                        else:
-                            category = incident_type_represent(kw.incident_type_id)
-                            break
-                    elif NLTK:
-                        # Synonyms
-                        if word in synonyms[_word]:
-                            # Check for negation
-                            if index and words[index - 1].lower() == "no":
-                                pass
-                            else:
-                                category = incident_type_represent(kw.incident_type_id)
-                                break
-                # Check for Location
-                for loc in locs:
-                    name = loc.name.lower()
-                    # @ToDo: Do a Unicode comparison
-                    if word == name:
-                        if not loc_matches:
-                            location_id = loc.id
-                            priority += 1
-                        loc_matches += 1
-                    elif (index < max_index) and \
-                         ("%s %s" % (word, words[index + 1]) == name):
-                        # Try names with 2 words
-                        if not loc_matches:
-                            location_id = loc.id
-                            priority += 1
-                        loc_matches += 1
-
-            index += 1
-
-        # @ToDo: Prioritise reports from people located where they are reporting from
-        # if coordinates:
-
-        if not loc_matches or loc_matches > 1:
-            if lat and lon:
-                location_id = ltable.insert(lat = lat,
-                                            lon = lon)
-            elif service == "twitter":
-                # @ToDo: Use Geolocation of Tweet
-                #location_id =
-                pass
-
-        # @ToDo: Update records inside this function with parsed data
-        # @ToDo: Image
-        #return category, priority, location_id
-
-        # No reply here
-        return None
-
-    # -------------------------------------------------------------------------
     def search_resource(self, message):
         """
             1st Pass Parser for searching resources
@@ -449,22 +254,18 @@ class S3Parser:
                                                                   stable.security_status,
                                                                   limitby=(0, 1)
                                                                   ).first()
-            reply = "%s %s (%s) " % (reply, hospital.name,
-                                     T("Hospital"))
+            reply = "%s %s (%s) " % (reply, hospital.name, T("Hospital"))
             if "phone" in pquery:
                 reply = reply + "Phone->" + str(hospital.phone_emergency)
             if "facility" in pquery:
-                 reply = reply + "Facility status " + \
-                    str(stable.facility_status.represent\
-                                            (status.facility_status))
+                reply = reply + "Facility status " + \
+                        str(stable.facility_status.represent(status.facility_status))
             if "clinical" in pquery:
                 reply = reply + "Clinical status " + \
-                    str(stable.clinical_status.represent\
-                                            (status.clinical_status))
+                        str(stable.clinical_status.represent(status.clinical_status))
             if "security" in pquery:
                 reply = reply + "Security status " + \
-                    str(stable.security_status.represent\
-                                            (status.security_status))
+                        str(stable.security_status.represent(status.security_status))
 
         return reply
 

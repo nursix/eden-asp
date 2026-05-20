@@ -230,7 +230,7 @@ class register_invited(CustomController):
         response.form_label_separator = ""
         form = SQLFORM.factory(table_name = utable._tablename,
                                record = None,
-                               hidden = {"_next": request.vars._next},
+                               hidden = {"_next": auth.get_vars_next()},
                                labels = labels,
                                separator = "",
                                showid = False,

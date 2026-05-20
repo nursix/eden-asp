@@ -1509,10 +1509,12 @@ class GIS:
                     query = (ctable.uuid == "SITE_DEFAULT") | \
                             ((ctable.pe_id == pe_id) & \
                              (ctable.pe_default != False))
+
                     if len(pes) == 1:
                         query |= (ctable.pe_id == pes[0])
                     else:
                         query |= (ctable.pe_id.belongs(pes))
+
                     # Order by pe_type (defined in gis_config)
                     # @ToDo: Sort orgs from the hierarchy?
                     # (Currently we just have branch > non-branch in pe_type)

@@ -16,19 +16,13 @@ xlrd>=1.2.0
 GDAL>=3.4.1#from osgeo import gdal
 # Warning: S3Msg unresolved dependency: pyserial required for Serial port modem usage
 pyserial>=2.6
-# Warning: S3Msg unresolved dependency: tweepy required for non-Tropo Twitter support
-tweepy>=1.9
 # Warning: S3MSG unresolved dependency: sgmllib3k required for Feed import on Python 3.x
 sgmllib3k>=1.0.0
 # Warning: GIS unresolved dependency: selenium required for Map printing support
 selenium>=2.23.0
-# Warning: Message Parsing unresolved dependency: TwitterSearch required for fetching results from twitter keyword queries
-TwitterSearch>=1.0
 # Warning: S3 unresolved dependency: pyparsing required for Calendar Support and Advanced URL Queries
 pyparsing>=2.2.0
 # Warning: URL shortener unresolved dependency: pyshorteners required to shorten the url (currently used by SAMBRO)
 #pyshorteners>=0.6.1
 # Warning: S3Doc unresolved dependency: docx-mailmerge required to merge into docx templates
 #docx-mailmerge>=0.5.0
-# Warning: S3Translate unresolved dependency: translate-toolkit required for Pootle support
-translate-toolkit>=1.0.1

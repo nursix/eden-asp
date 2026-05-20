@@ -110,10 +110,8 @@ class MainMenu(default.MainMenu):
         if not auth.is_logged_in():
             request = current.request
             login_next = URL(args=request.args, vars=request.get_vars)
-            if request.controller == "default" and \
-               request.function == "user" and \
-               "_next" in request.get_vars:
-                login_next = request.get_vars["_next"]
+            if request.controller == "default" and request.function == "user":
+                login_next = auth.get_vars_next() or login_next
 
             #self_registration = settings.get_security_self_registration()
             menu_personal = MP()(
@@ -132,10 +130,11 @@ class MainMenu(default.MainMenu):
                                  ),
                               )
         else:
-            s3_has_role = auth.s3_has_role
-            is_user_admin = lambda i: \
-                            s3_has_role(sr.ORG_ADMIN, include_admin=False) or \
-                            s3_has_role(sr.ORG_GROUP_ADMIN, include_admin=False)
+            has_role = auth.s3_has_role
+            is_user_admin = lambda i: not has_role(ADMIN) and (
+                                        has_role(sr.ORG_ADMIN, include_admin=False) or \
+                                        has_role(sr.ORG_GROUP_ADMIN, include_admin=False)
+                                        )
 
             menu_personal = MP()(
                         MP("Administration", c="admin", f="index",

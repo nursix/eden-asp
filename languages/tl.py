@@ -765,7 +765,6 @@
 'Transport': 'Transportasyon',
 'Transportation Required': 'Kinakailangan ng Transportasyon',
 'Truck Driving': 'Pagmamaneho ng Trak',
-'Twitter ID or #hashtag': 'Twitter ID o #hashtag',
 'Type of Donation': 'Uri ng Donasyon',
 'Type': 'Uri',
 'UTC Offset': 'Offset ng UTC',

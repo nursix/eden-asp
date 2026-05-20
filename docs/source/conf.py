@@ -12,6 +12,8 @@
 #
 import os
 import sys
+from sphinx_treeview.decorator import DecoratorType
+
 sys.path.insert(0, os.path.abspath('../../../web2py'))
 sys.path.insert(0, os.path.abspath('../../modules'))
 
@@ -52,3 +54,10 @@ html_theme = 'sphinx_rtd_theme'
 html_static_path = ['_static']
 
 autoclass_content = "both"
+
+stv_decorators = [
+	DecoratorType(
+		name="custom",
+		icons = []
+	)
+]

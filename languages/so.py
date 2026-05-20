@@ -40,4 +40,3 @@
 'Very satisfied': 'Aad u qanacsan',
 'Very unsatisfied': 'Aad ayaan ugu qanacsanayn',
 }
-

@@ -516,7 +516,7 @@ class PresenceRegistration(CRUDMethod):
             additional status information.
 
             Args:
-                r: the CRUDRequest
+                tablename: the table name of the site resource
                 site_id: the site ID
                 person: the person record
 

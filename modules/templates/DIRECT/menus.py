@@ -93,7 +93,8 @@ class MainMenu(default.MainMenu):
         #s3 = current.response.s3
         settings = current.deployment_settings
 
-        ADMIN = current.auth.get_system_roles().ADMIN
+        sr = current.auth.get_system_roles()
+        ADMIN = sr.ADMIN
 
         if not auth.is_logged_in():
             request = current.request
@@ -120,14 +121,17 @@ class MainMenu(default.MainMenu):
                                  ),
                               )
         else:
-            s3_has_role = auth.s3_has_role
-            is_org_admin = lambda i: s3_has_role("ORG_ADMIN", include_admin=False)
+            has_role = auth.s3_has_role
+            is_user_admin = lambda i: not has_role(ADMIN) and (
+                                        has_role(sr.ORG_ADMIN, include_admin=False) or \
+                                        has_role(sr.ORG_GROUP_ADMIN, include_admin=False)
+                                        )
             menu_personal = MP()(
                         MP("Administration", c="admin", f="index",
                            restrict = ADMIN,
                            ),
                         MP("Administration", c="admin", f="user",
-                           check = is_org_admin,
+                           check = is_user_admin,
                            ),
                         MP("Profile", c="default", f="person"),
                         MP("Change Password", c="default", f="user",

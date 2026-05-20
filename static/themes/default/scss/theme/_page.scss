@@ -360,11 +360,10 @@ main {
 
 // ----------------------------------------------------------------------------
 // Throbbers
-// - used by Autocompletes, map popups, map toolbar, dropdown widgets , tweets
+// - used by Autocompletes, map popups, map toolbar, dropdown widgets
 //
 .throbber,
 .layer_throbber,
-.s3-twitter-throbber,
 .map_loader,
 .inline-throbber {
     background-image: url(../../img/indicator.gif);
@@ -383,12 +382,6 @@ main {
     width: 24px;
     display: inline-block;
     margin: 0 0 -11px -24px;
-}
-.s3-twitter-throbber {
-    height: 0px;
-    margin: 66px 0 0 42px;
-    padding: 20px;
-    width: 0px;
 }
 
 // END ========================================================================

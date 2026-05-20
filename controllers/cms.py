@@ -1135,7 +1135,7 @@ def newsletter():
                                 InlineLink(
                                     "distribution",
                                     label = T("Distribution##list"),
-                                    field = "filter_id",
+                                    field = "saved_filter_id",
                                     filterby = {
                                         "pe_id": auth.user.pe_id if auth.user else None,
                                         "resource": types,

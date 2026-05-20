@@ -3033,15 +3033,6 @@ class S3Config(Storage):
 
         return self.cap.get("restrict_fields", False)
 
-    def get_cap_post_to_twitter(self):
-        """
-            Whether to post the alerts in twitter
-            @ToDo: enhance this by as well as True,
-            being able to specify a specific Twitter channel to tweet on
-        """
-
-        return self.cap.get("post_to_twitter", False)
-
     def get_cap_same_code(self):
         """
             Name of the tag that will be used to lookup in the gis_location_tag
@@ -3308,15 +3299,6 @@ class S3Config(Storage):
             or deploy_alert_select_recipients
         """
         return self.__lazy("deploy", "member_filters", default=None)
-
-    def get_deploy_post_to_twitter(self):
-        """
-            Whether to post the alerts in twitter
-            @ToDo: enhance this by as well as True,
-            being able to specify a specific Twitter channel to tweet on
-        """
-
-        return self.deploy.get("post_to_twitter", False)
 
     def get_deploy_responses_via_web(self):
         """

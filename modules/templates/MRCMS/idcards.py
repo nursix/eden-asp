@@ -96,7 +96,6 @@ class GenerateIDCard(CRUDMethod):
         record = r.record
         person_id = record.id
 
-        request = current.request
         response = current.response
         s3 = response.s3
 
@@ -162,7 +161,7 @@ class GenerateIDCard(CRUDMethod):
         response.form_label_separator = ""
         form = SQLFORM.factory(table_name = "generate_id",
                                record = None,
-                               hidden = {"_next": request.vars._next},
+                               hidden = {"_next": auth.get_vars_next()},
                                labels = labels,
                                separator = "",
                                showid = False,
