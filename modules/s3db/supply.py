@@ -412,9 +412,9 @@ class SupplyCatalogModel(DataModel):
         catalog_id = data.get("catalog_id")
         if catalog_id:
             query &= (table.catalog_id == catalog_id)
-        parent_category_id = data.get("parent_category_id")
+        parent_category_id = data.get("parent_item_category_id")
         if parent_category_id:
-            query &= (table.parent_category_id == parent_category_id)
+            query &= (table.parent_item_category_id == parent_category_id)
         duplicate = current.db(query).select(table.id,
                                              limitby=(0, 1)).first()
         if duplicate:
