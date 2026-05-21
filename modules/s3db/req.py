@@ -5534,7 +5534,7 @@ class req_CommitRepresent(S3Represent):
         if row.date:
             daterepr = table.date.represent(row.date)
         else:
-            daterepr = T("undated")
+            daterepr = current.T("undated")
 
         # Combine committer/date as available
         if committer:
