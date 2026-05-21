@@ -1093,20 +1093,32 @@ def recv_cancel():
     # and put them back in the track item record
     query = (tracktable.recv_id == recv_id) & \
             (tracktable.deleted == False)
-    recv_items = db(query).select(tracktable.recv_inv_item_id,
+    recv_items = db(query).select(tracktable.id,
+                                  tracktable.recv_inv_item_id,
                                   tracktable.recv_quantity,
                                   tracktable.send_id,
                                   )
     send_id = None
     for recv_item in recv_items:
         inv_item_id = recv_item.recv_inv_item_id
-        # This assumes that the inv_item has the quantity
-        quantity = inv_item_table.quantity - recv_item.recv_quantity
-        if quantity == 0:
-            db(inv_item_table.id == inv_item_id).delete()
+        if inv_item_id:
+            inv_item = db(inv_item_table.id == inv_item_id).select(inv_item_table.quantity,
+                                                                   limitby = (0, 1),
+                                                                   ).first()
         else:
-            db(inv_item_table.id == inv_item_id).update(quantity = quantity)
-        db(tracktable.recv_id == recv_id).update(status = 2) # In transit
+            inv_item = None
+        if inv_item:
+            quantity = inv_item.quantity - recv_item.recv_quantity
+            if quantity == 0:
+                db(tracktable.id == recv_item.id).update(recv_inv_item_id = None,
+                                                         status = 2, # In transit
+                                                         )
+                db(inv_item_table.id == inv_item_id).delete()
+            else:
+                db(inv_item_table.id == inv_item_id).update(quantity = quantity)
+                db(tracktable.id == recv_item.id).update(status = 2) # In transit
+        else:
+            db(tracktable.id == recv_item.id).update(status = 2) # In transit
         # @todo potential problem in that the send id should be the same for all track items but is not explicitly checked
         if send_id is None and recv_item.send_id is not None:
             send_id = recv_item.send_id
