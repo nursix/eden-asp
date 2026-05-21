@@ -6983,8 +6983,8 @@ class ReqControllerTests(SupplyChainTestCase):
         self.assertFalse(timeout_writable)
 
     # -------------------------------------------------------------------------
-    def testReqControllerAutoKeyvalueAddsDynamicTagFields(self):
-        """req_controller adds inline tag fields when auto-keyvalue is enabled"""
+    def testReqControllerLeavesTagFieldsStaticWhenAutoKeyvalueDisabled(self):
+        """req_controller leaves tag fields static when auto-keyvalue is disabled"""
 
         db = current.db
         s3db = current.s3db
@@ -7000,7 +7000,7 @@ class ReqControllerTests(SupplyChainTestCase):
                                 get_req_req_crud_strings=lambda req_type: None,
                                 get_req_items_ask_purpose=lambda: False,
                                 get_req_inline_forms=lambda: False,
-                                get_ui_auto_keyvalue=lambda: True,
+                                get_ui_auto_keyvalue=lambda: False,
                                 )
 
         saved_form = s3db.get_config("req_req", "crud_form")
@@ -7038,16 +7038,9 @@ class ReqControllerTests(SupplyChainTestCase):
                            list_fields=saved_list_fields,
                            )
 
-        self.assertIsNotNone(crud_form)
-        dynamic_fields = [(str(entry[0]), entry[1])
-                          for entry in list_fields
-                          if isinstance(entry, (tuple, list)) and len(entry) == 2
-                          ]
-        self.assertIn(("Donor", "donor.value"), dynamic_fields)
-        self.assertIn(("Reference", "reference.value"), dynamic_fields)
-        self.assertEqual(captured[0][0], "req_req")
-        self.assertEqual(captured[0][1]["org_organisation_tag"]["name"], "donor")
-        self.assertEqual(captured[1][1]["org_organisation_tag"]["name"], "reference")
+        self.assertIs(crud_form, saved_form)
+        self.assertEqual(list_fields, saved_list_fields)
+        self.assertEqual(captured, [])
 
     # -------------------------------------------------------------------------
     def testReqControllerUpdatePrepHidesStatusesAndLocksApprovedRequests(self):

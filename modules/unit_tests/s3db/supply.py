@@ -1871,6 +1871,26 @@ class SupplyModelTests(SupplyChainTestCase):
 class SupplyControllerTests(SupplyChainTestCase):
     """Tests for supply controller wrappers and prep hooks"""
 
+    item_entity_virtual_methods = ("category",
+                                   "country",
+                                   "organisation",
+                                   "contacts",
+                                   "status",
+                                   )
+
+    # -------------------------------------------------------------------------
+    @classmethod
+    def cleanup_item_entity_virtual_methods(cls):
+        """Remove virtual methods added by supply_item_entity_controller"""
+
+        table = current.s3db.supply_item_entity
+        for method in list(table._virtual_methods):
+            name = getattr(method, "name", None)
+            if name in cls.item_entity_virtual_methods:
+                table._virtual_methods.remove(method)
+                if getattr(table, name, None) is method:
+                    delattr(table, name)
+
     # -------------------------------------------------------------------------
     def testSupplyIndexUsesConfiguredModuleName(self):
         """supply index exposes the configured module name"""
@@ -2815,6 +2835,7 @@ class SupplyControllerTests(SupplyChainTestCase):
         current.crud_controller = crud_controller
         response_s3.jquery_ready = []
         try:
+            self.cleanup_item_entity_virtual_methods()
             output = supply_item_entity_controller()
             postp = captured["postp"]
             rendered = postp(Storage(interactive=True, record=None), {})
@@ -2825,6 +2846,7 @@ class SupplyControllerTests(SupplyChainTestCase):
             response_s3.postp = saved_postp
             response_s3.no_sspag = saved_no_sspag
             response_s3.jquery_ready = saved_ready
+            self.cleanup_item_entity_virtual_methods()
 
         rheader = str(rendered["rheader"])
         list_fields = current.s3db.get_config("supply_item_entity", "list_fields")
@@ -2898,6 +2920,7 @@ class SupplyControllerTests(SupplyChainTestCase):
         current.crud_controller = crud_controller
         response_s3.jquery_ready = []
         try:
+            self.cleanup_item_entity_virtual_methods()
             supply_item_entity_controller()
             postp = captured["postp"]
 
@@ -2913,6 +2936,7 @@ class SupplyControllerTests(SupplyChainTestCase):
             response_s3.jquery_ready = saved_ready
             if saved_inv is not None:
                 settings.modules["inv"] = saved_inv
+            self.cleanup_item_entity_virtual_methods()
 
         rheader = str(rendered["rheader"])
 

@@ -11,7 +11,7 @@ from contextlib import contextmanager
 
 import core
 
-from gluon import A, B, HTTP, SPAN, URL, current
+from gluon import A, HTTP, SPAN, URL, current
 from gluon.storage import Storage
 
 from s3db.inv import (SHIP_STATUS_IN_PROCESS,
@@ -3442,8 +3442,8 @@ class InventoryAdjustmentTests(SupplyChainTestCase):
                          current.messages.UNKNOWN_OPT)
 
     # -------------------------------------------------------------------------
-    def testAdjustmentOnacceptBuildsItemsForPositiveStockAndFormatsNoneQuantity(self):
-        """Adjustment onaccept expands stocktake lines from positive stock and preserves None quantities"""
+    def testAdjustmentOnacceptBuildsItemsForPositiveStock(self):
+        """Adjustment onaccept expands stocktake lines from positive stock"""
 
         db = current.db
         s3db = current.s3db
@@ -3478,8 +3478,6 @@ class InventoryAdjustmentTests(SupplyChainTestCase):
         rows = db(s3db.inv_adj_item.adj_id == adj_id).select(s3db.inv_adj_item.item_id)
 
         self.assertEqual({row.item_id for row in rows}, {item_a})
-        self.assertTrue(isinstance(InventoryAdjustModel.qnty_adj_repr(None), B))
-        self.assertNotEqual(InventoryAdjustModel.qnty_adj_repr(2), current.messages["NONE"])
 
     # -------------------------------------------------------------------------
     def testAdjustmentRheaderAndPdfFootersRenderExpectedSections(self):

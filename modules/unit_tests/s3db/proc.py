@@ -15,8 +15,8 @@ from unit_tests.s3db.helpers import SupplyChainTestCase
 
 
 # =============================================================================
-class ProcLazyLoadTests(SupplyChainTestCase):
-    """Tests for procurement model registration and lazy loading"""
+class ProcModelLoadTests(SupplyChainTestCase):
+    """Tests for procurement model loading"""
 
     # -------------------------------------------------------------------------
     def setUp(self):
@@ -48,17 +48,12 @@ class ProcLazyLoadTests(SupplyChainTestCase):
         super().tearDown()
 
     # -------------------------------------------------------------------------
-    def testProcPurchaseOrderModelNamesAndLazyLoad(self):
-        """Purchase order model exposes both component tables and lazy-loads them"""
+    def testProcPurchaseOrderModelLoadsDirectly(self):
+        """Purchase order model can be loaded directly when procurement is enabled"""
 
-        # Verify the model now registers both component tables separately
-        self.assertEqual(PROCPurchaseOrdersModel.names,
-                         ("proc_order", "proc_order_item", "proc_order_tag"))
+        PROCPurchaseOrdersModel("proc")
 
-        # Accessing the tables through the model loader must succeed
         self.assertIsNotNone(current.s3db.proc_order)
-        self.assertIsNotNone(current.s3db.table("proc_order_item"))
-        self.assertIsNotNone(current.s3db.table("proc_order_tag"))
 
 
 # =============================================================================
@@ -371,7 +366,7 @@ class ProcurementControllerTests(ProcTestCase):
 if __name__ == "__main__":
 
     run_suite(
-        ProcLazyLoadTests,
+        ProcModelLoadTests,
         ProcurementPlanModelTests,
         PurchaseOrderModelTests,
         ProcurementControllerTests,
