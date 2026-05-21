@@ -4161,6 +4161,7 @@ def req_update_commit_quantities_and_status(req):
         # Get all commits for this request
         citable = s3db.req_commit_item
         query = (ctable.req_id == req_id) & \
+                (ctable.deleted == False) & \
                 (citable.commit_id == ctable.id) & \
                 (citable.deleted == False)
         citems = db(query).select(citable.item_pack_id,
@@ -4234,6 +4235,7 @@ def req_update_commit_quantities_and_status(req):
         # Get all commits for this request
         cstable = s3db.req_commit_skill
         query = (ctable.req_id == req_id) & \
+                (ctable.deleted == False) & \
                 (cstable.commit_id == ctable.id) & \
                 (cstable.deleted == False)
         cskills = db(query).select(cstable.skill_id,
