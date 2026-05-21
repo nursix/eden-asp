@@ -1171,7 +1171,7 @@ $.filterOptionsS3({
             query = (table.catalog_id == catalog_id) & \
                     (table.deleted == False)
             if record_id:
-                query = (table.id != record_id)
+                query &= (table.id != record_id)
 
             for k in ("code", "name"):
                 if not item[k]:
