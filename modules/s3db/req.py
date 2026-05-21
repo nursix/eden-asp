@@ -2199,7 +2199,7 @@ class RequestModel(DataModel):
                         # @ToDo: Think about branches
                         if site and site.organisation_id == exists.organisation_id:
                             # Set the HR record as being for this site
-                            exists.update_record(site_id = site_id)
+                            exists.update(site_id = site_id)
                             s3db.hrm_human_resource_onaccept(exists)
                 elif site_id:
                     # Lookup the Org for the site
@@ -4161,7 +4161,6 @@ def req_update_commit_quantities_and_status(req):
         # Get all commits for this request
         citable = s3db.req_commit_item
         query = (ctable.req_id == req_id) & \
-                (ctable.deleted == False) & \
                 (citable.commit_id == ctable.id) & \
                 (citable.deleted == False)
         citems = db(query).select(citable.item_pack_id,
@@ -4235,7 +4234,6 @@ def req_update_commit_quantities_and_status(req):
         # Get all commits for this request
         cstable = s3db.req_commit_skill
         query = (ctable.req_id == req_id) & \
-                (ctable.deleted == False) & \
                 (cstable.commit_id == ctable.id) & \
                 (cstable.deleted == False)
         cskills = db(query).select(cstable.skill_id,
@@ -4809,10 +4807,10 @@ def req_send_commit():
     """
 
     # Get the commit record
-    if not current.request.args:
+    try:
+        commit_id = current.request.args[0]
+    except KeyError:
         redirect(URL(c="req", f="commit"))
-
-    commit_id = current.request.args[0]
 
     db = current.db
     s3db = current.s3db
@@ -4838,8 +4836,6 @@ def req_send_commit():
                               req_table.req_ref,
                               limitby = (0, 1)
                               ).first()
-    if not record:
-        redirect(URL(c="req", f="commit"))
 
     # @ToDo: Identify if we have stock items which match the commit items
     # If we have a single match per item then proceed automatically (as-now) & then decrement the stock quantity

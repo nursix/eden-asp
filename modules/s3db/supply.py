@@ -412,9 +412,9 @@ class SupplyCatalogModel(DataModel):
         catalog_id = data.get("catalog_id")
         if catalog_id:
             query &= (table.catalog_id == catalog_id)
-        parent_category_id = data.get("parent_item_category_id")
+        parent_category_id = data.get("parent_category_id")
         if parent_category_id:
-            query &= (table.parent_item_category_id == parent_category_id)
+            query &= (table.parent_category_id == parent_category_id)
         duplicate = current.db(query).select(table.id,
                                              limitby=(0, 1)).first()
         if duplicate:
@@ -1171,7 +1171,7 @@ $.filterOptionsS3({
             query = (table.catalog_id == catalog_id) & \
                     (table.deleted == False)
             if record_id:
-                query &= (table.id != record_id)
+                query = (table.id != record_id)
 
             for k in ("code", "name"):
                 if not item[k]:
@@ -2465,7 +2465,6 @@ class supply_ItemCategoryRepresent(S3Represent):
 
         name = row["supply_item_category.name"]
         code = row["supply_item_category.code"]
-        catalog = row.get("supply_catalog.name")
 
         translate = self.translate
         if translate:
@@ -2528,42 +2527,43 @@ class supply_ItemCategoryRepresent(S3Represent):
                               gtable.name,
                               gtable.code,
                               ]
-                    deep_row = db(query).select(*fields,
-                                                left = left,
-                                                limitby = (0, 1)
-                                                ).first()
-                    if deep_row:
+                    row = db(query).select(*fields,
+                                           left = left,
+                                           limitby = (0, 1)
+                                           ).first()
+                    if row:
                         if use_code:
-                            greatgrandparent = deep_row["supply_item_category.code"]
-                            greatgreatgrandparent = deep_row["supply_parent_item_category.code"]
+                            greatgrandparent = row["supply_item_category.code"]
+                            greatgreatgrandparent = row["supply_parent_item_category.code"]
                         else:
-                            greatgrandparent = deep_row["supply_item_category.name"]
+                            greatgrandparent = row["supply_item_category.name"]
                             if greatgrandparent:
                                 if translate:
                                     greatgrandparent = T(greatgrandparent)
                             else:
-                                greatgrandparent = deep_row["supply_item_category.code"]
-                            greatgreatgrandparent = deep_row["supply_parent_item_category.name"]
+                                greatgrandparent = row["supply_item_category.code"]
+                            greatgreatgrandparent = row["supply_parent_item_category.name"]
                             if greatgreatgrandparent:
                                 if translate:
                                     greatgreatgrandparent = T(greatgreatgrandparent)
                             else:
-                                greatgreatgrandparent = deep_row["supply_parent_item_category.code"]
+                                greatgreatgrandparent = row["supply_parent_item_category.code"]
                         name = "%s%s%s" % (name, sep, greatgrandparent)
                         if greatgreatgrandparent:
                             name = "%s%s%s" % (name, sep, greatgreatgrandparent)
                             if use_code:
-                                greatgreatgreatgrandparent = deep_row["supply_grandparent_item_category.code"]
+                                greatgreatgreatgrandparent = row["supply_grandparent_item_category.code"]
                             else:
-                                greatgreatgreatgrandparent = deep_row["supply_grandparent_item_category.name"]
+                                greatgreatgreatgrandparent = row["supply_grandparent_item_category.name"]
                                 if greatgreatgreatgrandparent:
                                     if translate:
                                         greatgreatgreatgrandparent = T(greatgreatgreatgrandparent)
                                 else:
-                                    greatgreatgreatgrandparent = deep_row["supply_grandparent_item_category.code"]
+                                    greatgreatgreatgrandparent = row["supply_grandparent_item_category.code"]
                             if greatgreatgreatgrandparent:
                                 name = "%s%s%s" % (name, sep, greatgreatgreatgrandparent)
 
+        catalog = row.get("supply_catalog.name")
         if catalog:
             if translate:
                 catalog = T(catalog)
@@ -2870,7 +2870,7 @@ def supply_item_entity_country(row):
 
         rtable = s3db.inv_recv
         stable = s3db.org_site
-        query = (itable.id == entity_id) & \
+        query = (itable[ekey] == entity_id) & \
                 (rtable.id == itable.recv_id) & \
                 (stable.site_id == rtable.site_id) & \
                 (ltable.id == stable.location_id)
@@ -2945,7 +2945,7 @@ def supply_item_entity_organisation(row):
 
         rtable = s3db.inv_recv
         stable = s3db.org_site
-        query = (itable.id == entity_id) & \
+        query = (itable[ekey] == entity_id) & \
                 (rtable.id == itable.recv_id) & \
                 (stable.site_id == rtable.site_id)
         record = current.db(query).select(stable.organisation_id,
@@ -2995,7 +2995,7 @@ def supply_item_entity_contacts(row):
     elif instance_type == "inv_track_item":
 
         rtable = s3db.inv_recv
-        query = (itable.id == entity_id) & \
+        query = (itable[ekey] == entity_id) & \
                 (rtable.id == itable.recv_id)
         record = db(query).select(rtable.site_id,
                                   limitby=(0, 1)).first()
@@ -3100,8 +3100,8 @@ def supply_item_entity_status(row):
     elif instance_type == "inv_track_item":
 
         rtable = s3db.inv_recv
-        query = (itable.id == entity_id) & \
-                (rtable.id == itable.recv_id)
+        query = (itable[ekey] == entity_id) & \
+                (rtable.id == itable.send_inv_item_id)
         record = current.db(query).select(rtable.eta,
                                           limitby=(0, 1)).first()
         if record:
