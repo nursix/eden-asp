@@ -2465,6 +2465,7 @@ class supply_ItemCategoryRepresent(S3Represent):
 
         name = row["supply_item_category.name"]
         code = row["supply_item_category.code"]
+        catalog = row.get("supply_catalog.name")
 
         translate = self.translate
         if translate:
@@ -2527,43 +2528,42 @@ class supply_ItemCategoryRepresent(S3Represent):
                               gtable.name,
                               gtable.code,
                               ]
-                    row = db(query).select(*fields,
-                                           left = left,
-                                           limitby = (0, 1)
-                                           ).first()
-                    if row:
+                    deep_row = db(query).select(*fields,
+                                                left = left,
+                                                limitby = (0, 1)
+                                                ).first()
+                    if deep_row:
                         if use_code:
-                            greatgrandparent = row["supply_item_category.code"]
-                            greatgreatgrandparent = row["supply_parent_item_category.code"]
+                            greatgrandparent = deep_row["supply_item_category.code"]
+                            greatgreatgrandparent = deep_row["supply_parent_item_category.code"]
                         else:
-                            greatgrandparent = row["supply_item_category.name"]
+                            greatgrandparent = deep_row["supply_item_category.name"]
                             if greatgrandparent:
                                 if translate:
                                     greatgrandparent = T(greatgrandparent)
                             else:
-                                greatgrandparent = row["supply_item_category.code"]
-                            greatgreatgrandparent = row["supply_parent_item_category.name"]
+                                greatgrandparent = deep_row["supply_item_category.code"]
+                            greatgreatgrandparent = deep_row["supply_parent_item_category.name"]
                             if greatgreatgrandparent:
                                 if translate:
                                     greatgreatgrandparent = T(greatgreatgrandparent)
                             else:
-                                greatgreatgrandparent = row["supply_parent_item_category.code"]
+                                greatgreatgrandparent = deep_row["supply_parent_item_category.code"]
                         name = "%s%s%s" % (name, sep, greatgrandparent)
                         if greatgreatgrandparent:
                             name = "%s%s%s" % (name, sep, greatgreatgrandparent)
                             if use_code:
-                                greatgreatgreatgrandparent = row["supply_grandparent_item_category.code"]
+                                greatgreatgreatgrandparent = deep_row["supply_grandparent_item_category.code"]
                             else:
-                                greatgreatgreatgrandparent = row["supply_grandparent_item_category.name"]
+                                greatgreatgreatgrandparent = deep_row["supply_grandparent_item_category.name"]
                                 if greatgreatgreatgrandparent:
                                     if translate:
                                         greatgreatgreatgrandparent = T(greatgreatgreatgrandparent)
                                 else:
-                                    greatgreatgreatgrandparent = row["supply_grandparent_item_category.code"]
+                                    greatgreatgreatgrandparent = deep_row["supply_grandparent_item_category.code"]
                             if greatgreatgreatgrandparent:
                                 name = "%s%s%s" % (name, sep, greatgreatgreatgrandparent)
 
-        catalog = row.get("supply_catalog.name")
         if catalog:
             if translate:
                 catalog = T(catalog)
