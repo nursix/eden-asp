@@ -5023,7 +5023,7 @@ class OrgOfficeModel(DataModel):
         is_admin = auth.s3_has_role(ADMIN)
         root_org = auth.root_org()
         if is_admin:
-            filter_opts = ()
+            filter_opts = None
         elif root_org:
             filter_opts = (root_org, None)
         else:
@@ -7539,11 +7539,14 @@ def org_site_staff_config(r):
             # Default to Volunteers
             table.type.default = 2
 
-    # Cascade the organisation_id from the site to the staff
-    field = table.organisation_id
-    field.default = r.record.organisation_id
-    field.writable = False
-    field.comment = None
+    # Cascade organisation from the parent site where available
+    # (options lookups can call this without a parent record)
+    record = r.record
+    if record:
+        field = table.organisation_id
+        field.default = record.organisation_id
+        field.writable = False
+        field.comment = None
 
 # =============================================================================
 def org_office_controller():

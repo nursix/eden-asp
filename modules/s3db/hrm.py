@@ -122,7 +122,7 @@ class HRModel(DataModel):
 
         root_org = auth.root_org()
         if is_admin:
-            filter_opts = ()
+            filter_opts = None
         elif root_org:
             filter_opts = (root_org, None)
         else:
@@ -2096,7 +2096,7 @@ class HRSkillModel(DataModel):
 
         root_org = auth.root_org()
         if is_admin:
-            filter_opts = ()
+            filter_opts = None
         elif root_org:
             filter_opts = (root_org, None)
         else:
@@ -2123,6 +2123,10 @@ class HRSkillModel(DataModel):
                            label = T("Name"),
                            requires = [IS_NOT_EMPTY(),
                                        IS_LENGTH(64),
+                                       IS_NOT_ONE_OF(db,
+                                                     "%s.name" % tablename,
+                                                     error_message = T("Record already exists"),
+                                                     ),
                                        ],
                            ),
                      CommentsField(),
@@ -2184,6 +2188,10 @@ class HRSkillModel(DataModel):
                            label = T("Name"),
                            requires = [IS_NOT_EMPTY(),
                                        IS_LENGTH(64),
+                                       IS_NOT_ONE_OF(db,
+                                                     "%s.name" % tablename,
+                                                     error_message = T("Record already exists"),
+                                                     ),
                                        ],
                            ),
                      CommentsField(),
@@ -4848,7 +4856,7 @@ class HRProgrammeModel(DataModel):
 
         label_create = crud_strings[tablename].label_create
         if is_admin:
-            filter_opts = ()
+            filter_opts = None
         elif root_org:
             filter_opts = (root_org, None)
         else:
