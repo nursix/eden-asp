@@ -2199,7 +2199,7 @@ class RequestModel(DataModel):
                         # @ToDo: Think about branches
                         if site and site.organisation_id == exists.organisation_id:
                             # Set the HR record as being for this site
-                            exists.update(site_id = site_id)
+                            exists.update_record(site_id = site_id)
                             s3db.hrm_human_resource_onaccept(exists)
                 elif site_id:
                     # Lookup the Org for the site
