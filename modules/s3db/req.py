@@ -4807,10 +4807,10 @@ def req_send_commit():
     """
 
     # Get the commit record
-    try:
-        commit_id = current.request.args[0]
-    except KeyError:
+    if not current.request.args:
         redirect(URL(c="req", f="commit"))
+
+    commit_id = current.request.args[0]
 
     db = current.db
     s3db = current.s3db
@@ -4836,6 +4836,8 @@ def req_send_commit():
                               req_table.req_ref,
                               limitby = (0, 1)
                               ).first()
+    if not record:
+        redirect(URL(c="req", f="commit"))
 
     # @ToDo: Identify if we have stock items which match the commit items
     # If we have a single match per item then proceed automatically (as-now) & then decrement the stock quantity
