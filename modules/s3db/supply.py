@@ -2870,7 +2870,7 @@ def supply_item_entity_country(row):
 
         rtable = s3db.inv_recv
         stable = s3db.org_site
-        query = (itable[ekey] == entity_id) & \
+        query = (itable.id == entity_id) & \
                 (rtable.id == itable.recv_id) & \
                 (stable.site_id == rtable.site_id) & \
                 (ltable.id == stable.location_id)
@@ -2945,7 +2945,7 @@ def supply_item_entity_organisation(row):
 
         rtable = s3db.inv_recv
         stable = s3db.org_site
-        query = (itable[ekey] == entity_id) & \
+        query = (itable.id == entity_id) & \
                 (rtable.id == itable.recv_id) & \
                 (stable.site_id == rtable.site_id)
         record = current.db(query).select(stable.organisation_id,
@@ -2995,7 +2995,7 @@ def supply_item_entity_contacts(row):
     elif instance_type == "inv_track_item":
 
         rtable = s3db.inv_recv
-        query = (itable[ekey] == entity_id) & \
+        query = (itable.id == entity_id) & \
                 (rtable.id == itable.recv_id)
         record = db(query).select(rtable.site_id,
                                   limitby=(0, 1)).first()
@@ -3100,8 +3100,8 @@ def supply_item_entity_status(row):
     elif instance_type == "inv_track_item":
 
         rtable = s3db.inv_recv
-        query = (itable[ekey] == entity_id) & \
-                (rtable.id == itable.send_inv_item_id)
+        query = (itable.id == entity_id) & \
+                (rtable.id == itable.recv_id)
         record = current.db(query).select(rtable.eta,
                                           limitby=(0, 1)).first()
         if record:
