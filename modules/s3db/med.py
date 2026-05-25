@@ -1100,12 +1100,12 @@ class MedParameterModel(DataModel):
 
         T = current.T
         db = current.db
-        s3db = current.s3db
 
         s3 = current.response.s3
         crud_strings = s3.crud_strings
 
         define_table = self.define_table
+        configure = self.configure
 
         organisation_id = self.org_organisation_id
         person_id = self.pr_person_id
@@ -1125,8 +1125,11 @@ class MedParameterModel(DataModel):
                      CommentsField(),
                      )
 
+        # Table configuration
         # TODO import option
-        # TODO onvalidation to ensure uniqueness of name within organisation
+        configure(tablename,
+                  onvalidation = self.parameter_group_onvalidation,
+                  )
 
         # Foreign key template
         represent = S3Represent(lookup=tablename)
@@ -1210,13 +1213,14 @@ class MedParameterModel(DataModel):
         tablename = "med_parameter"
         define_table(tablename,
                      organisation_id(),
+                     # TODO filterOptions
                      parameter_group_id(),
                      sample_type_id(),
                      Field("name",
                            label = T("Parameter"),
                            requires = IS_NOT_EMPTY(),
                            ),
-                     Field("abbrv",
+                     Field("abrv",
                            label = T("Abbreviation"),
                            requires = IS_NOT_EMPTY(),
                            ),
@@ -1242,8 +1246,11 @@ class MedParameterModel(DataModel):
                      CommentsField(),
                      )
 
-        # TODO onvalidation to ensure uniqueness of name/abbrv within organisation
+        # Table configuration
         # TODO inherit organisation_id from parameter group if using parameter groups
+        configure(tablename,
+                  onvalidation = self.parameter_onvalidation,
+                  )
 
         # Foreign key template
         represent = S3Represent(lookup=tablename)
@@ -1374,6 +1381,64 @@ class MedParameterModel(DataModel):
         # TODO CRUD Strings
 
         # ---------------------------------------------------------------------
+        # Pass names back to global scope (s3.*)
+        #
+        #return {}
+
+    # -------------------------------------------------------------------------
+    @staticmethod
+    def parameter_group_onvalidation(form):
+        """
+            Form validation of parameter groups:
+                - name must be unique within organisation
+        """
+
+        table = current.s3db.med_parameter_group
+        data = get_form_record_data(form, table, ["organisation_id", "name"])
+
+        query = (table.organisation_id == data.get("organisation_id")) & \
+                (table.name == data.get("name"))
+
+        record_id = get_form_record_id(form)
+        if record_id:
+            query &= (table.id != record_id)
+        query &= (table.deleted == False)
+        row = current.db(query).select(table.id, limitby=(0, 1)).first()
+        if row:
+            form.errors["name"] = current.T("Parameter Group exists")
+
+    # -------------------------------------------------------------------------
+    @staticmethod
+    def parameter_onvalidation(form):
+        """
+            Form validation of parameters:
+                - name must be unique within organisation
+                - abrv must be unique within organisation
+        """
+
+        record_id = get_form_record_id(form)
+
+        table = current.s3db.med_parameter
+        data = get_form_record_data(form, table, ["organisation_id", "name", "abrv"])
+        name = data.get("name")
+        abrv = data.get("abrv")
+
+        query = (table.name == name)
+        if abrv:
+            query |= (table.abrv == abrv)
+        query = (table.organisation_id == data.get("organisation_id")) & query
+        if record_id:
+            query &= (table.id != record_id)
+        query &= (table.deleted == False)
+        rows = current.db(query).select(table.id, table.name, table.abrv)
+
+        msg = current.T("Parameter exists")
+        for row in rows:
+            if row.name == name:
+                form.errors["name"] = msg
+            if row.abrv == abrv:
+                form.errors["abrv"] = msg
+
 # =============================================================================
 class MedVitalsModel(DataModel):
     """ Data Model for vital signs """
@@ -3502,8 +3567,6 @@ class med_PatientListLayout(S3DataListLayout):
                 rfields: the S3ResourceFields to render
                 record: the record as dict
         """
-
-        record_id = record["_row"]["med_patient.id"]
 
         body = DIV(_class="med-status")
         if record["_row"]["med_patient.status"] in ("ARRIVED", "TREATMENT"):

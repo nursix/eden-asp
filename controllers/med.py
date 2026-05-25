@@ -646,6 +646,9 @@ def sample_type():
 def parameter():
     """ Parameters - CRUD Controller """
 
+    # TODO filter selectable Organisations
+    # TODO filter parameter group to selected Organisation
+
     return crud_controller()
 
 # =============================================================================
