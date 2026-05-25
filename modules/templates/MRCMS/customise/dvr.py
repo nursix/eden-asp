@@ -270,6 +270,10 @@ def dvr_need_resource(r, tablename):
     field = table.code
     field.readable = field.writable = True
 
+    # Expose protection flag
+    field = table.protection
+    field.readable = field.writable = True
+
 # -------------------------------------------------------------------------
 def dvr_case_activity_resource(r, tablename):
 

@@ -760,6 +760,10 @@ def configure_case_filters(resource, organisation_id=None, privileged=False):
                            hidden = True,
                            comment = T("Search for multiple IDs (separated by blanks)"),
                            ),
+                OptionsFilter("case_activity.need_id",
+                              hidden = True,
+                              options = get_filter_options("dvr_need"),
+                              ),
                 ])
 
     resource.configure(filter_widgets=filter_widgets)
