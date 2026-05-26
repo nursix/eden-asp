@@ -1162,24 +1162,40 @@ class MedParameterModel(DataModel):
         #
         tablename = "med_sample_type"
         define_table(tablename,
-                     # TODO name/code must be unique
-                     Field("name", notnull=True,
+                     Field("name", length=128, notnull=True, unique=True,
                            label = T("Name"),
-                           requires = IS_NOT_EMPTY(),
+                           requires = [IS_NOT_ONE_OF(db, "%s.name" % tablename),
+                                       IS_LENGTH(128, minsize=2),
+                                       ],
                            ),
-                     Field("code", notnull=True,
+                     Field("code", length=32, notnull=True, unique=True,
                            label = T("Code"),
-                           requires = IS_NOT_EMPTY(),
+                           requires = [IS_NOT_ONE_OF(db, "%s.code" % tablename),
+                                       IS_LENGTH(32, minsize=2),
+                                       ],
                            ),
                      CommentsField("instructions",
                                    label = T("Instructions"),
                                    comment = None,
                                    ),
-                     # TODO obsolete-field?
+                     Field("obsolete", "boolean",
+                           label = T("Obsolete"),
+                           default = False,
+                           represent = BooleanRepresent(labels = False,
+                                                        # Reverse icons semantics
+                                                        icons = (BooleanRepresent.NEG,
+                                                                 BooleanRepresent.POS,
+                                                                 ),
+                                                        flag = True,
+                                                        ),
+                           ),
                      CommentsField(),
                      )
 
-        # TODO import deduplication primary=code+Name
+        # Table configuration
+        configure(tablename,
+                  deduplicate = S3Duplicate(primary=("name", "code")),
+                  )
 
         # Foreign key template
         represent = S3Represent(lookup=tablename)
@@ -1190,6 +1206,8 @@ class MedParameterModel(DataModel):
                                        requires = IS_EMPTY_OR(
                                                     IS_ONE_OF(db, "%s.id" % tablename,
                                                               represent,
+                                                              filterby = "obsolete",
+                                                              filter_opts = (False,),
                                                               )),
                                        )
 

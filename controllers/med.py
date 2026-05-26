@@ -638,16 +638,68 @@ def parameter_group():
 
     return crud_controller()
 
+# -----------------------------------------------------------------------------
 def sample_type():
     """ Sample Types - CRUD Controller """
 
     return crud_controller()
 
+# -----------------------------------------------------------------------------
 def parameter():
     """ Parameters - CRUD Controller """
 
-    # TODO filter selectable Organisations
-    # TODO filter parameter group to selected Organisation
+    def prep(r):
+
+        resource = r.resource
+        table = resource.table
+
+        if not r.component:
+            # Limit selectable organisations to those the user can create parameters for
+            permissions = auth.permission
+            permitted_realms = permissions.permitted_realms(r.tablename, "create")
+
+            otable = s3db.org_organisation
+            if permitted_realms is None:
+                dbset = db
+                selectable_orgs = []
+            else:
+                dbset = db(otable.pe_id.belongs(permitted_realms))
+                selectable_orgs = dbset.select(otable.id)
+            field = table.organisation_id
+            field.requires = IS_ONE_OF(dbset, "org_organisation.id", field.represent)
+            if len(selectable_orgs) == 1:
+                # Only one organisation selectable => make default + r/o
+                field.default = selectable_orgs[0].id
+                field.writable = False
+
+            # Limit selectable parameter groups by selectable organisation
+            gtable = s3db.med_parameter_group
+            if permitted_realms is None:
+                dbset = db
+            elif len(selectable_orgs) == 1:
+                dbset = db(gtable.organisation_id == selectable_orgs[0].id)
+            else:
+                dbset = db(gtable.organisation_id.belongs({row.id for row in selectable_orgs}))
+            field = table.parameter_group_id
+            field.requires = IS_EMPTY_OR(
+                                IS_ONE_OF(dbset, "med_parameter_group.id",
+                                          field.represent,
+                                          ))
+
+            if len(selectable_orgs) != 1:
+                # Filter parameter group options dynamically after selected organisation
+                script = '''$.filterOptionsS3({
+'trigger':'organisation_id',
+'target':'parameter_group_id',
+'lookupPrefix':'med',
+'lookupResource':'parameter_group',
+'optional':true
+})'''
+                if script not in s3.jquery_ready:
+                    s3.jquery_ready.append(script)
+
+        return True
+    s3.prep = prep
 
     return crud_controller()
 
