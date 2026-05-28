@@ -632,12 +632,12 @@ def configure_case_form(resource, *,
                        )
 
 # -------------------------------------------------------------------------
-def configure_case_filters(resource, organisation_id=None, privileged=False):
+def configure_case_filters(r, organisation_id=None, privileged=False):
     """
         Configure case list filters
 
         Args:
-            resource: the (pr_person) resource
+            r: the CRUDRequest
             organisation_id: the default case organisation ID
             privileged: whether the user has a privileged role with
                         extended access to fields
@@ -647,6 +647,8 @@ def configure_case_filters(resource, organisation_id=None, privileged=False):
 
     db = current.db
     s3db = current.s3db
+
+    resource = r.resource
 
     # Status filter options
     get_status_opts = s3db.dvr_case_status_filter_opts
@@ -741,6 +743,12 @@ def configure_case_filters(resource, organisation_id=None, privileged=False):
 
     # Additional filters for privileged roles
     if privileged:
+        if r.controller == "counsel":
+            filter_widgets.append(OptionsFilter("case_activity.need_id",
+                                                label = T("Needs"),
+                                                hidden = True,
+                                                options = get_filter_options("dvr_need"),
+                                                ))
         from ..helpers import AbsenceFilter
         filter_widgets.extend([
                 AbsenceFilter("dvr_case.last_seen_on",
@@ -760,10 +768,6 @@ def configure_case_filters(resource, organisation_id=None, privileged=False):
                            hidden = True,
                            comment = T("Search for multiple IDs (separated by blanks)"),
                            ),
-                OptionsFilter("case_activity.need_id",
-                              hidden = True,
-                              options = get_filter_options("dvr_need"),
-                              ),
                 ])
 
     resource.configure(filter_widgets=filter_widgets)
@@ -1077,7 +1081,7 @@ def configure_case_file(r, privileged=False, administration=False):
 
             # Configure case filters
             if not record:
-                configure_case_filters(resource,
+                configure_case_filters(r,
                                        organisation_id = case_organisation,
                                        privileged = privileged,
                                        )
