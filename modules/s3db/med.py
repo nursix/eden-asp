@@ -1333,6 +1333,7 @@ class MedParameterModel(DataModel):
                             )
 
         # Foreign key template
+        # TODO represent as type code + localized date
         represent = S3Represent(lookup=tablename, fields=("date",))
         sample_id = FieldTemplate("sample_id", "reference %s" % tablename,
                                   label = T("Sample"),
