@@ -1126,7 +1126,6 @@ class MedParameterModel(DataModel):
                      )
 
         # Table configuration
-        # TODO import option
         configure(tablename,
                   onvalidation = self.parameter_group_onvalidation,
                   )
@@ -1321,7 +1320,7 @@ class MedParameterModel(DataModel):
                      person_id(comment=None),
                      sample_type_id(),
                      # sample number (autogenerate)?
-                     DateField(default="now"),
+                     DateTimeField(default="now"),
                      # taken_by
                      # invalid yes/no
                      # vhash
@@ -1332,8 +1331,6 @@ class MedParameterModel(DataModel):
         self.add_components(tablename,
                             med_parameter_value = "sample_id",
                             )
-
-        # TODO automatically set patient/person IDs (onaccept)
 
         # Foreign key template
         represent = S3Represent(lookup=tablename, fields=("date",))
@@ -1380,12 +1377,23 @@ class MedParameterModel(DataModel):
                          ),
                      sample_id(),
                      parameter_id(empty=False),
+                     # The original result as-entered
                      Field("result",
                            label = T("Result"),
                            ),
+                     # Converted numerical result, TODO compute onaccept
+                     # - if parameter is quantitative, and
+                     # - entered value is numeric
                      Field("result_numeric", "double",
                            readable = False,
                            writable = False,
+                           ),
+                     # Marker for abnormal values, TODO compute onaccept
+                     # - unless set True manually
+                     # - if value is valid and normal range/options defined
+                     Field("abnormal", "boolean",
+                           default = False,
+                           label = T("Outside of normal range"),
                            ),
                      DateTimeField(label = T("Date reported"),
                                    default = "now",
@@ -1410,8 +1418,10 @@ class MedParameterModel(DataModel):
                      # TODO vhash
                      )
 
-        # TODO inherit person_id/patient_id from sample (onaccept),
-        #      alternatively, set patient_id/person_id automatically
+        # Table configuration
+        configure(tablename,
+                  onaccept = self.parameter_value_onaccept,
+                  )
 
         # TODO CRUD Strings
 
@@ -1507,10 +1517,12 @@ class MedParameterModel(DataModel):
         """
             Onaccept-routine for parameter values
             - set patient_id/person_id
+            - generate+link new sample if record was not linked to one
         """
 
         db = current.db
         s3db = current.s3db
+        auth = current.auth
 
         record_id = get_form_record_id(form)
 
@@ -1519,16 +1531,18 @@ class MedParameterModel(DataModel):
         record = db(query).select(table.id,
                                   table.person_id,
                                   table.patient_id,
+                                  table.parameter_id,
                                   table.sample_id,
+                                  table.date,
                                   limitby = (0, 1),
                                   ).first()
 
         if not record:
             return
 
-        if not record.person_id and not record.patient_id:
-            # Look up from sample
-            stable = s3db.med_sample
+        stable = s3db.med_sample
+        if not(record.person_id or record.patient_id) and record.sample_id:
+            # Look up person_id/patient_id from sample
             query = (stable.id == record.sample_id) & \
                     (stable.deleted == False)
             row = db(query).select(stable.person_id,
@@ -1542,6 +1556,33 @@ class MedParameterModel(DataModel):
 
         if not record.patient_id or not record.person_id:
             MedPatientModel.set_patient(record)
+
+        # If not linked to a sample, generate+link new sample
+        if not record.sample_id:
+            # Look up sample type from parameter
+            ptable = s3db.med_parameter
+            query = (ptable.id == record.parameter_id) & \
+                    (ptable.deleted == False)
+            param = db(query).select(ptable.sample_type_id,
+                                     limitby = (0, 1),
+                                     ).first()
+            if param and param.sample_type_id:
+                # Create new sample
+                sample = {"sample_type_id": param.sample_type_id,
+                          "person_id": record.person_id,
+                          "patient_id": record.patient_id,
+                          "date": record.date,
+                          }
+                sample_id = sample["id"] = stable.insert(**sample)
+
+                # Postprocess create
+                s3db.update_super(stable, sample)
+                auth.s3_set_record_owner(stable, sample_id)
+                auth.s3_make_session_owner(stable, sample_id)
+                s3db.onaccept(stable, sample_id, method="create")
+
+                # Link record to sample
+                record.update_record(sample_id=sample_id)
 
 # =============================================================================
 class MedVitalsModel(DataModel):
