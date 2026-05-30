@@ -1231,7 +1231,6 @@ class MedParameterModel(DataModel):
         tablename = "med_parameter"
         define_table(tablename,
                      organisation_id(),
-                     # TODO filterOptions
                      parameter_group_id(),
                      sample_type_id(),
                      Field("name",
@@ -1254,9 +1253,27 @@ class MedParameterModel(DataModel):
                            default = 0,
                            requires = IS_INT_IN_RANGE(minimum=0, maximum=4),
                            ),
-                     # TODO options (JSON list (min/max) or (val, val, val))
-                     # TODO normal range (JSON list (min/max) or (val,val,val))
-                     # TODO obsolete-field?
+                     Field("values_valid", "json",
+                           label = T("Valid Values"),
+                           requires = IS_EMPTY_OR(IS_JSONS3()),
+                           comment = T('Specify like ["value", "value", ...] (options) or [min, max] (range)'),
+                           ),
+                     Field("values_normal", "json",
+                           label = T("Normal Values"),
+                           requires = IS_EMPTY_OR(IS_JSONS3()),
+                           comment = T('Specify like ["value", "value", ...] (options) or [min, max] (range)'),
+                           ),
+                     Field("obsolete", "boolean",
+                           label = T("Obsolete"),
+                           default = False,
+                           represent = BooleanRepresent(labels = False,
+                                                        # Reverse icons semantics
+                                                        icons = (BooleanRepresent.NEG,
+                                                                 BooleanRepresent.POS,
+                                                                 ),
+                                                        flag = True,
+                                                        ),
+                           ),
                      CommentsField("instructions",
                                    label = T("Instructions"),
                                    comment = None,
@@ -1265,7 +1282,6 @@ class MedParameterModel(DataModel):
                      )
 
         # Table configuration
-        # TODO inherit organisation_id from parameter group if using parameter groups
         configure(tablename,
                   onvalidation = self.parameter_onvalidation,
                   )
@@ -1364,11 +1380,12 @@ class MedParameterModel(DataModel):
                          ),
                      sample_id(),
                      parameter_id(empty=False),
-                     Field("value", "double",
+                     Field("result",
                            label = T("Result"),
                            ),
-                     Field("value_qualitative",
-                           label = T("Result (qualitative)"),
+                     Field("result_numeric", "double",
+                           readable = False,
+                           writable = False,
                            ),
                      DateTimeField(label = T("Date reported"),
                                    default = "now",
@@ -1456,6 +1473,75 @@ class MedParameterModel(DataModel):
                 form.errors["name"] = msg
             if row.abrv == abrv:
                 form.errors["abrv"] = msg
+
+    # -------------------------------------------------------------------------
+    @staticmethod
+    def sample_onaccept(form):
+        """
+            Onaccept-routine for sample
+            - set patient_id/person_id
+        """
+
+        db = current.db
+        s3db = current.s3db
+
+        record_id = get_form_record_id(form)
+
+        table = s3db.med_sample
+        query = (table.id == record_id) & (table.deleted == False)
+        record = db(query).select(table.id,
+                                  table.person_id,
+                                  table.patient_id,
+                                  limitby = (0, 1),
+                                  ).first()
+
+        if not record:
+            return
+
+        if not record.patient_id or not record.person_id:
+            MedPatientModel.set_patient(record)
+
+    # -------------------------------------------------------------------------
+    @staticmethod
+    def parameter_value_onaccept(form):
+        """
+            Onaccept-routine for parameter values
+            - set patient_id/person_id
+        """
+
+        db = current.db
+        s3db = current.s3db
+
+        record_id = get_form_record_id(form)
+
+        table = s3db.med_parameter_value
+        query = (table.id == record_id) & (table.deleted == False)
+        record = db(query).select(table.id,
+                                  table.person_id,
+                                  table.patient_id,
+                                  table.sample_id,
+                                  limitby = (0, 1),
+                                  ).first()
+
+        if not record:
+            return
+
+        if not record.person_id and not record.patient_id:
+            # Look up from sample
+            stable = s3db.med_sample
+            query = (stable.id == record.sample_id) & \
+                    (stable.deleted == False)
+            row = db(query).select(stable.person_id,
+                                   stable.patient_id,
+                                   limitby = (0, 1),
+                                   ).first()
+            if row:
+                record.update_record(person_id = row.person_id,
+                                     patient_id = row.patient_id,
+                                     )
+
+        if not record.patient_id or not record.person_id:
+            MedPatientModel.set_patient(record)
 
 # =============================================================================
 class MedVitalsModel(DataModel):
