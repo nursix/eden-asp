@@ -53,7 +53,7 @@ from gluon.validators import Validator, ValidationError
 from ..core import *
 
 BP = r"^\s*([1-3]{1}\d{2}|[2-9]{1}\d)\s*(?:[/]{1}\s*([1]{1}\d{2}|[2-9]{1}\d)){0,1}\s*$"
-
+NV = r"^([+-]?)([0-9]{1,3}(?:(?:([\,\.])[0-9]{3}(?=[\,\.])(?:\3[0-9]{3})*(?!\3))|(?:[0-9]*))?)(?:[\,\.]([0-9]*))?$"
 # =============================================================================
 class MedUnitModel(DataModel):
     """ Medical Unit & Treatment Areas Model """
@@ -1382,9 +1382,7 @@ class MedParameterModel(DataModel):
                      Field("result",
                            label = T("Result"),
                            ),
-                     # Converted numerical result, TODO compute onaccept
-                     # - if parameter is quantitative, and
-                     # - entered value is numeric
+                     # Numerical result, computed from result onaccept
                      Field("result_numeric", "double",
                            readable = False,
                            writable = False,
@@ -1527,6 +1525,10 @@ class MedParameterModel(DataModel):
 
         record_id = get_form_record_id(form)
 
+        ptable = s3db.med_parameter
+        stable = s3db.med_sample
+
+        # Reload the record
         table = s3db.med_parameter_value
         query = (table.id == record_id) & (table.deleted == False)
         record = db(query).select(table.id,
@@ -1535,13 +1537,13 @@ class MedParameterModel(DataModel):
                                   table.parameter_id,
                                   table.sample_id,
                                   table.date,
+                                  table.result,
                                   limitby = (0, 1),
                                   ).first()
 
         if not record:
             return
 
-        stable = s3db.med_sample
         if not(record.person_id or record.patient_id) and record.sample_id:
             # Look up person_id/patient_id from sample
             query = (stable.id == record.sample_id) & \
@@ -1558,32 +1560,63 @@ class MedParameterModel(DataModel):
         if not record.patient_id or not record.person_id:
             MedPatientModel.set_patient(record)
 
+        # Look up parameter details
+        query = (ptable.id == record.parameter_id) & \
+                (ptable.deleted == False)
+        param = db(query).select(ptable.sample_type_id,
+                                 ptable.qualitative,
+                                 limitby = (0, 1),
+                                 ).first()
+
         # If not linked to a sample, generate+link new sample
-        if not record.sample_id:
-            # Look up sample type from parameter
-            ptable = s3db.med_parameter
-            query = (ptable.id == record.parameter_id) & \
-                    (ptable.deleted == False)
-            param = db(query).select(ptable.sample_type_id,
-                                     limitby = (0, 1),
-                                     ).first()
-            if param and param.sample_type_id:
-                # Create new sample
-                sample = {"sample_type_id": param.sample_type_id,
-                          "person_id": record.person_id,
-                          "patient_id": record.patient_id,
-                          "date": record.date,
-                          }
-                sample_id = sample["id"] = stable.insert(**sample)
+        if not record.sample_id and param and param.sample_type_id:
+            # Create new sample
+            sample = {"sample_type_id": param.sample_type_id,
+                      "person_id": record.person_id,
+                      "patient_id": record.patient_id,
+                      "date": record.date,
+                      }
+            sample_id = sample["id"] = stable.insert(**sample)
 
-                # Postprocess create
-                s3db.update_super(stable, sample)
-                auth.s3_set_record_owner(stable, sample_id)
-                auth.s3_make_session_owner(stable, sample_id)
-                s3db.onaccept(stable, sample_id, method="create")
+            # Postprocess create
+            s3db.update_super(stable, sample)
+            auth.s3_set_record_owner(stable, sample_id)
+            auth.s3_make_session_owner(stable, sample_id)
+            s3db.onaccept(stable, sample_id, method="create")
 
-                # Link record to sample
-                record.update_record(sample_id=sample_id)
+            # Link record to sample
+            record.update_record(sample_id=sample_id)
+
+        # Compute numeric value for quantitative parameters
+        if param and not param.qualitative and record.result:
+            result, value = record.result, None
+            if result:
+                # The NV-regex handles numerical values with either , or . as
+                # decimals-separator, and then the other one for thousands,
+                # to allow for safer data entry; e.g. "1,234.56" or "1.234,56"
+                # are both understood as 1234.56
+                # NOTE: however, a single separator is always interpreted as
+                #       decimals-separator, i.e. 1,234 is read as 1.234, not 1234
+                # NOTE: input values that do not match the regex will produce
+                #       result_numeric=None
+                # NOTE: output representation should always use the configured
+                #       l10n separators and med_parameter.precsn, regardless how
+                #       the value has been entered
+                match = re.match(NV, result.replace(" ", ""))
+                if match:
+                    # Get the integer part
+                    value = "%s%s" % (match.group(1), match.group(2))
+                    if match.group(3):
+                        # Drop the thousands-separator
+                        value = value.replace(match.group(3), "")
+                    if match.group(4):
+                        # Add the decimal part
+                        value = "%s.%s" % (value, match.group(4))
+                    try:
+                        value = float(value)
+                    except (ValueError, TypeError):
+                        pass
+            record.update_record(result_numeric=value)
 
 # =============================================================================
 class MedVitalsModel(DataModel):
