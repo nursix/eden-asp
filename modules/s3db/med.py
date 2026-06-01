@@ -1607,15 +1607,15 @@ class MedParameterModel(DataModel):
                 match = re.match(NV, result.replace(" ", ""))
                 if match:
                     # Get the integer part
-                    value = "%s%s" % (match.group(1), match.group(2))
+                    v = "%s%s" % (match.group(1), match.group(2))
                     if match.group(3):
                         # Drop the thousands-separator
-                        value = value.replace(match.group(3), "")
+                        v = v.replace(match.group(3), "")
                     if match.group(4):
                         # Add the decimal part
-                        value = "%s.%s" % (value, match.group(4))
+                        v = "%s.%s" % (v, match.group(4))
                     try:
-                        value = float(value)
+                        value = float(v)
                     except (ValueError, TypeError):
                         pass
             record.update_record(result_numeric=value)
