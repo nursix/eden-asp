@@ -1588,7 +1588,7 @@ class MedParameterModel(DataModel):
             record.update_record(sample_id=sample_id)
 
         # Compute numeric value for quantitative parameters
-        if param and not param.qualitative and record.result:
+        if param and not param.qualitative:
             result, value = record.result, None
             if result:
                 # The NV-regex handles numerical values with either , or . as
