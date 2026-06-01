@@ -54,6 +54,7 @@ from ..core import *
 
 BP = r"^\s*([1-3]{1}\d{2}|[2-9]{1}\d)\s*(?:[/]{1}\s*([1]{1}\d{2}|[2-9]{1}\d)){0,1}\s*$"
 NV = r"^([+-]?)([0-9]{1,3}(?:(?:([\,\.])[0-9]{3}(?=[\,\.])(?:\3[0-9]{3})*(?!\3))|(?:[0-9]*))?)(?:[\,\.]([0-9]*))?$"
+
 # =============================================================================
 class MedUnitModel(DataModel):
     """ Medical Unit & Treatment Areas Model """
@@ -1517,6 +1518,7 @@ class MedParameterModel(DataModel):
             Onaccept-routine for parameter values
             - set patient_id/person_id
             - generate+link new sample if record was not linked to one
+            - compute numerical result for quantitative parameters (if possible)
         """
 
         db = current.db
