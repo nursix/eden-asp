@@ -1363,6 +1363,13 @@ class MedParameterModel(DataModel):
         # ---------------------------------------------------------------------
         # Measured/observed values
         #
+        result_status_opts = WorkflowOptions(("PENDING", "Pending", "blue"),
+                                             ("PRELIMINARY", "Preliminary", "amber"),
+                                             ("FINAL", "Final", "green"),
+                                             represent = "status",
+                                             none = "PENDING",
+                                             )
+
         tablename = "med_parameter_value"
         define_table(tablename,
                      person_id(
@@ -1382,6 +1389,12 @@ class MedParameterModel(DataModel):
                      # The original result as-entered
                      Field("result",
                            label = T("Result"),
+                           ),
+                     Field("status",
+                           label = T("Status"),
+                           default = "PENDING",
+                           requires = IS_IN_SET(result_status_opts.selectable(), sort=False),
+                           represent = result_status_opts.represent,
                            ),
                      # Numerical result, computed from result onaccept
                      Field("result_numeric", "double",
@@ -1420,6 +1433,7 @@ class MedParameterModel(DataModel):
 
         # Table configuration
         configure(tablename,
+                  onvalidation = self.parameter_value_onvalidation,
                   onaccept = self.parameter_value_onaccept,
                   )
 
@@ -1513,6 +1527,27 @@ class MedParameterModel(DataModel):
 
     # -------------------------------------------------------------------------
     @staticmethod
+    def parameter_value_onvalidation(form):
+        """
+            Form validation of parameter values:
+            - other status than PENDING requires a result
+        """
+
+        table = current.s3db.med_parameter_value
+        data = get_form_record_data(form, table, ["result", "status"])
+
+        status = data.get("status")
+        result = data.get("result")
+
+        if result:
+            if status == "PENDING":
+                form.errors["status"] = current.T("Result must have qualified status")
+        else:
+            if status != "PENDING":
+                form.errors["result"] = current.T("Result cannot be empty")
+
+    # -------------------------------------------------------------------------
+    @staticmethod
     def parameter_value_onaccept(form):
         """
             Onaccept-routine for parameter values
@@ -1540,6 +1575,7 @@ class MedParameterModel(DataModel):
                                   table.sample_id,
                                   table.date,
                                   table.result,
+                                  table.status,
                                   limitby = (0, 1),
                                   ).first()
 
@@ -1592,7 +1628,7 @@ class MedParameterModel(DataModel):
         # Compute numeric value for quantitative parameters
         if param and not param.qualitative:
             result, value = record.result, None
-            if result:
+            if result and record.status != "PENDING":
                 # The NV-regex handles numerical values with either , or . as
                 # decimals-separator, and then the other one for thousands,
                 # to allow for safer data entry; e.g. "1,234.56" or "1.234,56"
