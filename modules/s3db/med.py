@@ -1300,7 +1300,7 @@ class MedParameterModel(DataModel):
 
         # CRUD Strings
         crud_strings[tablename] = Storage(
-            label_create = T("Add Parameter"),
+            label_create = T("Create Parameter"),
             title_display = T("Parameter"),
             title_list = T("Parameters"),
             title_update = T("Edit Parameter"),
@@ -1406,6 +1406,16 @@ class MedParameterModel(DataModel):
                      Field("abnormal", "boolean",
                            default = False,
                            label = T("Outside of normal range"),
+                           represent = BooleanRepresent(labels = False,
+                                                        # Reverse icons semantics
+                                                        icons = ("fa fa-exclamation",
+                                                                 BooleanRepresent.POS,
+                                                                 ),
+                                                        colors = (BooleanRepresent.RED,
+                                                                  BooleanRepresent.GREEN,
+                                                                  ),
+                                                        flag = True,
+                                                        ),
                            ),
                      DateTimeField(label = T("Date reported"),
                                    default = "now",
@@ -1424,7 +1434,16 @@ class MedParameterModel(DataModel):
                      Field("invalid", "boolean",
                            label = T("Invalid"),
                            default = False,
-                           # TODO BooleanRepresent
+                           represent = BooleanRepresent(labels = False,
+                                                        # Reverse icons semantics
+                                                        icons = (BooleanRepresent.NEG,
+                                                                 BooleanRepresent.POS,
+                                                                 ),
+                                                        colors = (BooleanRepresent.RED,
+                                                                  BooleanRepresent.GREEN,
+                                                                  ),
+                                                        flag = True,
+                                                        ),
                            ),
                      CommentsField(),
                      # TODO vhash
@@ -1436,7 +1455,19 @@ class MedParameterModel(DataModel):
                   onaccept = self.parameter_value_onaccept,
                   )
 
-        # TODO CRUD Strings
+        # CRUD strings
+        crud_strings[tablename] = Storage(
+            label_create = T("Add Measured Value"),
+            title_display = T("Measured Value"),
+            title_list = T("Measured Values"),
+            title_update = T("Edit Measured Value"),
+            label_list_button = T("List Measured Values"),
+            label_delete_button = T("Delete Measured Value"),
+            msg_record_created = T("Measured Value Added"),
+            msg_record_modified = T("Measured Value updated"),
+            msg_record_deleted = T("Measured Value deleted"),
+            msg_list_empty = T("No Measured Values currently registered"),
+            )
 
         # ---------------------------------------------------------------------
         # Pass names back to global scope (s3.*)
@@ -1734,10 +1765,6 @@ class MedVitalsModel(DataModel):
                            requires = IS_IN_SET(airway_status, zero=None, sort=False),
                            represent = self.represent_discrete(dict(airway_status), normal={"N"}),
                            ),
-                     Field("rf", "integer", # TODO remove after migration to rr
-                           readable = False,
-                           writable = False,
-                           ),
                      Field("rr", "integer",
                            label = T("Respiratory Rate"),
                            requires = IS_EMPTY_OR(IS_INT_IN_RANGE(minimum=2, maximum=80)),
@@ -1761,10 +1788,6 @@ class MedVitalsModel(DataModel):
                            label = T("Blood Pressure"),
                            requires = IS_EMPTY_OR(IS_BLOOD_PRESSURE()),
                            represent = self.represent_bp(110, 220),
-                           ),
-                     Field("hf", "integer", # TODO remove after migration to hr
-                           readable = False,
-                           writable = False,
                            ),
                      Field("hr", "integer",
                            label = T("Heart Rate"),
