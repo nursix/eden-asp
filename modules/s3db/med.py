@@ -1334,8 +1334,7 @@ class MedParameterModel(DataModel):
                             )
 
         # Foreign key template
-        # TODO represent as type code + localized date
-        represent = S3Represent(lookup=tablename, fields=("date",))
+        represent = med_SampleRepresent()
         sample_id = FieldTemplate("sample_id", "reference %s" % tablename,
                                   label = T("Sample"),
                                   ondelete = "SET NULL",
@@ -3291,6 +3290,73 @@ class med_PatientRepresent(S3Represent):
 
         formatted.append(SPAN(s3_truncate(row.reason), _class=css))
         return formatted
+
+# =============================================================================
+class med_SampleRepresent(S3Represent):
+    """ Representation of samples """
+
+    def __init__(self, show_link=False):
+        """
+            Args:
+                show_link: render as link to the sample
+        """
+
+        super().__init__(lookup = "med_sample",
+                         show_link = show_link,
+                         )
+
+    # -------------------------------------------------------------------------
+    def lookup_rows(self, key, values, fields=None):
+        """
+            Custom rows lookup
+
+            Args:
+                key: the key Field
+                values: the values
+                fields: list of fields to look up (unused)
+        """
+
+        count = len(values)
+        if count == 1:
+            query = (key == values[0])
+        else:
+            query = key.belongs(values)
+
+        table = self.table
+
+        fields = [table.id,
+                  table.person_id,
+                  table.patient_id,
+                  table.sample_type_id,
+                  table.date,
+                  ]
+
+        rows = current.db(query).select(limitby=(0, count), *fields)
+        self.queries += 1
+
+        # Bulk-represent human_resource_ids
+        type_ids = [row.sample_type_id for row in rows]
+        table.sample_type_id.represent.bulk(type_ids)
+
+        return rows
+
+    # -------------------------------------------------------------------------
+    def represent_row(self, row):
+        """
+            Represent a row
+
+            Args:
+                row: the Row
+        """
+
+        table = self.table
+
+        date = table.date.represent(row.date)
+        sample_type = table.sample_type_id.represent(row.sample_type_id)
+
+        reprstr = "[%s] %s" % (date, sample_type)
+
+        return reprstr
 
 # =============================================================================
 class med_DocEntityRepresent(S3Represent):
