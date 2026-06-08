@@ -2663,6 +2663,7 @@
 'Filter by Location': 'Nach Standort filtern',
 'Filter by Organization': 'Nach Organisation filtern',
 'Filter by Tag': 'Nach Tag filtern',
+'Final': 'Endgültig',
 'Finalized': 'Abgeschlossen',
 'Finance': 'Finanzen',
 'Find Dead Body Report': 'Suche Leichenfund-Meldung',

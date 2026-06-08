@@ -53,6 +53,7 @@ from gluon.validators import Validator, ValidationError
 from ..core import *
 
 BP = r"^\s*([1-3]{1}\d{2}|[2-9]{1}\d)\s*(?:[/]{1}\s*([1]{1}\d{2}|[2-9]{1}\d)){0,1}\s*$"
+NV = r"^([+-]?)([0-9]{1,3}(?:(?:([\,\.])[0-9]{3}(?=[\,\.])(?:\3[0-9]{3})*(?!\3))|(?:[0-9]*))?)(?:[\,\.]([0-9]*))?$"
 
 # =============================================================================
 class MedUnitModel(DataModel):
@@ -1126,7 +1127,6 @@ class MedParameterModel(DataModel):
                      )
 
         # Table configuration
-        # TODO import option
         configure(tablename,
                   onvalidation = self.parameter_group_onvalidation,
                   )
@@ -1231,7 +1231,6 @@ class MedParameterModel(DataModel):
         tablename = "med_parameter"
         define_table(tablename,
                      organisation_id(),
-                     # TODO filterOptions
                      parameter_group_id(),
                      sample_type_id(),
                      Field("name",
@@ -1254,9 +1253,27 @@ class MedParameterModel(DataModel):
                            default = 0,
                            requires = IS_INT_IN_RANGE(minimum=0, maximum=4),
                            ),
-                     # TODO options (JSON list (min/max) or (val, val, val))
-                     # TODO normal range (JSON list (min/max) or (val,val,val))
-                     # TODO obsolete-field?
+                     Field("values_valid", "json",
+                           label = T("Valid Values"),
+                           requires = IS_EMPTY_OR(IS_JSONS3()),
+                           comment = T('Specify like ["value", "value", ...] (options) or [min, max] (range)'),
+                           ),
+                     Field("values_normal", "json",
+                           label = T("Normal Values"),
+                           requires = IS_EMPTY_OR(IS_JSONS3()),
+                           comment = T('Specify like ["value", "value", ...] (options) or [min, max] (range)'),
+                           ),
+                     Field("obsolete", "boolean",
+                           label = T("Obsolete"),
+                           default = False,
+                           represent = BooleanRepresent(labels = False,
+                                                        # Reverse icons semantics
+                                                        icons = (BooleanRepresent.NEG,
+                                                                 BooleanRepresent.POS,
+                                                                 ),
+                                                        flag = True,
+                                                        ),
+                           ),
                      CommentsField("instructions",
                                    label = T("Instructions"),
                                    comment = None,
@@ -1265,7 +1282,6 @@ class MedParameterModel(DataModel):
                      )
 
         # Table configuration
-        # TODO inherit organisation_id from parameter group if using parameter groups
         configure(tablename,
                   onvalidation = self.parameter_onvalidation,
                   )
@@ -1284,7 +1300,7 @@ class MedParameterModel(DataModel):
 
         # CRUD Strings
         crud_strings[tablename] = Storage(
-            label_create = T("Add Parameter"),
+            label_create = T("Create Parameter"),
             title_display = T("Parameter"),
             title_list = T("Parameters"),
             title_update = T("Edit Parameter"),
@@ -1305,7 +1321,7 @@ class MedParameterModel(DataModel):
                      person_id(comment=None),
                      sample_type_id(),
                      # sample number (autogenerate)?
-                     DateField(default="now"),
+                     DateTimeField(default="now"),
                      # taken_by
                      # invalid yes/no
                      # vhash
@@ -1317,10 +1333,8 @@ class MedParameterModel(DataModel):
                             med_parameter_value = "sample_id",
                             )
 
-        # TODO automatically set patient/person IDs (onaccept)
-
         # Foreign key template
-        represent = S3Represent(lookup=tablename, fields=("date",))
+        represent = med_SampleRepresent()
         sample_id = FieldTemplate("sample_id", "reference %s" % tablename,
                                   label = T("Sample"),
                                   ondelete = "SET NULL",
@@ -1348,6 +1362,13 @@ class MedParameterModel(DataModel):
         # ---------------------------------------------------------------------
         # Measured/observed values
         #
+        result_status_opts = WorkflowOptions(("PENDING", "Pending", "blue"),
+                                             ("PRELIMINARY", "Preliminary", "amber"),
+                                             ("FINAL", "Final", "green"),
+                                             represent = "status",
+                                             none = "PENDING",
+                                             )
+
         tablename = "med_parameter_value"
         define_table(tablename,
                      person_id(
@@ -1364,11 +1385,37 @@ class MedParameterModel(DataModel):
                          ),
                      sample_id(),
                      parameter_id(empty=False),
-                     Field("value", "double",
+                     # The original result as-entered
+                     Field("result",
                            label = T("Result"),
                            ),
-                     Field("value_qualitative",
-                           label = T("Result (qualitative)"),
+                     Field("status",
+                           label = T("Status"),
+                           default = "PENDING",
+                           requires = IS_IN_SET(result_status_opts.selectable(), sort=False),
+                           represent = result_status_opts.represent,
+                           ),
+                     # Numerical result, computed from result onaccept
+                     Field("result_numeric", "double",
+                           readable = False,
+                           writable = False,
+                           ),
+                     # Marker for abnormal values, TODO compute onaccept
+                     # - unless set True manually
+                     # - if value is valid and normal range/options defined
+                     Field("abnormal", "boolean",
+                           default = False,
+                           label = T("Outside of normal range"),
+                           represent = BooleanRepresent(labels = False,
+                                                        # Reverse icons semantics
+                                                        icons = ("fa fa-exclamation",
+                                                                 BooleanRepresent.POS,
+                                                                 ),
+                                                        colors = (BooleanRepresent.RED,
+                                                                  BooleanRepresent.GREEN,
+                                                                  ),
+                                                        flag = True,
+                                                        ),
                            ),
                      DateTimeField(label = T("Date reported"),
                                    default = "now",
@@ -1387,16 +1434,40 @@ class MedParameterModel(DataModel):
                      Field("invalid", "boolean",
                            label = T("Invalid"),
                            default = False,
-                           # TODO BooleanRepresent
+                           represent = BooleanRepresent(labels = False,
+                                                        # Reverse icons semantics
+                                                        icons = (BooleanRepresent.NEG,
+                                                                 BooleanRepresent.POS,
+                                                                 ),
+                                                        colors = (BooleanRepresent.RED,
+                                                                  BooleanRepresent.GREEN,
+                                                                  ),
+                                                        flag = True,
+                                                        ),
                            ),
                      CommentsField(),
                      # TODO vhash
                      )
 
-        # TODO inherit person_id/patient_id from sample (onaccept),
-        #      alternatively, set patient_id/person_id automatically
+        # Table configuration
+        configure(tablename,
+                  onvalidation = self.parameter_value_onvalidation,
+                  onaccept = self.parameter_value_onaccept,
+                  )
 
-        # TODO CRUD Strings
+        # CRUD strings
+        crud_strings[tablename] = Storage(
+            label_create = T("Add Measured Value"),
+            title_display = T("Measured Value"),
+            title_list = T("Measured Values"),
+            title_update = T("Edit Measured Value"),
+            label_list_button = T("List Measured Values"),
+            label_delete_button = T("Delete Measured Value"),
+            msg_record_created = T("Measured Value Added"),
+            msg_record_modified = T("Measured Value updated"),
+            msg_record_deleted = T("Measured Value deleted"),
+            msg_list_empty = T("No Measured Values currently registered"),
+            )
 
         # ---------------------------------------------------------------------
         # Pass names back to global scope (s3.*)
@@ -1456,6 +1527,164 @@ class MedParameterModel(DataModel):
                 form.errors["name"] = msg
             if row.abrv == abrv:
                 form.errors["abrv"] = msg
+
+    # -------------------------------------------------------------------------
+    @staticmethod
+    def sample_onaccept(form):
+        """
+            Onaccept-routine for sample
+            - set patient_id/person_id
+        """
+
+        db = current.db
+        s3db = current.s3db
+
+        record_id = get_form_record_id(form)
+
+        table = s3db.med_sample
+        query = (table.id == record_id) & (table.deleted == False)
+        record = db(query).select(table.id,
+                                  table.person_id,
+                                  table.patient_id,
+                                  limitby = (0, 1),
+                                  ).first()
+
+        if not record:
+            return
+
+        if not record.patient_id or not record.person_id:
+            MedPatientModel.set_patient(record)
+
+    # -------------------------------------------------------------------------
+    @staticmethod
+    def parameter_value_onvalidation(form):
+        """
+            Form validation of parameter values:
+            - other status than PENDING requires a result
+        """
+
+        table = current.s3db.med_parameter_value
+        data = get_form_record_data(form, table, ["result", "status"])
+
+        status = data.get("status")
+        result = data.get("result")
+
+        if result:
+            if status == "PENDING":
+                form.errors["status"] = current.T("Result must have qualified status")
+        else:
+            if status != "PENDING":
+                form.errors["result"] = current.T("Result cannot be empty")
+
+    # -------------------------------------------------------------------------
+    @staticmethod
+    def parameter_value_onaccept(form):
+        """
+            Onaccept-routine for parameter values
+            - set patient_id/person_id
+            - generate+link new sample if record was not linked to one
+            - compute numerical result for quantitative parameters (if possible)
+        """
+
+        db = current.db
+        s3db = current.s3db
+        auth = current.auth
+
+        record_id = get_form_record_id(form)
+
+        ptable = s3db.med_parameter
+        stable = s3db.med_sample
+
+        # Reload the record
+        table = s3db.med_parameter_value
+        query = (table.id == record_id) & (table.deleted == False)
+        record = db(query).select(table.id,
+                                  table.person_id,
+                                  table.patient_id,
+                                  table.parameter_id,
+                                  table.sample_id,
+                                  table.date,
+                                  table.result,
+                                  table.status,
+                                  limitby = (0, 1),
+                                  ).first()
+
+        if not record:
+            return
+
+        if not(record.person_id or record.patient_id) and record.sample_id:
+            # Look up person_id/patient_id from sample
+            query = (stable.id == record.sample_id) & \
+                    (stable.deleted == False)
+            row = db(query).select(stable.person_id,
+                                   stable.patient_id,
+                                   limitby = (0, 1),
+                                   ).first()
+            if row:
+                record.update_record(person_id = row.person_id,
+                                     patient_id = row.patient_id,
+                                     )
+
+        if not record.patient_id or not record.person_id:
+            MedPatientModel.set_patient(record)
+
+        # Look up parameter details
+        query = (ptable.id == record.parameter_id) & \
+                (ptable.deleted == False)
+        param = db(query).select(ptable.sample_type_id,
+                                 ptable.qualitative,
+                                 limitby = (0, 1),
+                                 ).first()
+
+        # If not linked to a sample, generate+link new sample
+        if not record.sample_id and param and param.sample_type_id:
+            # Create new sample
+            sample = {"sample_type_id": param.sample_type_id,
+                      "person_id": record.person_id,
+                      "patient_id": record.patient_id,
+                      "date": record.date,
+                      }
+            sample_id = sample["id"] = stable.insert(**sample)
+
+            # Postprocess create
+            s3db.update_super(stable, sample)
+            auth.s3_set_record_owner(stable, sample_id)
+            auth.s3_make_session_owner(stable, sample_id)
+            s3db.onaccept(stable, sample_id, method="create")
+
+            # Link record to sample
+            record.update_record(sample_id=sample_id)
+
+        # Compute numeric value for quantitative parameters
+        if param and not param.qualitative:
+            result, value = record.result, None
+            if result and record.status != "PENDING":
+                # The NV-regex handles numerical values with either , or . as
+                # decimals-separator, and then the other one for thousands,
+                # to allow for safer data entry; e.g. "1,234.56" or "1.234,56"
+                # are both understood as 1234.56
+                # NOTE: however, a single separator is always interpreted as
+                #       decimals-separator, i.e. 1,234 is read as 1.234, not 1234
+                # NOTE: input values that do not match the regex will produce
+                #       result_numeric=None
+                # NOTE: output representation should always use the configured
+                #       l10n separators and med_parameter.precsn, regardless how
+                #       the value has been entered
+                match = re.match(NV, result.replace(" ", ""))
+                if match:
+                    # Get the integer part
+                    v = "%s%s" % (match.group(1), match.group(2))
+                    if match.group(3):
+                        # Drop the thousands-separator
+                        v = v.replace(match.group(3), "")
+                    if match.group(4):
+                        # Add the decimal part
+                        v = "%s.%s" % (v, match.group(4))
+                    try:
+                        value = float(v)
+                    except (ValueError, TypeError):
+                        pass
+            record.update_record(result_numeric=value)
 
 # =============================================================================
 class MedVitalsModel(DataModel):
@@ -1536,10 +1765,6 @@ class MedVitalsModel(DataModel):
                            requires = IS_IN_SET(airway_status, zero=None, sort=False),
                            represent = self.represent_discrete(dict(airway_status), normal={"N"}),
                            ),
-                     Field("rf", "integer", # TODO remove after migration to rr
-                           readable = False,
-                           writable = False,
-                           ),
                      Field("rr", "integer",
                            label = T("Respiratory Rate"),
                            requires = IS_EMPTY_OR(IS_INT_IN_RANGE(minimum=2, maximum=80)),
@@ -1563,10 +1788,6 @@ class MedVitalsModel(DataModel):
                            label = T("Blood Pressure"),
                            requires = IS_EMPTY_OR(IS_BLOOD_PRESSURE()),
                            represent = self.represent_bp(110, 220),
-                           ),
-                     Field("hf", "integer", # TODO remove after migration to hr
-                           readable = False,
-                           writable = False,
                            ),
                      Field("hr", "integer",
                            label = T("Heart Rate"),
@@ -3092,6 +3313,73 @@ class med_PatientRepresent(S3Represent):
 
         formatted.append(SPAN(s3_truncate(row.reason), _class=css))
         return formatted
+
+# =============================================================================
+class med_SampleRepresent(S3Represent):
+    """ Representation of samples """
+
+    def __init__(self, show_link=False):
+        """
+            Args:
+                show_link: render as link to the sample
+        """
+
+        super().__init__(lookup = "med_sample",
+                         show_link = show_link,
+                         )
+
+    # -------------------------------------------------------------------------
+    def lookup_rows(self, key, values, fields=None):
+        """
+            Custom rows lookup
+
+            Args:
+                key: the key Field
+                values: the values
+                fields: list of fields to look up (unused)
+        """
+
+        count = len(values)
+        if count == 1:
+            query = (key == values[0])
+        else:
+            query = key.belongs(values)
+
+        table = self.table
+
+        fields = [table.id,
+                  table.person_id,
+                  table.patient_id,
+                  table.sample_type_id,
+                  table.date,
+                  ]
+
+        rows = current.db(query).select(limitby=(0, count), *fields)
+        self.queries += 1
+
+        # Bulk-represent human_resource_ids
+        type_ids = [row.sample_type_id for row in rows]
+        table.sample_type_id.represent.bulk(type_ids)
+
+        return rows
+
+    # -------------------------------------------------------------------------
+    def represent_row(self, row):
+        """
+            Represent a row
+
+            Args:
+                row: the Row
+        """
+
+        table = self.table
+
+        date = table.date.represent(row.date)
+        sample_type = table.sample_type_id.represent(row.sample_type_id)
+
+        reprstr = "[%s] %s" % (date, sample_type)
+
+        return reprstr
 
 # =============================================================================
 class med_DocEntityRepresent(S3Represent):
