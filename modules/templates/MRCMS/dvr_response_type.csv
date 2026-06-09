@@ -7,4 +7,5 @@ Sonstiger Kontakt,Sonstiger Kontakt mit Klient,OCC,false,false,Other Contact wit
 Sonstiger Kontakt,Sonstiger Kontakt mit Umfeld,OCE,false,false,Other Contact
 Vulnerabilitäten,Meldebogen BAMF,VRBAMF,false,false,Vulnerabilities reported to BAMF
 Vulnerabilitäten,Meldung an Aufnahmeeinrichtung,VRRP,false,false,Vulnerabilities reported to reception facility
+Vulnerabilitäten,Meldung an Sozialbehörde,VRSSD,false,false,Vulnerabilities reported to Social Services Department
 Vulnerabilitäten,Weiterleitung an Beratungsstelle,REF,false,false,Client referred to counsel
