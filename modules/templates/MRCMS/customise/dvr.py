@@ -434,7 +434,7 @@ def response_action_postprocess(default_postprocess):
         ltable = s3db.dvr_vulnerability_response_action
 
         join = ttable.on((ttable.id == table.response_type_id) & \
-                         (ttable.code.belongs(("VRBAMF", "VRRP")))
+                         (ttable.code.belongs(("VRBAMF", "VRRP", "VRSSD")))
                          )
         left = ltable.on((ltable.action_id == table.id) & \
                          (ltable.vulnerability_id != None) & \
