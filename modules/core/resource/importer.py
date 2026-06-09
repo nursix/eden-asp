@@ -111,10 +111,7 @@ class XMLImporter:
                 t = xml.parse(s)
 
             if not t:
-                if xml.error:
-                    raise SyntaxError(xml.error)
-                else:
-                    raise SyntaxError(current.ERROR.BAD_SOURCE)
+                raise SyntaxError(xml.error if xml.error else current.ERROR.BAD_SOURCE)
 
             if stylesheet is not None:
                 prefix, name = tablename.split("_", 1)
@@ -378,6 +375,7 @@ class ImportResult:
             self.created = job.created
             self.updated = job.updated
             self.deleted = job.deleted
+            self.skipped = job.skipped
             self.mtime = job.mtime
             self.error_tree = job.error_tree
         else:
@@ -387,6 +385,7 @@ class ImportResult:
             self.created = []
             self.updated = []
             self.deleted = []
+            self.skipped = []
             self.mtime = None
             self.error_tree = None
 
@@ -415,6 +414,8 @@ class ImportResult:
             info["updated"] = list(set(self.updated))
         if self.deleted:
             info["deleted"] = list(set(self.deleted))
+        if self.skipped:
+            info["skipped"] = list(set(self.skipped))
 
         if self.success:
             msg = xml.json_message(message = self.error,
@@ -472,6 +473,7 @@ class ImportJob():
         self.created = [] # IDs of created records
         self.updated = [] # IDs of updated records
         self.deleted = [] # IDs of deleted records
+        self.skipped = [] # IDs of skipped records
 
         self.log = None
 
@@ -674,8 +676,7 @@ class ImportJob():
 
                 if (ctablename, calias) not in cinfos:
                     continue
-                else:
-                    cinfo = cinfos[(ctablename, calias)]
+                cinfo = cinfos[(ctablename, calias)]
 
                 component = cinfo.component
                 ctable = cinfo.ctable
@@ -1081,9 +1082,9 @@ class ImportJob():
         errors = 0
         mtime = None
         created = []
-        cappend = created.append
         updated = []
         deleted = []
+        skipped = []
         tablename = self.table._tablename
 
         self.log = log_items
@@ -1121,8 +1122,10 @@ class ImportJob():
                 if mtime is None or item.mtime > mtime:
                     mtime = item.mtime
                 if item.id:
-                    if item.method == METHOD.CREATE:
-                        cappend(item.id)
+                    if item.skip:
+                        skipped.append(item.id)
+                    elif item.method == METHOD.CREATE:
+                        created.append(item.id)
                     elif item.method == METHOD.UPDATE:
                         updated.append(item.id)
                     elif item.method in (METHOD.MERGE, METHOD.DELETE):
@@ -1137,6 +1140,7 @@ class ImportJob():
         self.created = created
         self.updated = updated
         self.deleted = deleted
+        self.skipped = skipped
         return True
 
     # -------------------------------------------------------------------------
@@ -1312,6 +1316,7 @@ class ImportItem:
         self.load_components = []
         self.load_references = []
         self.parent = None
+        self.load_parent = None
         self.skip = False
 
         # Conflict handling
@@ -1914,7 +1919,7 @@ class ImportItem:
                 for f in list(data.keys()):
                     if f in original:
                         # Check if unchanged
-                        if type(original[f]) is datetime.datetime:
+                        if isinstance(original[f], datetime.datetime):
                             if s3_utc(data[f]) == s3_utc(original[f]):
                                 del data[f]
                                 continue
@@ -2257,6 +2262,7 @@ class ImportItem:
                 pkey, fkey = ("id", field)
 
             f = table[fkey]
+            multiple = False
             if f.type == "json":
                 is_json = True
                 objref = reference.objref
@@ -2294,13 +2300,11 @@ class ImportItem:
                     else:
                         fk = item.id
             if fk and pkey != "id":
-                row = db(ktable._id == fk).select(ktable[pkey],
-                                                  limitby=(0, 1)).first()
+                row = db(ktable._id == fk).select(ktable[pkey], limitby=(0, 1)).first()
                 if not row:
                     fk = None
                     continue
-                else:
-                    fk = row[pkey]
+                fk = row[pkey]
 
             # Update record data
             if fk:
@@ -2665,15 +2669,15 @@ class ObjectReferences:
         refs = self._refs
         objs = self._objs
 
-        if type(obj) is list:
+        if isinstance(obj, list):
             for item in obj:
                 self._traverse(item)
 
-        elif type(obj) is dict:
+        elif isinstance(obj, dict):
 
             for key, value in obj.items():
 
-                if key[:3] == "$k_" and type(value) is dict:
+                if key[:3] == "$k_" and isinstance(value, dict):
 
                     tablename = uid = uid_type = None
 
@@ -2731,7 +2735,7 @@ class S3Duplicate:
 
     def __init__(self,
                  primary = None,
-                 secondary = None,
+                 secondary = None, *,
                  ignore_case = True,
                  ignore_deleted = False,
                  noupdate = False,
