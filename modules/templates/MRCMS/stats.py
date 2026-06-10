@@ -397,23 +397,24 @@ class PerformanceIndicatorsBAMF(PerformanceIndicators):
             (7, "Anzahl aller Personen bis zum vollendeten 18. Lebensjahr", "clients", "age_group", "u18"),
             (8, "Anzahl aller Personen vom vollendeten 18. bis zum vollendeten 27. Lebensjahr", "clients", "age_group", "18-27"),
             (9, "Anzahl aller Personen über dem vollendeten 65. Lebensjahr", "clients", "age_group", "65+"),
-            (10, "Anzahl aller beratenen Personen aus Syrien", "clients", "nationality", "SY"),
-            (11, "Anzahl aller beratenen Personen aus Afghanistan", "clients", "nationality", "AF"),
-            (12, "Anzahl aller beratenen Personen aus Türkei", "clients", "nationality", "TR"),
-            (13, "Anzahl aller beratenen Personen aus Georgien", "clients", "nationality", "GE"),
-            (14, "Anzahl aller beratenen Personen aus Iran", "clients", "nationality", "IR"),
-            (15, "Anzahl aller beratenen Personen aus Irak", "clients", "nationality", "IQ"),
-            (16, "Anzahl aller beratenen Personen aus Russische Föderation", "clients", "nationality", "RU"),
-            (17, "Anzahl aller beratenen Personen aus Nordmazedonien", "clients", "nationality", "MK"),
-            (18, "Anzahl aller beratenen Personen aus Venezuela", "clients", "nationality", "VE"),
-            (19, "Anzahl aller beratenen Personen aus Somalia", "clients", "nationality", "SO"),
-            (20, "Anzahl aller beratenen Personen aus Eritrea", "clients", "nationality", "ER"),
-            (21, "Anzahl aller beratenen Personen aus Algerien", "clients", "nationality", "DZ"),
-            (22, "Anzahl aller beratenen Personen aus Kolumbien", "clients", "nationality", "CO"),
-            (23, "Anzahl aller beratenen Personen aus Tunesien", "clients", "nationality", "TN"),
-            (24, "Anzahl aller beratenen Personen aus Nigeria", "clients", "nationality", "NG"),
-            (25, "Anzahl aller beratenen Personen aus Ungeklärt", "clients", "nationality", "??"),
-            (26, "Anzahl aller beratenen Personen aus Indien", "clients", "nationality", "IN"),
+            (10, "Anzahl aller beratenen Personen aus Ukraine", "clients", "nationality", "UA"),
+            (11, "Anzahl aller beratenen Personen aus Syrien", "clients", "nationality", "SY"),
+            (12, "Anzahl aller beratenen Personen aus Afghanistan", "clients", "nationality", "AF"),
+            (13, "Anzahl aller beratenen Personen aus Türkei", "clients", "nationality", "TR"),
+            (14, "Anzahl aller beratenen Personen aus Georgien", "clients", "nationality", "GE"),
+            (15, "Anzahl aller beratenen Personen aus Iran", "clients", "nationality", "IR"),
+            (16, "Anzahl aller beratenen Personen aus Irak", "clients", "nationality", "IQ"),
+            (17, "Anzahl aller beratenen Personen aus Russische Föderation", "clients", "nationality", "RU"),
+            (18, "Anzahl aller beratenen Personen aus Nordmazedonien", "clients", "nationality", "MK"),
+            (19, "Anzahl aller beratenen Personen aus Venezuela", "clients", "nationality", "VE"),
+            (20, "Anzahl aller beratenen Personen aus Somalia", "clients", "nationality", "SO"),
+            (21, "Anzahl aller beratenen Personen aus Eritrea", "clients", "nationality", "ER"),
+            (22, "Anzahl aller beratenen Personen aus Algerien", "clients", "nationality", "DZ"),
+            (23, "Anzahl aller beratenen Personen aus Kolumbien", "clients", "nationality", "CO"),
+            (24, "Anzahl aller beratenen Personen aus Tunesien", "clients", "nationality", "TN"),
+            (25, "Anzahl aller beratenen Personen aus Nigeria", "clients", "nationality", "NG"),
+            (26, "Anzahl aller beratenen Personen aus Ungeklärt", "clients", "nationality", "??"),
+            # (26, "Anzahl aller beratenen Personen aus Indien", "clients", "nationality", "IN"),
             (27, "Anzahl aller beratenen Personen aus Pakistan", "clients", "nationality", "PK"),
             (28, "Anzahl aller beratenen Personen aus Ägypten", "clients", "nationality", "EG"),
             (29, "Anzahl aller beratenen Personen aus Serbien", "clients", "nationality", "RS"),
@@ -597,32 +598,35 @@ class PerformanceIndicatorsBAMF(PerformanceIndicators):
                 indicator dict
 
             Indicators:
-                # 10 Anzahl aller beratenen Personen aus Syrien
-                # 11 Anzahl aller beratenen Personen aus Afghanistan
-                # 12 Anzahl aller beratenen Personen aus Türkei
-                # 13 Anzahl aller beratenen Personen aus Georgien
-                # 14 Anzahl aller beratenen Personen aus Iran
-                # 15 Anzahl aller beratenen Personen aus Irak
-                # 16 Anzahl aller beratenen Personen aus Russische Föderation
-                # 17 Anzahl aller beratenen Personen aus Nordmazedonien
-                # 18 Anzahl aller beratenen Personen aus Venezuela
-                # 19 Anzahl aller beratenen Personen aus Somalia
-                # 20 Anzahl aller beratenen Personen aus Eritrea
-                # 21 Anzahl aller beratenen Personen aus Algerien
-                # 22 Anzahl aller beratenen Personen aus Kolumbien
-                # 23 Anzahl aller beratenen Personen aus Tunesien
-                # 24 Anzahl aller beratenen Personen aus Nigeria
-                # 25 Anzahl aller beratenen Personen aus Ungeklärt
-                # 26 Anzahl aller beratenen Personen aus Indien
+                # 10 Anzahl aller beratenen Personen aus Ukraine
+                # 11 Anzahl aller beratenen Personen aus Syrien
+                # 12 Anzahl aller beratenen Personen aus Afghanistan
+                # 13 Anzahl aller beratenen Personen aus Türkei
+                # 14 Anzahl aller beratenen Personen aus Georgien
+                # 15 Anzahl aller beratenen Personen aus Iran
+                # 16 Anzahl aller beratenen Personen aus Irak
+                # 17 Anzahl aller beratenen Personen aus Russische Föderation
+                # 18 Anzahl aller beratenen Personen aus Nordmazedonien
+                # 19 Anzahl aller beratenen Personen aus Venezuela
+                # 20 Anzahl aller beratenen Personen aus Somalia
+                # 21 Anzahl aller beratenen Personen aus Eritrea
+                # 22 Anzahl aller beratenen Personen aus Algerien
+                # 23 Anzahl aller beratenen Personen aus Kolumbien
+                # 24 Anzahl aller beratenen Personen aus Tunesien
+                # 25 Anzahl aller beratenen Personen aus Nigeria
+                # 26 Anzahl aller beratenen Personen aus Ungeklärt
+                # (26 Anzahl aller beratenen Personen aus Indien)*
                 # 27 Anzahl aller beratenen Personen aus Pakistan
                 # 28 Anzahl aller beratenen Personen aus Ägypten
                 # 29 Anzahl aller beratenen Personen aus Serbien
                 # 30 Anzahl aller beratenen Personen aus anderen Staaten
+
+                * obsolet
         """
 
-        nationalities = ("SY", "AF", "TR", "GE", "IR", "IQ", "RU",
-                         "MK", "VE", "SO", "ER", "DZ", "CO", "TN",
-                         "NG", "??", "IN", "PK", "EG", "RS", "*"
+        nationalities = ("UA", "SY", "AF", "TR", "GE", "IR", "IQ",
+                         "RU", "MK", "VE", "SO", "ER", "DZ", "CO",
+                         "TN", "NG", "??", "PK", "EG", "RS", "*"
                          )
 
         s3db = current.s3db
