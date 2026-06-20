@@ -1,0 +1,69 @@
+.obstable-scroll {
+  position: relative;
+  width:100%;
+  z-index: 1;
+  margin: auto;
+  overflow: auto;
+  max-height: 80vh;
+}
+.obstable-scroll table {
+  width: 100%;
+  min-width: 800px;
+  margin: auto;
+  border-collapse: separate;
+  border-spacing: 0;
+}
+.obstable-scroll th,
+.obstable-scroll td {
+  padding: 5px 10px;
+  border: 1px solid #000;
+  background: #fff;
+  vertical-align: top;
+}
+.obstable-scroll thead,
+.obstable-scroll thead th,
+.obstable-scroll thead td {
+  background: #333;
+  color: #fff;
+  position: -webkit-sticky;
+  position: sticky;
+  top: 0;
+  z-index:4;
+}
+.obstable-scroll tfoot,
+.obstable-scroll tfoot th,
+.obstable-scroll tfoot td {
+  position: -webkit-sticky;
+  position: sticky;
+  bottom: 0;
+  background: #666;
+  color: #fff;
+  z-index:4;
+}
+
+.obstable-table th.fixed {
+  position: -webkit-sticky;
+  position: sticky;
+  left: 0;
+  z-index: 2;
+  background: #ccc;
+}
+.obstable-table thead th.fixed,
+.obstable-table tfoot th.fixed {
+  z-index: 5;
+}
+
+.obstable-table .obstable-param {
+    display: block;
+    font-size: 0.9rem;
+    white-space: pre;
+}
+.obstable-table .obstable-range {
+    display: block;
+    font-size: 0.7rem;
+    color: #777;
+    white-space: pre;
+}
+.xrrg {
+    color: red;
+}
