@@ -1333,12 +1333,6 @@ class MedParameterModel(DataModel):
                             med_parameter_value = "sample_id",
                             )
 
-        # Methods
-        self.set_method(tablename,
-                        method = "obstable",
-                        action = ObsTable,
-                        )
-
         # Foreign key template
         represent = med_SampleRepresent()
         sample_id = FieldTemplate("sample_id", "reference %s" % tablename,
@@ -1461,6 +1455,12 @@ class MedParameterModel(DataModel):
                   onaccept = self.parameter_value_onaccept,
                   )
 
+        # Methods
+        self.set_method(tablename,
+                        method = "results",
+                        action = ObsTable,
+                        )
+
         # CRUD strings
         crud_strings[tablename] = Storage(
             label_create = T("Add Measured Value"),
@@ -1571,6 +1571,10 @@ class MedParameterModel(DataModel):
 
         table = current.s3db.med_parameter_value
         data = get_form_record_data(form, table, ["result", "status"])
+
+        # TODO there must be only one result for a parameter per sample!
+        #      ...if there is a sample_id
+        # Check if there is another record with this combination of sample_id+parameter_id
 
         status = data.get("status")
         result = data.get("result")

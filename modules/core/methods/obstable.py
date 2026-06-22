@@ -109,7 +109,7 @@ class ObsTableWidget:
         # <thead>
         #   <tr>
         #     <th scope="col" class="fixed">Parameter</th>      # Left fixed column
-        #     <th scope="col">19.08.2025 10:12</th>             # Date/Time Slots
+        #     <th scope="col">19.08.2025 10:12</th>             # Sample slots
         #     <th scope="col">18.08.2025 16:23</th>
         #     <th scope="col">16.08.2025 08:33</th>
         #     <th scope="col">13.08.2025 12:44</th>
@@ -125,7 +125,7 @@ class ObsTableWidget:
         #   </tr>
         # </thead>
         header_row = TR(TH("Parameter", _scope="col", _class="fixed"))
-        for x in range(12):
+        for x in range(20):
             header_row.append(TH(x, _scope="col"))
         header = THEAD(header_row)
         obstable.append(header)
@@ -158,8 +158,8 @@ class ObsTableWidget:
                             DIV("137-145 mmol/l", _class="obstable-range"),
                             _class="fixed",
                             ))
-            for x in range(12):
-                value_row.append(TD("%s-%s" % (i, x)))
+            for x in range(20):
+                value_row.append(TD("Result %s-%s" % (i, x)))
             body.append(value_row)
         obstable.append(body)
 
@@ -183,7 +183,7 @@ class ObsTableWidget:
         #   </tr>
         # </tfoot>
         footer_row = TR(TH("Parameter", _scope="col", _class="fixed"))
-        for x in range(12):
+        for x in range(20):
             footer_row.append(TH(x, _scope="col"))
         footer = TFOOT(footer_row)
         obstable.append(footer)
