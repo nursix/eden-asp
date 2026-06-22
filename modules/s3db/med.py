@@ -1333,12 +1333,6 @@ class MedParameterModel(DataModel):
                             med_parameter_value = "sample_id",
                             )
 
-        # Methods
-        self.set_method(tablename,
-                        method = "obstable",
-                        action = ObsTable,
-                        )
-
         # Foreign key template
         represent = med_SampleRepresent()
         sample_id = FieldTemplate("sample_id", "reference %s" % tablename,
