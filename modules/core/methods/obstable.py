@@ -80,7 +80,24 @@ class ObsTable(CRUDMethod):
 
         # Initial data
         # TODO extract from target resource
-        data = {"test": "me"}
+        # Status: 0=pending, 1=prelimiary, 2=final
+        data = {"label": "Parameter",
+                "slots": [
+                    [0, "2025-08-19T10:12:00Z", "19.08.2025 10:12"],
+                    [1, "2025-08-18T15:23:00Z", "18.08.2025 16:23"],
+                    [2, "2025-08-16T08:33:00Z", "16.08.2025 08:33"],
+                    [3, "2025-08-13T12:44:00Z", "13.08.2025 12:44"],
+                    ],
+                "params": [
+                        {"name": "Serum-Na+",
+                         "range": "137 - 145 mmol/l",
+                         "values": {
+                             1: ["125", 2, 1, 0],
+                             3: ["127", 2, 1, 0],
+                             },
+                         }
+                    ],
+                }
 
         # Instantiate Widget
         widget = ObsTableWidget(data=data)

@@ -99,14 +99,49 @@
 
         _renderHeader: function(data) {
 
-            const head = $('<thead>').hide();
+            const head = $('<thead>').hide(),
+                  row = $('<tr>').appendTo(head),
+                  label = data.label || '',
+                  slots = data.slots || [];
+
+            $('<th scope="col">').addClass('fixed').text(label).appendTo(row);
+            slots.forEach(function(slot) {
+                var slotLabel = slot[2] || '??';
+                $('<th scope="col">').text(slotLabel).appendTo(row);
+            });
 
             return head;
         },
 
         _renderBody: function(data) {
 
-            const body = $('<tbody>').hide();
+            const body = $('<tbody>').hide(),
+                  slots = data.slots || [],
+                  params = data.params || [];
+
+            params.forEach(function(param) {
+
+                var row = $('<tr>').appendTo(body),
+                    label = $('<div class="obstable-param">').text(param.name || '??'),
+                    range = $('<div class="obstable-range">').text(param.range || '??'),
+                    values = param.values;
+
+                $('<th class="fixed">').append(label).append(range).appendTo(row);
+                slots.forEach(function(slot) {
+                    var slotID = slot[0],
+                        cell = $('<td>').appendTo(row),
+                        cellData = values[slotID];
+                    if (cellData) {
+                        var value = cellData[0] || '***',
+                            status = cellData[1],
+                            outOfRange = cellData[2],
+                            invalid = cellData[3];
+
+                        // TODO process status, range excess and inalid
+                        cell.text(value);
+                    }
+                });
+            });
 
             return body;
         },
