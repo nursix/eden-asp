@@ -99,7 +99,16 @@
 
         _renderHeader: function(data) {
 
-            const head = $('<thead>').hide();
+            const head = $('<thead>').hide(),
+                  row = $('<tr>').appendTo(head),
+                  label = data.label || '',
+                  slots = data.slots || [];
+
+            $('<th scope="col">').addClass('fixed').text(label).appendTo(row);
+            slots.forEach(function(slot) {
+                var slotLabel = slot[2] || '??';
+                $('<th scope="col">').text(slotLabel).appendTo(row);
+            });
 
             return this._renderSlots(head, data);
         },
