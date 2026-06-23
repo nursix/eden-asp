@@ -34,7 +34,7 @@ __all__ = ("ObsTable",
 import json
 
 from gluon import current, \
-                  TABLE, THEAD, TBODY, TFOOT, TR, TH, TD, DIV
+                  INPUT, DIV, TABLE, THEAD, TBODY, TFOOT, TR, TH, TD
 
 from .base import CRUDMethod
 
@@ -78,8 +78,12 @@ class ObsTable(CRUDMethod):
 
         widget_id = "obstable"
 
+        # Initial data
+        # TODO extract from target resource
+        data = {"test": "me"}
+
         # Instantiate Widget
-        widget = ObsTableWidget()
+        widget = ObsTableWidget(data=data)
         output["obstable"] = widget.html(widget_id = widget_id,
                                          )
 
@@ -92,11 +96,11 @@ class ObsTable(CRUDMethod):
 class ObsTableWidget:
     """ Helper to configure and render the observation table UI """
 
-    def __init__(self):
+    def __init__(self, data=None):
         # TODO docstring
 
         # TODO implement
-        pass
+        self.data = data if data else {}
 
     # -------------------------------------------------------------------------
     def html(self, widget_id):
@@ -190,8 +194,14 @@ class ObsTableWidget:
         footer = TFOOT(footer_row)
         obstable.append(footer)
 
+        # Initial data
+        data_input = INPUT(value = json.dumps(self.data),
+                           _id = "%s-data" % widget_id,
+                           _type = "hidden",
+                           )
 
         container = DIV(obstable,
+                        data_input,
                         _class = "obstable-scroll",
                         _id = "%s-scroll" % widget_id,
                         )

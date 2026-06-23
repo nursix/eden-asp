@@ -42,6 +42,20 @@
          */
         _init: function() {
 
+            const $el = $(this.element),
+                  widgetID = $el.attr('id'),
+                  dataInput = $('#' + widgetID + '-data');
+
+            // Read+parse initial data
+            self.data = {};
+            if (dataInput.length) {
+                try {
+                    self.data = JSON.parse(dataInput.val());
+                } catch(e) {
+                    // pass
+                }
+            }
+
             this.refresh();
         },
 
@@ -60,7 +74,54 @@
 
             this._unbindEvents();
 
+            this._renderTable(self.data);
+
             this._bindEvents();
+        },
+
+        _renderTable: function(data) {
+
+            const $el = $(this.element);
+
+            const head = this._renderHeader(data),
+                  body = this._renderBody(data),
+                  foot = this._renderFooter(data);
+
+            $el.empty()
+               .append(head)
+               .append(body)
+               .append(foot);
+
+            head.show();
+            foot.show();
+            body.show();
+        },
+
+        _renderHeader: function(data) {
+
+            const head = $('<thead>').hide();
+
+            return head;
+        },
+
+        _renderBody: function(data) {
+
+            const body = $('<tbody>').hide();
+
+            return body;
+        },
+
+        _renderFooter: function(data) {
+
+            const foot = $('<tfoot>').hide();
+
+            return foot;
+        },
+
+        _renderSlots: function(container, data) {
+
+            // TODO implement
+
         },
 
         /**
