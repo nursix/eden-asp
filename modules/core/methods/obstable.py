@@ -31,6 +31,8 @@ __all__ = ("ObsTable",
            "ObsTableWidget",
            )
 
+import json
+
 from gluon import current, \
                   TABLE, THEAD, TBODY, TFOOT, TR, TH, TD, DIV
 
@@ -193,14 +195,45 @@ class ObsTableWidget:
                         _class = "obstable-scroll",
                         _id = "%s-scroll" % widget_id,
                         )
+
+        # Inject JS
+        script_opts = {}
+        self.inject_script(widget_id, script_opts)
+
         return container
 
     # -------------------------------------------------------------------------
     @staticmethod
     def inject_script(widget_id, options):
-        # TODO docstring
+        """
+            Inject the necessary JavaScript
 
-        # TODO implement
-        pass
+            Args:
+                widget_id: the container's DOM ID
+                options: widget options (JSON-serializable dict)
+        """
+
+        s3 = current.response.s3
+        scripts = s3.scripts
+
+        appname = current.request.application
+
+        # Select scripts
+        # TODO Add minify-config
+        if s3.debug or True:
+            script = "/%s/static/scripts/S3/s3.ui.obstable.js" % appname
+        else:
+            script = "/%s/static/scripts/S3/s3.ui.obstable.min.js" % appname
+
+        # Inject scripts
+        if script not in scripts:
+            scripts.append(script)
+
+        # Script to attach the obstable widget
+        script = """$("#%(widget_id)s").obsTable(%(options)s)""" % \
+                    {"widget_id": widget_id,
+                     "options": json.dumps(options),
+                     }
+        s3.jquery_ready.append(script)
 
 # END =========================================================================
