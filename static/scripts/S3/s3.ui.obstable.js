@@ -99,18 +99,9 @@
 
         _renderHeader: function(data) {
 
-            const head = $('<thead>').hide(),
-                  row = $('<tr>').appendTo(head),
-                  label = data.label || '',
-                  slots = data.slots || [];
+            const head = $('<thead>').hide();
 
-            $('<th scope="col">').addClass('fixed').text(label).appendTo(row);
-            slots.forEach(function(slot) {
-                var slotLabel = slot[2] || '??';
-                $('<th scope="col">').text(slotLabel).appendTo(row);
-            });
-
-            return head;
+            return this._renderSlots(head, data);
         },
 
         _renderBody: function(data) {
@@ -150,13 +141,22 @@
 
             const foot = $('<tfoot>').hide();
 
-            return foot;
+            return this._renderSlots(foot, data);
         },
 
         _renderSlots: function(container, data) {
 
-            // TODO implement
+            const row = $('<tr>').appendTo(container),
+                  label = data.label || '',
+                  slots = data.slots || [];
 
+            $('<th scope="col">').addClass('fixed').text(label).appendTo(row);
+            slots.forEach(function(slot) {
+                var slotLabel = slot[2] || '??';
+                $('<th scope="col">').text(slotLabel).appendTo(row);
+            });
+
+            return container;
         },
 
         /**

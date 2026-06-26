@@ -123,111 +123,23 @@ class ObsTableWidget:
     def html(self, widget_id):
         # TODO docstring
 
-        # TODO implement
-        obstable = TABLE(_class = "obstable-table",
-                         _id = widget_id,
-                         )
-
-        # TODO render header    (Repeat as footer)
-        # <thead>
-        #   <tr>
-        #     <th scope="col" class="fixed">Parameter</th>      # Left fixed column
-        #     <th scope="col">19.08.2025 10:12</th>             # Sample slots
-        #     <th scope="col">18.08.2025 16:23</th>
-        #     <th scope="col">16.08.2025 08:33</th>
-        #     <th scope="col">13.08.2025 12:44</th>
-        #     <th scope="col">11.08.2025 09:55</th>
-        #     <th scope="col">08.08.2025 14:06</th>
-        #     <th scope="col">04.08.2025 13:17</th>
-        #     <th scope="col">04.08.2025 13:17</th>
-        #     <th scope="col">04.08.2025 13:17</th>
-        #     <th scope="col">04.08.2025 13:17</th>
-        #     <th scope="col">04.08.2025 13:17</th>
-        #     <th scope="col">04.08.2025 13:17</th>
-        #     <th scope="col">04.08.2025 13:17</th>
-        #   </tr>
-        # </thead>
-        header_row = TR(TH("Parameter", _scope="col", _class="fixed"))
-        for x in range(20):
-            header_row.append(TH(x, _scope="col"))
-        header = THEAD(header_row)
-        obstable.append(header)
-
-        # TODO render body
-        # <tbody>
-        #   <tr>
-        #     <th class="fixed">
-        #         <div class="obs-cat">Serum-Na+</div>          # Parameter
-        #         <div class="obs-rrg">137-145 mmol/l</div>     # Normal Range + Unit
-        #     </th>
-        #     <td>132</td>                                      # Slot value
-        #     <td></td>
-        #     <td></td>
-        #     <td>141</td>
-        #     <td></td>
-        #     <td></td>
-        #     <td></td>
-        #     <td></td>
-        #     <td></td>
-        #     <td></td>
-        #     <td></td>
-        #     <td></td>
-        #     <td></td>
-        #   </tr>
-        # </tbody>
-        body = TBODY()
-        for i in range(24):
-            value_row = TR(TH(DIV("Serum-Na+", _class="obstable-param"),
-                            DIV("137-145 mmol/l", _class="obstable-range"),
-                            _class="fixed",
-                            ))
-            for x in range(20):
-                value_row.append(TD("Result %s-%s" % (i, x)))
-            body.append(value_row)
-        obstable.append(body)
-
-        # TODO render footer (Repeat from Header)
-        # <tfoot>
-        #   <tr>
-        #     <th class="fixed">Footer 1</th>
-        #     <td>Footer 2</td>
-        #     <td>Footer 3</td>
-        #     <td>Footer 4</td>
-        #     <td>Footer 5</td>
-        #     <td>Footer 6</td>
-        #     <td>Footer 7</td>
-        #     <td>Footer 8</td>
-        #     <td>Footer 7</td>
-        #     <td>Footer 8</td>
-        #     <td>Footer 7</td>
-        #     <td>Footer 8</td>
-        #     <td>Footer 7</td>
-        #     <td>Footer 8</td>
-        #   </tr>
-        # </tfoot>
-        footer_row = TR(TH("Parameter", _scope="col", _class="fixed"))
-        for x in range(20):
-            footer_row.append(TH(x, _scope="col"))
-        footer = TFOOT(footer_row)
-        obstable.append(footer)
-
-        # Initial data
-        data_input = INPUT(value = json.dumps(self.data),
-                           _id = "%s-data" % widget_id,
+        widget = DIV(TABLE(_class = "obstable-table",
+                           _id = widget_id,
+                           ),
+                     INPUT(value = json.dumps(self.data),
+                           _class = "obstable-data",
+                           _id = f"{widget_id}-data",
                            _type = "hidden",
-                           )
-
-        container = DIV(obstable,
-                        data_input,
-                        _class = "obstable-scroll",
-                        _id = "%s-scroll" % widget_id,
-                        )
+                           ),
+                     _class = "obstable-scroll",
+                     _id = f"{widget_id}-scroll",
+                     )
 
         # Inject JS
         script_opts = {}
         self.inject_script(widget_id, script_opts)
 
-        return container
+        return widget
 
     # -------------------------------------------------------------------------
     @staticmethod
@@ -245,18 +157,15 @@ class ObsTableWidget:
 
         appname = current.request.application
 
-        # Select scripts
-        # TODO Add minify-config
-        if s3.debug or True:
+        # Inject static script
+        if s3.debug:
             script = "/%s/static/scripts/S3/s3.ui.obstable.js" % appname
         else:
             script = "/%s/static/scripts/S3/s3.ui.obstable.min.js" % appname
-
-        # Inject scripts
         if script not in scripts:
             scripts.append(script)
 
-        # Script to attach the obstable widget
+        # Script to instantiate the widget
         script = """$("#%(widget_id)s").obsTable(%(options)s)""" % \
                     {"widget_id": widget_id,
                      "options": json.dumps(options),
