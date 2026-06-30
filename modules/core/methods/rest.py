@@ -53,6 +53,14 @@ class RESTful(CRUDMethod):
                 attr: controller parameters
         """
 
+        # With restricted REST API, generic XML/S3JSON exports are only allowed for ADMINs
+        if r.representation in ("xml", "s3json") and \
+           current.deployment_settings.get_security_restapi_restricted() and \
+           not current.auth.s3_has_role("ADMIN"):
+            r.unauthorised()
+
+        output = {}
+
         http, method = r.http, r.method
         if not method:
             if http == "GET":
@@ -418,6 +426,8 @@ class RESTful(CRUDMethod):
                 attr: controller attributes
         """
 
+        output = content_type = None
+
         representation = r.representation
         if representation == "xml":
             output = r.resource.export_fields(component=r.component_name)
@@ -465,33 +475,29 @@ class RESTful(CRUDMethod):
         else:
             hierarchy = False
 
-        if "only_last" in get_vars:
+        representation = r.representation
+
+        if representation != "xml" and "only_last" in get_vars:
             only_last = get_vars["only_last"].lower() not in ("false", "0")
         else:
             only_last = False
 
-        if "show_uids" in get_vars:
+        if representation == "xml" and "show_uids" in get_vars:
             show_uids = get_vars["show_uids"].lower() not in ("false", "0")
         else:
             show_uids = False
 
-        representation = r.representation
+        content_type, as_json = "application/json", True
         flat = False
+
         if representation == "xml":
-            only_last = False
-            as_json = False
-            content_type = "text/xml"
+            content_type, as_json = "text/xml", False
         elif representation == "s3json":
-            show_uids = False
-            as_json = True
-            content_type = "application/json"
+            pass
         elif representation == "json" and fields and len(fields) == 1:
             # JSON option supported for flat data structures only
             # e.g. for use by jquery.jeditable
             flat = True
-            show_uids = False
-            as_json = True
-            content_type = "application/json"
         else:
             r.error(415, current.ERROR.BAD_FORMAT)
 

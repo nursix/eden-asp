@@ -242,6 +242,10 @@ def org_organisation_controller(**attr):
 
         elif r.component_name == "human_resource":
 
+            # Only OrgAdmins can export staff data
+            from ..helpers import restrict_data_formats
+            restrict_data_formats(r, privileged=auth.s3_has_role("ORG_ADMIN"))
+
             phone_label = settings.get_ui_label_mobile_phone()
             list_fields = ["person_id",
                            "job_title_id",
