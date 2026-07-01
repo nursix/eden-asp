@@ -421,14 +421,14 @@ class PerformanceIndicatorsBAMF(PerformanceIndicators):
             (31, "Anzahl der Fälle bei denen eine Weiterleitung zu Beratungsstelle stattgefunden hat", "referrals", "total"),
             (32, "Anzahl der Weiterleitung von Meldebögen zu Vulnerabilitäten an BAMF", "vulnerabilities", "VRBAMF", "reports"),
             (33, "Davon Anzahl der Fälle zu unbegleiteten minderjährigen Ausländern", "vulnerabilities", "VRBAMF", "cases", "UAM"),
-            (34, "Davon Anzahl der Fälle zu sexueller Orientierung oder geschlechtlicher Identität", "vulnerabilities", "VRBAMF", "cases", "LGBQTi"),
+            (34, "Davon Anzahl der Fälle zu sexueller Orientierung oder geschlechtlicher Identität", "vulnerabilities", "VRBAMF", "cases", "SOGI"),
             (35, "Davon Anzahl der Fälle zu Opfer von Menschenhandel", "vulnerabilities", "VRBAMF", "cases", "VHT"),
             (36, "Davon Anzahl der Fälle zu Opfer von Folter, Vergewaltigung oder sonstigen schweren Formen psychischer, physischer oder sexueller Gewalt", "vulnerabilities", "VRBAMF", "cases", "VT"),
             (37, "Davon Anzahl der Fälle zu Behinderung", "vulnerabilities", "VRBAMF", "cases", "DISAB"),
             (38, "Davon Anzahl der Fälle die keiner der oben genannten Kategorien zugewiesen werden kann", "vulnerabilities", "VRBAMF", "cases", "*"),
             (39, "Anzahl der Weiterleitung von Vulnerabilitäten an Aufnahmeeinrichtungen", "vulnerabilities", "VRRP", "reports"),
             (40, "Davon Anzahl der Fälle zu unbegleiteten minderjährigen Ausländern", "vulnerabilities", "VRRP", "cases", "UAM"),
-            (41, "Davon Anzahl der Fälle zu sexueller Orientierung oder geschlechtlicher identität", "vulnerabilities", "VRRP", "cases", "LGBQTi"),
+            (41, "Davon Anzahl der Fälle zu sexueller Orientierung oder geschlechtlicher identität", "vulnerabilities", "VRRP", "cases", "SOGI"),
             (42, "Davon Anzahl der Fälle zu Opfer von Menschenhandel", "vulnerabilities", "VRRP", "cases", "VHT"),
             (43, "Davon Anzahl der Fälle zu Opfer von Folter, Vergewaltigung oder sonstigen schweren Formen psychischer, physischer oder sexueller Gewalt", "vulnerabilities", "VRRP", "cases", "VT"),
             (44, "Davon Anzahl der Fälle zu Behinderung", "vulnerabilities", "VRRP", "cases", "DISAB"),
@@ -824,7 +824,7 @@ class PerformanceIndicatorsBAMF(PerformanceIndicators):
         """
 
         response_types = ("VRBAMF", "VRRP")
-        vulnerability_types = ("UAM", "LGBQTi", "VHT", "VT", "DISAB", "*")
+        vulnerability_types = ("UAM", "SOGI", "VHT", "VT", "DISAB", "*")
 
         db = current.db
         s3db = current.s3db
