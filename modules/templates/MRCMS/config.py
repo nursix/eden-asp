@@ -133,6 +133,9 @@ def config(settings):
     # Version details on About-page require login
     settings.security.version_info_requires_login = True
 
+    # Generic format REST API requests are restricted to ADMINs
+    settings.security.restapi_restricted = True
+
     # -------------------------------------------------------------------------
     # Defaults for custom settings
     #

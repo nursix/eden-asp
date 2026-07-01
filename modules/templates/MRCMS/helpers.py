@@ -580,6 +580,31 @@ def get_response_theme_sectors():
     return {s.id: T(s.name) for s in sectors}
 
 # =============================================================================
+def restrict_data_formats(r, privileged=False):
+    """
+        Restrict data exports
+
+        Args:
+            r: the CRUDRequest
+    """
+
+    settings = current.deployment_settings
+    if privileged:
+        allowed = ("html", "iframe", "popup", "aadata", "plain", "geojson", "pdf", "xlsx")
+        settings.ui.export_formats = ("pdf", "xlsx")
+    else:
+        allowed = ("html", "iframe", "popup", "aadata", "plain", "geojson")
+        settings.ui.export_formats = None
+    if r.record:
+        allowed += ("card", "pdf")
+    if r.method in ("report", "timeplot", "filter", "lookup", "info", "validate", "verify"):
+        allowed += ("json",)
+    elif r.method == "options":
+        allowed += ("s3json",)
+    if r.representation not in allowed:
+        r.unauthorised()
+
+# =============================================================================
 def inject_button(output, button, before="add_btn", alt="showadd_btn"):
     """
         Injects an additional action button into a CRUD view

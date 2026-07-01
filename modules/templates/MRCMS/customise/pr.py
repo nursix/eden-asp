@@ -1582,6 +1582,12 @@ def pr_person_controller(**attr):
     standard_prep = s3.prep
     def prep(r):
 
+        # Restrict data formats
+        # - XML export not allowed
+        # - only administration roles can export data as PDF/XLSX
+        from ..helpers import restrict_data_formats
+        restrict_data_formats(r, privileged=administration)
+
         if QUARTERMASTER:
             # Enforce closed=0
             r.vars["closed"] = r.get_vars["closed"] = "0"
@@ -1687,7 +1693,7 @@ def pr_person_controller(**attr):
        controller == "med" and not current.request.get_vars.get("viewing"):
 
         attr["rheader"] = dvr_rheader
-        attr["variable_columns"] = True
+        attr["variable_columns"] = privileged
 
         # Allow selection of Organisation with case imports
         from ..helpers import managed_orgs_field
