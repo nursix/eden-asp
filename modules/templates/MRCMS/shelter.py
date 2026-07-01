@@ -39,11 +39,17 @@ class ShelterOverview(CRUDMethod):
 
         output = None
 
+        # Is the current user authorised to export the residents list?
+        privileged = current.auth.s3_has_role("SHELTER_ADMIN")
+
         if r.http == "GET":
             if r.representation == "html":
-                output = self.overview(r, **attr)
+                output = self.overview(r, privileged=privileged, **attr)
             elif r.representation == "xlsx":
-                output = ResidentsList(r.record).xlsx()
+                if not privileged:
+                    r.unauthorised()
+                else:
+                    output = ResidentsList(r.record).xlsx()
             else:
                 r.error(415, current.ERROR.BAD_FORMAT)
         else:
@@ -53,7 +59,7 @@ class ShelterOverview(CRUDMethod):
 
     # -------------------------------------------------------------------------
     @staticmethod
-    def overview(r, **attr):
+    def overview(r, privileged=False, **attr):
         """
             Renders the shelter overview
 
@@ -141,16 +147,21 @@ class ShelterOverview(CRUDMethod):
 
         # 4) Residents Overview ---------------------------
 
-        xlsx_btn = A(IMG(_src = "/%s/static/img/icon-xls.png" % r.application,
-                         _style = "margin-left:1rem;vertical-align:text-top;",
-                         ),
-                     data = {"url": URL(c="cr", f="shelter",
-                                        args = [r.id, "overview.xlsx"],
-                                        ),
-                             },
-                     _title = T("Export in %(format)s format") % {"format": "XLSX"},
-                     _class = "action-lnk s3-download-button",
-                     )
+        if privileged:
+            xlsx_btn = A(IMG(_src = "/%s/static/img/icon-xls.png" % r.application,
+                             _style = "margin-left:1rem;vertical-align:text-top;",
+                             ),
+                        data = {"url": URL(c="cr", f="shelter",
+                                           args = [r.id, "overview.xlsx"],
+                                           ),
+                                },
+                        _title = T("Export in %(format)s format") % {"format": "XLSX"},
+                        _class = "action-lnk s3-download-button",
+                        )
+        else:
+            # User not authorised to export the residents list
+            # => do not render export-button
+            xlsx_btn = ""
 
         residents = DIV(H4(T("Residents Overview"), xlsx_btn),
                         ResidentsList(record, status=status).html(),
@@ -744,21 +755,39 @@ class ResidentsList:
 
         T = current.T
 
-        return (("unit", T("Housing Unit"), "string"),
-                ("pe_label", T("ID"), "string"),
-                ("refno", T("Principal Ref.No."), "string"),
-                ("last_name", T("Last Name"), "string"),
-                ("first_name", T("First Name"), "string"),
-                ("gender", T("Gender"), "string"),
-                ("dob", T("Date of Birth"), "date"),
-                ("age", T("Age"), "string"),
-                ("nationality", T("Nationality"), "string"),
-                ("household_size", T("Size of Family"), "integer"),
-                ("status", T("Status"), "string"),
-                ("check_in_date", T("Check-in date"), "date"),
-                ("last_seen_on", T("Last seen on"), "date"),
-                ("present", T("Present##presence"), "string"),
-                )
+        case_administration = current.auth.permission.has_permission("create",
+                                                                     c = "dvr",
+                                                                     f = "person",
+                                                                     t = "pr_person",
+                                                                     )
+        if case_administration:
+            return (("unit", T("Housing Unit"), "string"),
+                    ("pe_label", T("ID"), "string"),
+                    ("refno", T("Principal Ref.No."), "string"),
+                    ("last_name", T("Last Name"), "string"),
+                    ("first_name", T("First Name"), "string"),
+                    ("gender", T("Gender"), "string"),
+                    ("dob", T("Date of Birth"), "date"),
+                    ("age", T("Age"), "string"),
+                    ("nationality", T("Nationality"), "string"),
+                    ("household_size", T("Size of Family"), "integer"),
+                    ("status", T("Status"), "string"),
+                    ("check_in_date", T("Check-in date"), "date"),
+                    ("last_seen_on", T("Last seen on"), "date"),
+                    ("present", T("Present##presence"), "string"),
+                    )
+        else:
+            # Limited fields
+            return (("unit", T("Housing Unit"), "string"),
+                    ("pe_label", T("ID"), "string"),
+                    ("last_name", T("Last Name"), "string"),
+                    ("first_name", T("First Name"), "string"),
+                    ("gender", T("Gender"), "string"),
+                    ("dob", T("Date of Birth"), "date"),
+                    ("age", T("Age"), "string"),
+                    ("nationality", T("Nationality"), "string"),
+                    ("present", T("Present##presence"), "string"),
+                    )
 
     # -------------------------------------------------------------------------
     def data_rows(self):

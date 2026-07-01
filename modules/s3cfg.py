@@ -1033,6 +1033,12 @@ class S3Config(Storage):
         """
         return self.security.get("version_info_requires_login", False)
 
+    def get_security_restapi_restricted(self):
+        """
+            Whether generic format REST API requests are restricted to ADMINs
+        """
+        return self.security.get("restapi_restricted", False)
+
     def get_security_archive_not_delete(self):
         return self.security.get("archive_not_delete", True)
 
