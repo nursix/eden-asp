@@ -2182,7 +2182,7 @@ def dvr_response_action_resource(r, tablename):
                                "end": "end_date",
                                "use_time": use_time,
                                },
-                   pdf_format = "list" if themes_details else "table",
+                   pdf_format = "list",
                    orderby = "dvr_response_action.start_date desc, dvr_response_action.created_on desc",
                    )
 
