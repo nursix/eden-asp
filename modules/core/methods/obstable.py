@@ -79,25 +79,7 @@ class ObsTable(CRUDMethod):
         widget_id = "obstable"
 
         # Initial data
-        # TODO extract from target resource
-        # Status: 0=pending, 1=prelimiary, 2=final
-        data = {"label": "Parameter",
-                "slots": [
-                    [0, "2025-08-19T10:12:00Z", "19.08.2025 10:12"],
-                    [1, "2025-08-18T15:23:00Z", "18.08.2025 16:23"],
-                    [2, "2025-08-16T08:33:00Z", "16.08.2025 08:33"],
-                    [3, "2025-08-13T12:44:00Z", "13.08.2025 12:44"],
-                    ],
-                "params": [
-                        {"name": "Serum-Na+",
-                         "range": "137 - 145 mmol/l",
-                         "values": {
-                             1: ["125", 2, 1, 0],
-                             3: ["127", 2, 1, 0],
-                             },
-                         }
-                    ],
-                }
+        data = self.extract(r)
 
         # Instantiate Widget
         widget = ObsTableWidget(data=data)
@@ -108,6 +90,14 @@ class ObsTable(CRUDMethod):
         current.response.view = self._view(r, "obstable.html")
 
         return output
+
+    def extract(self, r):
+
+        resource = self.resource
+
+        reader = resource.get_config("obstable")
+
+        return reader(resource).extract() if reader else {}
 
 # =============================================================================
 class ObsTableWidget:

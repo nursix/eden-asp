@@ -1453,6 +1453,7 @@ class MedParameterModel(DataModel):
         configure(tablename,
                   onvalidation = self.parameter_value_onvalidation,
                   onaccept = self.parameter_value_onaccept,
+                  obstable = ParameterData,
                   )
 
         # Methods
@@ -3161,6 +3162,99 @@ class RiskClass:
 
         if self.vitals:
             self.vitals.update_record(risk_class=risk)
+
+# =============================================================================
+class ParameterData:
+    """ ObsTable data reader for med_parameter_value """
+
+    def __init__(self, resource):
+
+        if resource.tablename != "med_parameter_value":
+            raise RuntimeError
+        self.resource = resource
+
+    def extract(self):
+        """
+            Extract data from context resource and generate data dict
+        """
+        # TODO date bracket as parameter
+
+        resource = self.resource
+
+        # TODO apply date bracket
+        rows = resource.select(["id",
+                                "sample_id",
+                                "parameter_id",
+                                "result",
+                                "status",
+                                "date",
+                                ],
+                                as_rows=True,
+                                )
+        print(rows)
+
+        slots = self.slots(rows)
+        print(slots)
+
+        # Need a {parameter_id: (name, range)}
+
+        # Extract records from target resource
+        # Apply date bracket, or default bracket [-2 weeks, today]
+        # Lookup parmeter references
+        # Condense slots
+
+        # Page number: difficult
+        # Status: 0=pending, 1=prelimiary, 2=final
+        data = {"label": "Parameter",
+                "slots": [
+                    [0, "2025-08-19T10:12:00Z", "19.08.2025 10:12"],
+                    [1, "2025-08-18T15:23:00Z", "18.08.2025 16:23"],
+                    [2, "2025-08-16T08:33:00Z", "16.08.2025 08:33"],
+                    [3, "2025-08-13T12:44:00Z", "13.08.2025 12:44"],
+                    ],
+                "params": [
+                        {"name": "Serum-Na+",
+                         "range": "137 - 145 mmol/l",
+                         "values": {
+                             1: ["125", 2, 1, 0],
+                             3: ["127", 2, 1, 0],
+                             },
+                         }
+                    ],
+                }
+
+        return data
+
+    def slots(self, rows):
+
+        # Gets: rows with sample_id
+        # Returns [(slots_id, date, [sample_ids])]
+
+        stable = current.s3db.med_sample
+
+        sample_ids = {row.sample_id for row in rows}
+        query = (stable.id.belongs(sample_ids))
+
+        samples = current.db(query).select(stable.id,
+                                           stable.date,
+                                           orderby = stable.date,
+                                           )
+
+        slots, this, slot_id = [], None, 0
+
+        # Group samples
+        for sample in samples:
+            if not sample.date:
+                continue
+            if this and sample.date == this[1]:
+                this[2].append(sample.id)
+            else:
+                this = (slot_id, sample.date, [sample.id])
+                slots.append(this)
+                slot_id += 1
+
+        return slots
+
 
 # =============================================================================
 class IS_BLOOD_PRESSURE(Validator):
