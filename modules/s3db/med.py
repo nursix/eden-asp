@@ -1367,6 +1367,7 @@ class MedParameterModel(DataModel):
                                                fields = ["parameter_id",
                                                          "result",
                                                          "status",
+                                                         "status_reason",
                                                          ],
                                                ),
                                "invalid",
@@ -1459,6 +1460,7 @@ class MedParameterModel(DataModel):
         result_status_opts = WorkflowOptions(("PENDING", "Pending", "blue"),
                                              ("PRELIMINARY", "Preliminary", "amber"),
                                              ("FINAL", "Final", "green"),
+                                             ("FAILED", "Failed", "black"),
                                              represent = "status",
                                              none = "PENDING",
                                              )
@@ -1480,17 +1482,24 @@ class MedParameterModel(DataModel):
                      analysis_id(empty=False),
                      sample_id(),
                      parameter_id(empty=False),
+
                      # The original result as-entered
-                     # TODO separate result/alt_result
                      Field("result",
                            label = T("Result"),
                            ),
+
+                     # Result Status
                      Field("status",
                            label = T("Status"),
                            default = "PENDING",
                            requires = IS_IN_SET(result_status_opts.selectable(), sort=False),
                            represent = result_status_opts.represent,
                            ),
+                     # TODO make status reason mandatory for all except preliminary/final
+                     Field("status_reason",
+                           label = T("Reason"),
+                           ),
+
                      # Numerical result, computed from result onaccept
                      Field("result_numeric", "double",
                            readable = False,
@@ -1527,7 +1536,6 @@ class MedParameterModel(DataModel):
                      #              label = T("Date acknowledged"),
                      #              ),
                      # TODO acknowledged_by
-                     CommentsField(), # TODO drop (alt_result as only comment)
                      # TODO vhash
                      )
 
