@@ -1154,8 +1154,9 @@ class PRPersonModel(DataModel):
                        med_status = {"name": "med_status",
                                      "joinby": "person_id",
                                      },
-                       med_sample = "person_id",
-                       med_parameter_value = "person_id",
+                       med_analysis = {"name": "med_analysis",
+                                       "joinby": "person_id",
+                                       },
                        med_treatment = "person_id",
 
                        # Seized Items (owner)

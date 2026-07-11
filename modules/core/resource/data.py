@@ -234,6 +234,7 @@ class ResourceData:
         empty = False
         limitby = None
         orderby_on_limitby = True
+        master_ids = None
 
         # If we know all possible record IDs from the filter query,
         # then we can simplify the master query so it doesn't need
@@ -377,6 +378,12 @@ class ResourceData:
                                                orderby_on_limitby = orderby_on_limitby,
                                                cacheable = not as_rows,
                                                *list(qfields.values()))
+
+                if as_rows and rows and has_id and master_ids:
+                    # Orderby was dropped for simplified master query, so
+                    # need to post-sort the rows according to their position
+                    # in the filter query result (=master_ids)
+                    rows = rows.sort(lambda row: master_ids.index(row[pkey]))
 
                 # Restore virtual fields
                 if not virtual:
