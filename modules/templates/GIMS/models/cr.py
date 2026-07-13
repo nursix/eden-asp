@@ -982,7 +982,7 @@ class CapacityOverview(CRUDMethod):
         for facility in facilities:
             facility_id = facility.id
             query = (stable.facility_id == facility_id) & \
-                    (stable.date < start) & \
+                    (stable.date <= start) & \
                     (stable.deleted == False)
             initial = db(query).select(stable.status,
                                        stable.population,
@@ -998,7 +998,7 @@ class CapacityOverview(CRUDMethod):
         # Lookup all subsequent status entries and fill the matrix
         query = (stable.facility_id.belongs(population.keys())) & \
                 (stable.date != None) & \
-                (stable.date >= start) & \
+                (stable.date > start) & \
                 (stable.deleted == False)
         rows = db(query).select(stable.facility_id,
                                 stable.date,
