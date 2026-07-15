@@ -13,6 +13,7 @@ from .hcrud import *
 from .mapview import *
 from .merge import S3Merge
 from .mobile import *
+from .obstable import *
 from .organizer import *
 from .pois import *
 from .presence import PresenceRegistration, SitePresence

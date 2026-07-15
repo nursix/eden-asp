@@ -21,70 +21,6 @@ from core import AgeFilter, DateFilter, OptionsFilter, TextFilter, get_filter_op
 ABSENCE_LIMIT = 5
 
 # =============================================================================
-def mrcms_absence(row):
-    # TODO update for org_site_presence_event
-    # TODO referring to the site where currently registered as checked-in
-    """
-        Field method to display duration of absence in
-        dvr/person list view and rheader
-
-        Args:
-            row: the Row
-    """
-
-    if hasattr(row, "cr_shelter_registration"):
-        registration = row.cr_shelter_registration
-    else:
-        registration = None
-
-    result = current.messages["NONE"]
-
-    if registration is None or \
-       not hasattr(registration, "registration_status") or \
-       not hasattr(registration, "check_out_date"):
-        # must reload
-        db = current.db
-        s3db = current.s3db
-
-        person = row.pr_person if hasattr(row, "pr_person") else row
-        person_id = person.id
-        if not person_id:
-            return result
-        table = s3db.cr_shelter_registration
-        query = (table.person_id == person_id) & \
-                (table.deleted != True)
-        registration = db(query).select(table.registration_status,
-                                        table.check_out_date,
-                                        limitby = (0, 1),
-                                        ).first()
-
-    if registration and \
-       registration.registration_status == 3:
-
-        T = current.T
-
-        check_out_date = registration.check_out_date
-        if check_out_date:
-
-            delta = max(0, (current.request.utcnow - check_out_date).total_seconds())
-            days = int(delta / 86400)
-
-            if days < 1:
-                result = "<1 %s" % T("Day")
-            elif days == 1:
-                result = "1 %s" % T("Day")
-            else:
-                result = "%s %s" % (days, T("Days"))
-
-            if days >= ABSENCE_LIMIT:
-                result = SPAN(result, _class="overdue")
-
-        else:
-            result = SPAN(T("Date unknown"), _class="overdue")
-
-    return result
-
-# -------------------------------------------------------------------------
 def event_overdue(code, interval):
     """
         Get cases (person_ids) for which a certain event is overdue
@@ -815,11 +751,6 @@ def configure_case_list_fields(resource,
 
         # Show latest on top
         orderby = "dvr_case.date desc"
-
-        # Days of absence (virtual field)
-        # TODO Restore when absence fixed
-        #if absence_field:
-        #    list_fields.append(absence_field)
     else:
         case_date = case_status = None
 
@@ -944,6 +875,7 @@ def configure_case_file(r, privileged=False, administration=False):
     settings = current.deployment_settings
 
     resource = r.resource
+    table = resource.table
 
     # Autocomplete using alternative search method
     search_fields = ("first_name", "last_name", "pe_label")
@@ -953,10 +885,6 @@ def configure_case_file(r, privileged=False, administration=False):
                     )
 
     from gluon import Field, IS_IN_SET, IS_NOT_EMPTY
-
-    # Absence-days method, used in both list_fields and rheader
-    table = r.table
-    table.absence = Field.Method("absence", mrcms_absence)
 
     # ID Card Export
     configure_id_cards(r, resource, administration=administration)

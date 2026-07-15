@@ -1,0 +1,80 @@
+.obstable-scroll {
+  position: relative;
+  width:100%;
+  z-index: 1;
+  margin: auto;
+  overflow: auto;
+  max-height: 80vh;
+  font-size: 0.8rem;
+}
+.obstable-scroll table {
+  width: 100%;
+  min-width: 800px;
+  margin: auto;
+  border-collapse: separate;
+  border-spacing: 0;
+  border: 1px solid #aaa;
+  line-height: 1.0;
+}
+.obstable-scroll th,
+.obstable-scroll td {
+  padding: 5px 10px;
+  background: #fff;
+  vertical-align: middle;
+  border: 1px solid #aaa;
+  border-right: 0;
+  border-top: 0;
+}
+.obstable-scroll tr:first-child th {
+  border-top: 1px solid #aaa;
+}
+.obstable-scroll thead,
+.obstable-scroll thead th,
+.obstable-scroll thead td {
+  background: #ccc;
+  color: #333;
+  position: -webkit-sticky;
+  position: sticky;
+  top: 0;
+  z-index:4;
+}
+.obstable-scroll tfoot,
+.obstable-scroll tfoot th,
+.obstable-scroll tfoot td {
+  position: -webkit-sticky;
+  position: sticky;
+  bottom: 0;
+  background: #ccc;
+  color: #333;
+  z-index:4;
+}
+
+.obstable-table th.fixed {
+  position: -webkit-sticky;
+  position: sticky;
+  left: 0;
+  z-index: 2;
+  background: #eee;
+  border-right: 1px solid #aaa;
+}
+.obstable-table thead th.fixed,
+.obstable-table tfoot th.fixed {
+  z-index: 5;
+  font-weight: normal;
+  color: #aaa;
+}
+
+.obstable-table .obstable-param {
+    display: block;
+    font-size: 0.9rem;
+    white-space: pre;
+}
+.obstable-table .obstable-range {
+    display: block;
+    font-size: 0.7rem;
+    color: #666;
+    white-space: pre;
+}
+.xrrg {
+    color: red;
+}

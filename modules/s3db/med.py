@@ -548,7 +548,7 @@ class MedPatientModel(DataModel):
                             med_treatment = "patient_id",
                             med_vitals = "patient_id",
                             med_sample = "patient_id",
-                            med_parameter_value = "patient_id",
+                            med_analysis = "patient_id",
                             med_epicrisis = {"joinby": "patient_id",
                                              "multiple": False,
                                              },
@@ -1090,11 +1090,12 @@ class MedStatusModel(DataModel):
 class MedParameterModel(DataModel):
     """ Data Model for medical parameters (e.g. lab results) """
 
-    names = ("med_parameter",
-             "med_parameter_group",
-             "med_parameter_value",
-             "med_sample",
+    names = ("med_parameter_group",
              "med_sample_type",
+             "med_parameter",
+             "med_analysis",
+             "med_sample",
+             "med_analysis_result",
              )
 
     def model(self):
@@ -1313,24 +1314,118 @@ class MedParameterModel(DataModel):
             )
 
         # ---------------------------------------------------------------------
-        # Sample/Measurement
+        # Analysis
+        #
+        tablename = "med_analysis"
+        define_table(tablename,
+                     patient_id(
+                         label = T("Visit"),
+                         readable = False,
+                         writable = False,
+                         ),
+                     person_id(
+                         readable = False,
+                         writable = False,
+                         comment = None,
+                         ),
+                     DateTimeField(default="now"),
+                     # TODO status (pending, partial, complete, )
+                     Field("invalid", "boolean",
+                           label = T("Invalid"),
+                           default = False,
+                           represent = BooleanRepresent(labels = False,
+                                                        # Reverse icons semantics
+                                                        icons = (BooleanRepresent.NEG,
+                                                                 BooleanRepresent.POS,
+                                                                 ),
+                                                        colors = (BooleanRepresent.RED,
+                                                                  BooleanRepresent.GREEN,
+                                                                  ),
+                                                        flag = True,
+                                                        ),
+                           ),
+                     CommentsField(),
+                     )
+
+        # Components
+        self.add_components(tablename,
+                            med_sample = "analysis_id",
+                            med_analysis_result = "analysis_id",
+                            )
+
+        # Methods
+        self.set_method(tablename,
+                        method = "results",
+                        action = ObsTable,
+                        )
+
+        # CRUD Form (with embedded results)
+        crud_form = CustomForm("date",
+                               InlineComponent("analysis_result",
+                                               # TODO label
+                                               # TODO review fields
+                                               fields = ["parameter_id",
+                                                         "result",
+                                                         "status",
+                                                         "status_reason",
+                                                         ],
+                                               ),
+                               "invalid",
+                               "comments",
+                               )
+
+        # Table Configuration
+        configure(tablename,
+                  crud_form = crud_form,
+                  onaccept = self.analysis_result_onaccept,
+                  obstable = AnalysisData,
+                  )
+
+        # Foreign key template
+        represent = S3Represent(lookup=tablename, fields=["date"])
+        analysis_id = FieldTemplate("analysis_id", "reference %s" % tablename,
+                                    label = T("Analysis"),
+                                    ondelete = "RESTRICT",
+                                    represent = represent,
+                                    requires = IS_EMPTY_OR(
+                                                IS_ONE_OF(db, "%s.id" % tablename,
+                                                          represent,
+                                                          )),
+                                    )
+
+        # CRUD strings
+        crud_strings[tablename] = Storage(
+            label_create = T("Create Analysis"),
+            title_display = T("Analysis"),
+            title_list = T("Analyses"),
+            title_update = T("Edit Analysis"),
+            label_list_button = T("List Analyses"),
+            label_delete_button = T("Delete Analysis"),
+            msg_record_created = T("Analysis created"),
+            msg_record_modified = T("Analysis updated"),
+            msg_record_deleted = T("Analysis deleted"),
+            msg_list_empty = T("No Analyses currently registered"),
+            )
+
+        # ---------------------------------------------------------------------
+        # Sample (physical artefact)
         #
         tablename = "med_sample"
         define_table(tablename,
                      patient_id(),
                      person_id(comment=None),
                      sample_type_id(),
+                     analysis_id(),
                      # sample number (autogenerate)?
                      DateTimeField(default="now"),
                      # taken_by
-                     # invalid yes/no
-                     # vhash
+                     # TODO status (pending, taken, sent, arrived, analysed, discarded)
                      CommentsField(),
                      )
 
         # Components
         self.add_components(tablename,
-                            med_parameter_value = "sample_id",
+                            med_analysis_result = "sample_id",
                             )
 
         # Foreign key template
@@ -1360,16 +1455,17 @@ class MedParameterModel(DataModel):
             )
 
         # ---------------------------------------------------------------------
-        # Measured/observed values
+        # Measured/observed values (data artefact)
         #
         result_status_opts = WorkflowOptions(("PENDING", "Pending", "blue"),
                                              ("PRELIMINARY", "Preliminary", "amber"),
                                              ("FINAL", "Final", "green"),
+                                             ("FAILED", "Failed", "black"),
                                              represent = "status",
                                              none = "PENDING",
                                              )
 
-        tablename = "med_parameter_value"
+        tablename = "med_analysis_result"
         define_table(tablename,
                      person_id(
                          label = T("Patient"),
@@ -1383,18 +1479,27 @@ class MedParameterModel(DataModel):
                          readable = False,
                          writable = False,
                          ),
+                     analysis_id(empty=False),
                      sample_id(),
                      parameter_id(empty=False),
+
                      # The original result as-entered
                      Field("result",
                            label = T("Result"),
                            ),
+
+                     # Result Status
                      Field("status",
                            label = T("Status"),
                            default = "PENDING",
                            requires = IS_IN_SET(result_status_opts.selectable(), sort=False),
                            represent = result_status_opts.represent,
                            ),
+                     # TODO make status reason mandatory for all except preliminary/final
+                     Field("status_reason",
+                           label = T("Reason"),
+                           ),
+
                      # Numerical result, computed from result onaccept
                      Field("result_numeric", "double",
                            readable = False,
@@ -1431,28 +1536,13 @@ class MedParameterModel(DataModel):
                      #              label = T("Date acknowledged"),
                      #              ),
                      # TODO acknowledged_by
-                     Field("invalid", "boolean",
-                           label = T("Invalid"),
-                           default = False,
-                           represent = BooleanRepresent(labels = False,
-                                                        # Reverse icons semantics
-                                                        icons = (BooleanRepresent.NEG,
-                                                                 BooleanRepresent.POS,
-                                                                 ),
-                                                        colors = (BooleanRepresent.RED,
-                                                                  BooleanRepresent.GREEN,
-                                                                  ),
-                                                        flag = True,
-                                                        ),
-                           ),
-                     CommentsField(),
                      # TODO vhash
                      )
 
         # Table configuration
         configure(tablename,
-                  onvalidation = self.parameter_value_onvalidation,
-                  onaccept = self.parameter_value_onaccept,
+                  onvalidation = self.analysis_result_onvalidation,
+                  onaccept = self.analysis_result_onaccept,
                   )
 
         # CRUD strings
@@ -1536,6 +1626,8 @@ class MedParameterModel(DataModel):
             - set patient_id/person_id
         """
 
+        # TODO inherit patient_id/person_id from analysis, if linked
+
         db = current.db
         s3db = current.s3db
 
@@ -1557,14 +1649,43 @@ class MedParameterModel(DataModel):
 
     # -------------------------------------------------------------------------
     @staticmethod
-    def parameter_value_onvalidation(form):
+    def analysis_onaccept(form):
+        """
+            Onaccept-routine for analysis
+            - set patient_id/person_id
+        """
+
+        db = current.db
+        s3db = current.s3db
+
+        record_id = get_form_record_id(form)
+
+        table = s3db.med_analysis
+        query = (table.id == record_id) & (table.deleted == False)
+        record = db(query).select(table.id,
+                                  table.person_id,
+                                  table.patient_id,
+                                  limitby = (0, 1),
+                                  ).first()
+
+        if not record:
+            return
+
+        if not record.patient_id or not record.person_id:
+            MedPatientModel.set_patient(record)
+
+    # -------------------------------------------------------------------------
+    @staticmethod
+    def analysis_result_onvalidation(form):
         """
             Form validation of parameter values:
             - other status than PENDING requires a result
         """
 
-        table = current.s3db.med_parameter_value
+        table = current.s3db.med_analysis_result
         data = get_form_record_data(form, table, ["result", "status"])
+
+        # TODO there must be only one result per parameter per analysis/sample!
 
         status = data.get("status")
         result = data.get("result")
@@ -1578,11 +1699,11 @@ class MedParameterModel(DataModel):
 
     # -------------------------------------------------------------------------
     @staticmethod
-    def parameter_value_onaccept(form):
+    def analysis_result_onaccept(form):
         """
             Onaccept-routine for parameter values
             - set patient_id/person_id
-            - generate+link new sample if record was not linked to one
+            - generate/link to sample as required
             - compute numerical result for quantitative parameters (if possible)
         """
 
@@ -1593,15 +1714,17 @@ class MedParameterModel(DataModel):
         record_id = get_form_record_id(form)
 
         ptable = s3db.med_parameter
+        atable = s3db.med_analysis
         stable = s3db.med_sample
 
         # Reload the record
-        table = s3db.med_parameter_value
+        table = s3db.med_analysis_result
         query = (table.id == record_id) & (table.deleted == False)
         record = db(query).select(table.id,
                                   table.person_id,
                                   table.patient_id,
                                   table.parameter_id,
+                                  table.analysis_id,
                                   table.sample_id,
                                   table.date,
                                   table.result,
@@ -1611,20 +1734,21 @@ class MedParameterModel(DataModel):
 
         if not record:
             return
+        analysis_id = record.analysis_id
 
-        if not(record.person_id or record.patient_id) and record.sample_id:
-            # Look up person_id/patient_id from sample
-            query = (stable.id == record.sample_id) & \
-                    (stable.deleted == False)
-            row = db(query).select(stable.person_id,
-                                   stable.patient_id,
+        # Inherit person_id/patient_id from analysis
+        if not(record.person_id or record.patient_id) and analysis_id:
+            # Look up person_id/patient_id from analysis
+            query = (atable.id == analysis_id) & (atable.deleted == False)
+            row = db(query).select(atable.person_id,
+                                   atable.patient_id,
                                    limitby = (0, 1),
                                    ).first()
             if row:
                 record.update_record(person_id = row.person_id,
                                      patient_id = row.patient_id,
                                      )
-
+        # Add missing person/patient reference, if required
         if not record.patient_id or not record.person_id:
             MedPatientModel.set_patient(record)
 
@@ -1635,22 +1759,37 @@ class MedParameterModel(DataModel):
                                  ptable.qualitative,
                                  limitby = (0, 1),
                                  ).first()
+        sample_type_id = param.sample_type_id if param else None
 
-        # If not linked to a sample, generate+link new sample
-        if not record.sample_id and param and param.sample_type_id:
-            # Create new sample
-            sample = {"sample_type_id": param.sample_type_id,
-                      "person_id": record.person_id,
-                      "patient_id": record.patient_id,
-                      "date": record.date,
-                      }
-            sample_id = sample["id"] = stable.insert(**sample)
+        # Auto-generate sample record, if required
+        if not record.sample_id and sample_type_id:
+            if analysis_id:
+                # Check for existing sample of that type
+                query = (stable.analysis_id == analysis_id) & \
+                        (stable.sample_type_id == sample_type_id) & \
+                        (stable.deleted == False)
+                sample = db(query).select(stable.id, limitby=(0, 1)).first()
+            else:
+                sample = None
 
-            # Postprocess create
-            s3db.update_super(stable, sample)
-            auth.s3_set_record_owner(stable, sample_id)
-            auth.s3_make_session_owner(stable, sample_id)
-            s3db.onaccept(stable, sample_id, method="create")
+            if sample:
+                # Use existing sample
+                sample_id = sample.id
+            else:
+                # Create new sample
+                sample = {"person_id": record.person_id,
+                          "patient_id": record.patient_id,
+                          "analysis_id": analysis_id,
+                          "sample_type_id": sample_type_id,
+                          "date": record.date,
+                          }
+                sample_id = sample["id"] = stable.insert(**sample)
+
+                # Postprocess create
+                s3db.update_super(stable, sample)
+                auth.s3_set_record_owner(stable, sample_id)
+                auth.s3_make_session_owner(stable, sample_id)
+                s3db.onaccept(stable, sample_id, method="create")
 
             # Link record to sample
             record.update_record(sample_id=sample_id)
@@ -3151,6 +3290,103 @@ class RiskClass:
 
         if self.vitals:
             self.vitals.update_record(risk_class=risk)
+
+# =============================================================================
+class AnalysisData:
+    """ ObsTable data reader for analysis results """
+
+    # TODO adjust for med_analysis model
+
+    def __init__(self, resource):
+
+        if resource.tablename != "med_analysis":
+            raise RuntimeError
+        self.resource = resource
+
+    def extract(self, start=0, limit=None):
+        """
+            Extract data from context resource and generate data dict
+        """
+
+        db = current.db
+        s3db = current.s3db
+
+        resource = self.resource
+
+        rows = resource.select(["id",
+                                "date",
+                                # "status",
+                                ],
+                                orderby = "date desc",
+                                as_rows = True,
+                                )
+
+        slots = [[row.id, row.date.isoformat(), row.date.isoformat()] for row in rows]
+
+        rtable = s3db.med_analysis_result
+        query = (rtable.analysis_id.belongs({row.id for row in rows})) & \
+                (rtable.deleted == False)
+        results = db(query).select(rtable.id,
+                                   rtable.analysis_id,
+                                   rtable.parameter_id,
+                                   rtable.result,
+                                   )
+        result_dict = {}
+        for result in results:
+            parameter_id = result["parameter_id"]
+            if parameter_id in result_dict:
+                result_dict[parameter_id].append(result)
+            else:
+                result_dict[parameter_id] = [result]
+        results = result_dict
+
+        ptable = s3db.med_parameter
+        query = (ptable.id.belongs(results.keys()))
+        parameters = db(query).select(ptable.id,
+                                      ptable.name,
+                                      ptable.abrv,
+                                      )
+
+        # Look up analysis results
+        params = []
+        for parameter in parameters:
+            rows = results.get(parameter_id)
+            if rows:
+                param_dict = {"name": parameter.abrv or parameter.name,
+                              "range": "-",
+                              "values": {},
+                              }
+                parameter_id = parameter.id
+                for row in rows:
+                    param_dict["values"][row.analysis_id] = [row.result,
+                                                             2, 1, 0,
+                                                             ]
+                params.append(param_dict)
+
+        data = {"label": "Results",
+                "slots": slots,
+                "params": params,
+                }
+        return data
+
+        # Status: 0=pending, 1=prelimiary, 2=final
+        # data = {"label": "Parameter",
+        #         "slots": [
+        #             [0, "2025-08-19T10:12:00Z", "19.08.2025 10:12"],
+        #             [1, "2025-08-18T15:23:00Z", "18.08.2025 16:23"],
+        #             [2, "2025-08-16T08:33:00Z", "16.08.2025 08:33"],
+        #             [3, "2025-08-13T12:44:00Z", "13.08.2025 12:44"],
+        #             ],
+        #         "params": [
+        #                 {"name": "Serum-Na+",
+        #                  "range": "137 - 145 mmol/l",
+        #                  "values": {
+        #                      1: ["125", 2, 1, 0],
+        #                      3: ["127", 2, 1, 0],
+        #                      },
+        #                  }
+        #             ],
+        #         }
 
 # =============================================================================
 class IS_BLOOD_PRESSURE(Validator):

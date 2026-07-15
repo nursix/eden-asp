@@ -947,7 +947,7 @@ class S3OrganizerWidget:
             if script not in scripts:
                 scripts.append(script)
 
-        # Script to attach the timeplot widget
+        # Script to attach the organizer widget
         script = """$("#%(widget_id)s").organizer(%(options)s)""" % \
                     {"widget_id": widget_id,
                      "options": json.dumps(options),

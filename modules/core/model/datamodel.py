@@ -97,9 +97,8 @@ class DataModel:
             except Exception:
                 self.__unlock()
                 raise
-            else:
-                if isinstance(env, dict):
-                    response.s3.update(env)
+            if isinstance(env, dict):
+                response.s3.update(env)
             if module in mandatory_models or \
                current.deployment_settings.has_module(module):
                 try:
@@ -142,9 +141,8 @@ class DataModel:
             response[LOCK] = {}
         if name in response[LOCK]:
             raise RuntimeError("circular model reference deadlock in %s" % name)
-        else:
-            response[LOCK][name] = True
-        return
+
+        response[LOCK][name] = True
 
     # -------------------------------------------------------------------------
     def __unlock(self):
@@ -157,7 +155,6 @@ class DataModel:
                 response[LOCK].pop(name, None)
             if not response[LOCK]:
                 del response[LOCK]
-        return
 
     # -------------------------------------------------------------------------
     def __getattr__(self, name):
@@ -1385,24 +1382,24 @@ class DataModel:
                 the method handler
         """
 
-        methods = current.model["methods"]
-        cmethods = current.model["cmethods"]
-
         if not method:
             return None
 
-        if not component:
-            if method in methods and tablename in methods[method]:
-                return methods[method][tablename]
-            else:
-                return None
-        else:
+        if component:
+            cmethods = current.model["cmethods"]
             if method in cmethods and \
                component in cmethods[method] and \
                tablename in cmethods[method][component]:
                 return cmethods[method][component][tablename]
             else:
-                return None
+                hook = cls.get_component(tablename, component)
+                tablename = hook["tablename"] if hook else None
+
+        methods = current.model["methods"]
+        if method in methods:
+            return methods[method].get(tablename)
+        else:
+            return None
 
     # -------------------------------------------------------------------------
     # Super-Entity API
@@ -1520,13 +1517,11 @@ class DataModel:
 
         try:
             key = supertable._id.name
-        except AttributeError:
-            raise SyntaxError("No id-type key found in %s" %
-                              supertable._tablename)
+        except AttributeError as e:
+            raise SyntaxError("No id-type key found in %s" % supertable._tablename) from e
 
         if name is not None and name != key:
-            raise SyntaxError("Primary key %s not found in %s" %
-                             (name, supertable._tablename))
+            raise SyntaxError("Primary key %s not found in %s" % (name, supertable._tablename))
 
         requires = IS_ONE_OF(current.db,
                              "%s.%s" % (supertable._tablename, key),
