@@ -1176,21 +1176,6 @@ def view():
 # =============================================================================
 # Login Methods
 # =============================================================================
-def facebook():
-    """ Login using Facebook """
-
-    channel = s3db.msg_facebook_login()
-
-    if not channel:
-        redirect(URL(f="user", args=request.args, vars=get_vars))
-
-    from core.aaa.oauth import FaceBookAccount
-    auth.settings.login_form = FaceBookAccount(channel)
-    form = auth()
-
-    return {"form": form}
-
-# -----------------------------------------------------------------------------
 def google():
     """ Login using Google """
 

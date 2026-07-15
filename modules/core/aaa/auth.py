@@ -1,7 +1,7 @@
 """
     Authentication and Authorization
 
-    Copyright: (c) 2010-2022 Sahana Software Foundation
+    Copyright: (c) 2010 Sahana Software Foundation
 
     Permission is hereby granted, free of charge, to any person
     obtaining a copy of this software and associated documentation
@@ -3724,8 +3724,7 @@ Please go to %(url)s to approve this user."""
     def s3_send_welcome_email(self, user, password=None):
         """
             Send a welcome mail to newly-registered users
-                - suitable e.g. for users from Facebook/Google who don't
-                  verify their emails
+                - suitable e.g. for users from Google who don't verify their emails
 
             Args:
                 user: the user dict, must contain "email", and can

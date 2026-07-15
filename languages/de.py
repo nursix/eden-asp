@@ -2583,7 +2583,6 @@
 'External Cooperation': 'Externe Kooperation',
 'External': 'Extern',
 'Eye Color': 'Augenfarbe',
-'Facebook Channels': 'Facebook Kanäle',
 'Facial hair, color': 'Gesichtsbehaarung, Farbe',
 'Facial hair, type': 'Gesichtsbehaarung, Art',
 'Facial hear, length': 'Gesichtsbehaarung, Länge',

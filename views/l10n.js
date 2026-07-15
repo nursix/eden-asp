@@ -22,7 +22,7 @@ i18n.no_matching_records='{{=T("No matching records found")}}'
 i18n.unsaved_changes="{{=T("You have unsaved changes. Click Cancel now, then 'Save' to save them. Click OK now to discard them.")}}"
 i18n.in_stock='{{=T("in Stock")}}',
 i18n.no_packs='{{=T("No Packs for Item")}}',
-{{fb_pixel_id = settings.get_facebook_pixel_id()}}{{ga_id = settings.get_google_analytics_tracking_id()}}{{if fb_pixel_id or ga_id:}}i18n.ihc_title='{{=T("Cookies & Privacy")}}'
+{{ga_id = settings.get_google_analytics_tracking_id()}}{{if ga_id:}}i18n.ihc_title='{{=T("Cookies & Privacy")}}'
 i18n.ihc_message='{{=T("Cookies enable you to personalize your experience on our sites, tell us which parts of our websites people have visited, help us measure the effectiveness of ads and web searches, and give us insights into user behavior so we can improve our communications and products.")}}'
 i18n.ihc_moreInfoLabel='{{=T("More information")}}'
 i18n.ihc_acceptBtnLabel='{{=T("Accept Cookies")}}'

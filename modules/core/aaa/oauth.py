@@ -1,10 +1,8 @@
 """
-    Authentication via OAuth2 (e.g. Facebook & Google)
+    Authentication via OAuth2 (e.g. Google, HumanitarianID)
 
-    @requires: U{B{I{gluon}} <http://web2py.com>}
-
-    @copyright: (c) 2010-2021 Sahana Software Foundation
-    @license: MIT
+    Copyright: (c) 2010 Sahana Software Foundation
+    License: MIT
 
     Permission is hereby granted, free of charge, to any person
     obtaining a copy of this software and associated documentation
@@ -28,8 +26,7 @@
     OTHER DEALINGS IN THE SOFTWARE.
 """
 
-__all__ = ("FaceBookAccount",
-           "GooglePlusAccount",
+__all__ = ("GooglePlusAccount",
            "HumanitarianIDAccount",
            "OpenIDConnectAccount",
            )
@@ -42,157 +39,11 @@ from urllib.error import HTTPError
 from urllib.request import urlopen
 from urllib.parse import urlencode
 
-from gluon import current, HTTP, IS_SLUG, redirect, URL
+from gluon import current, HTTP, redirect, URL
 from gluon.contrib.login_methods.oauth20_account import OAuthAccount
 
 REDIRECT_MSG = "You are not authenticated: you are being redirected " \
                "to the <a href='%s'> authentication server</a>"
-
-# =============================================================================
-class FaceBookAccount(OAuthAccount):
-    """ OAuth implementation for FaceBook """
-
-    AUTH_URL = "https://graph.facebook.com/oauth/authorize"
-    TOKEN_URL = "https://graph.facebook.com/oauth/access_token"
-
-    # -------------------------------------------------------------------------
-    def __init__(self, channel):
-        """
-            Constructor
-
-            @param channel: Facebook channel (Row) with API credentials:
-                            {app_id=clientID, app_secret=clientSecret}
-        """
-
-        from facebook import GraphAPI, GraphAPIError
-
-        self.GraphAPI = GraphAPI
-        self.GraphAPIError = GraphAPIError
-
-        request = current.request
-        settings = current.deployment_settings
-
-        scope = "email,user_about_me," \
-                "user_location,user_photos," \
-                "user_relationships,user_birthday,user_website," \
-                "create_event,user_events,publish_stream"
-
-        # Set the redirect URI to the default/facebook controller
-        redirect_uri = "%s/%s/default/facebook/login" % \
-                       (settings.get_base_public_url(), request.application)
-
-        OAuthAccount.__init__(self,
-                              client_id = channel.app_id,
-                              client_secret = channel.app_secret,
-                              auth_url = self.AUTH_URL,
-                              token_url = self.TOKEN_URL,
-                              scope = scope,
-                              redirect_uri = redirect_uri,
-                              )
-        self.graph = None
-
-    # -------------------------------------------------------------------------
-    def login_url(self, next="/"):
-        """ Overriding to produce a different redirect_uri """
-
-        if not self.accessToken():
-
-            request = current.request
-            session = current.session
-
-            if not request.vars.code:
-
-                session.redirect_uri = self.args["redirect_uri"]
-
-                data = {"redirect_uri": session.redirect_uri,
-                        "response_type": "code",
-                        "client_id": self.client_id,
-                        }
-
-                if self.args:
-                    data.update(self.args)
-
-                auth_request_url = "%s?%s" % (self.auth_url,
-                                              urlencode(data),
-                                              )
-                raise HTTP(307,
-                           REDIRECT_MSG % auth_request_url,
-                           Location = auth_request_url,
-                           )
-            else:
-                session.code = request.vars.code
-                self.accessToken()
-
-        return next
-
-    # -------------------------------------------------------------------------
-    def get_user(self):
-        """ Returns the user using the Graph API. """
-
-        token = self.accessToken()
-
-        if not token:
-            return None
-
-        if not self.graph:
-            self.graph = self.GraphAPI(token)
-
-        user = None
-        try:
-            user = self.graph.get_object_c("me")
-        except self.GraphAPIError:
-            current.session.token = None
-            self.graph = None
-
-        user_dict = None
-
-        if user:
-            # Check if a user with this email has already registered
-            #session = current.session
-            #session.facebooklogin = True
-
-            table = current.auth.settings.table_user
-
-            query = (table.email == user["email"])
-            existing = current.db(query).select(table.id,
-                                                table.password,
-                                                limitby=(0, 1)).first()
-            if existing:
-                #session["%s_setpassword" % existing.id] = existing.password
-
-                user_dict = {"first_name": user.get("first_name", ""),
-                             "last_name": user.get("last_name", ""),
-                             "facebookid": user["id"],
-                             "facebook": user.get("username", user["id"]),
-                             "email": user["email"],
-                             "password": existing.password,
-                             }
-
-            else:
-                # b = user["birthday"]
-                # birthday = "%s-%s-%s" % (b[-4:], b[0:2], b[-7:-5])
-                # if 'location' in user:
-                #     session.flocation = user['location']
-                #session["is_new_from"] = "facebook"
-
-                # Done in s3_approve_user()
-                #auth.s3_send_welcome_email(user)
-
-                user_dict = {"first_name": user.get("first_name", ""),
-                             "last_name": user.get("last_name", ""),
-                             "facebookid": user["id"],
-                             "facebook": user.get("username", user["id"]),
-                             "nickname": IS_SLUG()(user.get("username", "%(first_name)s-%(last_name)s" % user) + "-" + user['id'][:5])[0],
-                             "email": user["email"],
-                             #"birthdate": birthday,
-                             "about": user.get("bio", ""),
-                             "website": user.get("website", ""),
-                             #"gender": user.get("gender", "Not specified").title(),
-                             "photo_source": 3,
-                             "tagline": user.get("link", ""),
-                             "registration_type": 2,
-                             }
-        return user_dict
 
 # =============================================================================
 class GooglePlusAccount(OAuthAccount):
@@ -210,8 +61,9 @@ class GooglePlusAccount(OAuthAccount):
         """
             Constructor
 
-            @param channel: dict with Google API credentials:
-                            {id=clientID, secret=clientSecret}
+            Args:
+                channel: dict with Google API credentials
+                         {id=clientID, secret=clientSecret}
         """
 
         settings = current.deployment_settings
@@ -288,7 +140,7 @@ class GooglePlusAccount(OAuthAccount):
             try:
                 open_url = opener.open(self.token_url, urlencode(data))
             except HTTPError as e:
-                raise Exception(e.read())
+                raise Exception(e.read()) from e
             finally:
                 del session.code # throw it away
 
@@ -312,7 +164,6 @@ class GooglePlusAccount(OAuthAccount):
 
             request = current.request
             if not request.vars.code:
-
                 session = current.session
                 session.redirect_uri = self.args["redirect_uri"]
 
@@ -320,20 +171,17 @@ class GooglePlusAccount(OAuthAccount):
                         "response_type": "code",
                         "client_id": self.client_id,
                         }
-
                 if self.args:
                     data.update(self.args)
 
-                auth_request_url = "%s?%s" % (self.auth_url,
-                                              urlencode(data),
-                                              )
+                auth_request_url = "%s?%s" % (self.auth_url, urlencode(data))
                 raise HTTP(307,
                            REDIRECT_MSG % auth_request_url,
                            Location = auth_request_url,
                            )
-            else:
-                current.session.code = request.vars.code
-                self.accessToken()
+
+            current.session.code = request.vars.code
+            self.accessToken()
 
         return next
 
@@ -410,16 +258,17 @@ class GooglePlusAccount(OAuthAccount):
         """
             Get the user info from the API
 
-            @param token: the current access token
-            @return: user info (dict)
+            Args:
+                token: the current access token
+            Returns:
+                user info (dict)
         """
 
-        api_response = urlopen("%s?access_token=%s" % (cls.API_URL, token))
-
-        user = json.loads(api_response.read())
-        if not user:
-            user = None
-            current.session.token = None
+        with urlopen("%s?access_token=%s" % (cls.API_URL, token)) as api_response:
+            user = json.loads(api_response.read())
+            if not user:
+                user = None
+                current.session.token = None
 
         return user
 
@@ -439,8 +288,9 @@ class HumanitarianIDAccount(OAuthAccount):
         """
             Constructor
 
-            @param channel: dict with Humanitarian.ID API credentials:
-                            {id=clientID, secret=clientSecret}
+            Args:
+                channel: dict with Humanitarian.ID API credentials
+                         {id=clientID, secret=clientSecret}
         """
 
         request = current.request
@@ -513,7 +363,7 @@ class HumanitarianIDAccount(OAuthAccount):
             try:
                 open_url = opener.open(self.token_url, urlencode(data))
             except HTTPError as e:
-                raise Exception(e.read())
+                raise Exception(e.read()) from e
             finally:
                 del session.code # throw it away
 
@@ -538,27 +388,23 @@ class HumanitarianIDAccount(OAuthAccount):
             request = current.request
             session = current.session
             if not request.vars.code:
-
                 session.redirect_uri = self.args["redirect_uri"]
 
                 data = {"redirect_uri": session.redirect_uri,
                         "response_type": "code",
                         "client_id": self.client_id,
                         }
-
                 if self.args:
                     data.update(self.args)
 
-                auth_request_url = "%s?%s" % (self.auth_url,
-                                              urlencode(data),
-                                              )
+                auth_request_url = "%s?%s" % (self.auth_url, urlencode(data))
                 raise HTTP(307,
                            REDIRECT_MSG % auth_request_url,
                            Location = auth_request_url,
                            )
-            else:
-                session.code = request.vars.code
-                self.accessToken()
+
+            session.code = request.vars.code
+            self.accessToken()
 
         return next
 
@@ -617,16 +463,17 @@ class HumanitarianIDAccount(OAuthAccount):
         """
             Get the user info from the API
 
-            @param token: the current access token
-            @return: user info (dict)
+            Args:
+                token: the current access token
+            Returns:
+                user info (dict)
         """
 
-        api_response = urlopen("%s?access_token=%s" % (cls.API_URL, token))
-
-        user = json.loads(api_response.read())
-        if not user:
-            user = None
-            current.session.token = None
+        with urlopen("%s?access_token=%s" % (cls.API_URL, token)) as api_response:
+            user = json.loads(api_response.read())
+            if not user:
+                user = None
+                current.session.token = None
 
         return user
 
@@ -640,13 +487,14 @@ class OpenIDConnectAccount(OAuthAccount):
         """
             Constructor
 
-            @param channel: dict with OpenID Connect API parameters:
-                                {"auth_url": authURL,
-                                 "token_url": tokenURL,
-                                 "userinfo_url": userinfoURL,
-                                 "id": clientID,
-                                 "secret": clientSecret,
-                                 }
+            Args:
+                channel: dict with OpenID Connect API parameters
+                         {"auth_url": authURL,
+                          "token_url": tokenURL,
+                          "userinfo_url": userinfoURL,
+                          "id": clientID,
+                          "secret": clientSecret,
+                          }
         """
 
         request = current.request
@@ -723,7 +571,7 @@ class OpenIDConnectAccount(OAuthAccount):
             try:
                 open_url = opener.open(self.token_url, urlencode(data))
             except HTTPError as e:
-                raise Exception(e.read())
+                raise Exception(e.read()) from e
             finally:
                 del session.code # throw it away
 
@@ -748,27 +596,23 @@ class OpenIDConnectAccount(OAuthAccount):
             request = current.request
             session = current.session
             if not request.vars.code:
-
                 session.redirect_uri = self.args["redirect_uri"]
 
                 data = {"redirect_uri": session.redirect_uri,
                         "response_type": "code",
                         "client_id": self.client_id,
                         }
-
                 if self.args:
                     data.update(self.args)
+                auth_request_url = "%s?%s" % (self.auth_url, urlencode(data))
 
-                auth_request_url = "%s?%s" % (self.auth_url,
-                                              urlencode(data),
-                                              )
                 raise HTTP(307,
                            REDIRECT_MSG % auth_request_url,
                            Location = auth_request_url,
                            )
-            else:
-                session.code = request.vars.code
-                self.accessToken()
+
+            session.code = request.vars.code
+            self.accessToken()
 
         return next
 
@@ -832,8 +676,10 @@ class OpenIDConnectAccount(OAuthAccount):
         """
             Get the user info from the API
 
-            @param token: the current access token
-            @return: user info (dict)
+            Args:
+                token: the current access token
+            Returns:
+                user info (dict)
         """
 
         req = urllib2.Request(url=self.userinfo_url)
@@ -843,17 +689,16 @@ class OpenIDConnectAccount(OAuthAccount):
         userinfo = None
 
         try:
-            f = urlopen(req)
+            with urlopen(req) as f:
+                try:
+                    userinfo = json.load(f)
+                except ValueError:
+                    import sys
+                    message = sys.exc_info()[1]
+                    current.log.error(message)
         except HTTPError as e:
             message = "HTTP %s: %s" % (e.code, e.reason)
             current.log.error(message)
-        else:
-            try:
-                userinfo = json.load(f)
-            except ValueError as e:
-                import sys
-                message = sys.exc_info()[1]
-                current.log.error(message)
 
         return userinfo
 

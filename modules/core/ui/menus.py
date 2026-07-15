@@ -234,12 +234,6 @@ class MainMenu:
         settings = current.deployment_settings
 
         return MOA(c="default")(
-                MOA("Login with Facebook", f="facebook",
-                    args=["login"],
-                    api = "facebook",
-                    check = lambda item: current.s3db.msg_facebook_login(),
-                    title = T("Login using Facebook account"),
-                    ),
                 MOA("Login with Google", f="google",
                     args=["login"],
                     api = "google",
@@ -1199,13 +1193,11 @@ class OptionsMenu:
                     M("Compose", f="compose"),
                     M("InBox", f="inbox")(
                         M("Email", f="email_inbox"),
-                        #M("Facebook", f="facebook_inbox"),
                         M("RSS", f="rss"),
                         M("SMS", f="sms_inbox"),
                     ),
                     M("Outbox", f="outbox")(
                         M("Email", f="email_outbox"),
-                        M("Facebook", f="facebook_outbox"),
                         M("SMS", f="sms_outbox"),
                     ),
                     M("Message Log", f="message"),
@@ -1214,7 +1206,6 @@ class OptionsMenu:
                     ),
                     M("Administration", restrict=[ADMIN], link=False)(
                         M("Email Channels (Inbound)", c="msg", f="email_channel"),
-                        M("Facebook Channels", c="msg", f="facebook_channel"),
                         M("RSS Channels", c="msg", f="rss_channel"),
                         M("SMS Outbound Gateways", c="msg", f="sms_outbound_gateway"),
                         M("SMS Modem Channels", c="msg", f="sms_modem_channel"),

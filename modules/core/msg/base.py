@@ -97,7 +97,6 @@ class S3Msg:
         MOBILE = current.deployment_settings.get_ui_label_mobile_phone()
         # Full range of contact options
         self.CONTACT_OPTS = {"EMAIL":       T("Email"),
-                             "FACEBOOK":    T("Facebook"),
                              "FAX":         T("Fax"),
                              "HOME_PHONE":  T("Home Phone"),
                              "RADIO":       T("Radio Callsign"),
@@ -120,7 +119,6 @@ class S3Msg:
         # NB Coded into hrm_map_popup & s3.msg.js
         self.MSG_CONTACT_OPTS = {"EMAIL":   T("Email"),
                                  "SMS":     MOBILE,
-                                 "FACEBOOK": T("Facebook"),
                                  #"XMPP":   "XMPP",
                                  }
 
@@ -243,9 +241,7 @@ class S3Msg:
             # Parse the Message
             reply_id = parser(function_name, message.message_id)
             # Update to show that we've parsed the message & provide a link to the reply
-            message.update_record(is_parsed = True,
-                                  reply_id = reply_id)
-        return
+            message.update_record(is_parsed=True, reply_id=reply_id)
 
     # =========================================================================
     # Outbound Messages
@@ -475,8 +471,7 @@ class S3Msg:
                     # Raise exception here to make the scheduler
                     # task fail permanently until manually reset
                     raise ValueError("No SMS handler defined!")
-                else:
-                    return False
+                return False
 
             if len(rows) == 1:
                 lookup_org = False
@@ -849,7 +844,7 @@ class S3Msg:
                 channel_id: The specific channel_id to use for GCM push
         """
 
-        if not title or not uri or not message or not len(registration_ids):
+        if not all((title, uri, message, registration_ids)):
             return
 
         from gcm import GCM
@@ -1169,8 +1164,9 @@ class S3Msg:
         query = urlencode(post_data)
         if sms_api.username and sms_api.password:
             # e.g. Mobile Commons
-            base64string = base64.encodestring("%s:%s" % (sms_api.username, sms_api.password)).replace("\n", "")
-            request.add_header("Authorization", "Basic %s" % base64string)
+            cred = ("%s:%s" % (sms_api.username, sms_api.password)).encode("utf-8")
+            base64string = base64.b64encode(cred).replace(b"\n", b"")
+            request.add_header("Authorization", "Basic %s" % base64string.decode("utf-8"))
         try:
             result = urlopen(request, query)
         except HTTPError as e:
@@ -1333,84 +1329,6 @@ class S3Msg:
                                   from_address = from_address,
                                   system_generated = system_generated,
                                   )
-
-    #------------------------------------------------------------------------------
-    def post_to_facebook(self, text="", channel_id=None, recipient=None, **data):
-        """
-            Posts a message on Facebook
-
-            See Also:
-                https://developers.facebook.com/docs/graph-api
-        """
-
-        db = current.db
-        s3db = current.s3db
-        table = s3db.msg_facebook_channel
-        if not channel_id:
-            # Try the 1st enabled one in the DB
-            query = (table.enabled == True)
-        else:
-            query = (table.channel_id == channel_id)
-
-        c = db(query).select(table.app_id,
-                             table.app_secret,
-                             table.page_id,
-                             table.page_access_token,
-                             limitby = (0, 1)
-                             ).first()
-
-        import facebook
-
-        try:
-            app_access_token = facebook.get_app_access_token(c.app_id,
-                                                             c.app_secret)
-        except:
-            message = sys.exc_info()[1]
-            current.log.error("S3MSG: %s" % message)
-            return
-
-        table = s3db.msg_facebook
-        otable = s3db.msg_outbox
-
-        message_id = None
-
-        def log_facebook(post, recipient, from_address):
-            # Log in msg_facebook
-            _id = table.insert(body = post,
-                               from_address = from_address,
-                               )
-            record = db(table.id == _id).select(table.id,
-                                                limitby = (0, 1)
-                                                ).first()
-            s3db.update_super(table, record)
-            message_id = record.message_id
-
-            # Log in msg_outbox
-            otable.insert(message_id = message_id,
-                          address = recipient,
-                          status = 2,
-                          contact_method = "FACEBOOK",
-                          )
-            return message_id
-
-        graph = facebook.GraphAPI(app_access_token)
-
-        page_id = c.page_id
-        if page_id:
-            graph = facebook.GraphAPI(c.page_access_token)
-            graph.put_object(page_id, "feed", message=text)
-        else:
-            # FIXME user_id does not exist:
-            #graph.put_object(user_id, "feed", message=text)
-            raise NotImplementedError
-
-        message_id = log_facebook(text, recipient, channel_id)
-
-        # Perform post process after message sending
-        if message_id:
-            postp = current.deployment_settings.get_msg_send_postprocess()
-            if postp:
-                postp(message_id, **data)
 
     # -------------------------------------------------------------------------
     def poll(self, tablename, channel_id):
@@ -1867,8 +1785,9 @@ class S3Msg:
         password = channel.password
         if username and password:
             # feedparser doesn't do pre-emptive authentication with urllib2.HTTPBasicAuthHandler() and throws errors on the 401
-            base64string = base64.encodestring("%s:%s" % (username, password)).replace("\n", "")
-            request_headers = {"Authorization": "Basic %s" % base64string}
+            cred = ("%s:%s" % (username, password)).encode("utf-8")
+            base64string = base64.b64encode(cred).replace(b"\n", b"")
+            request_headers = {"Authorization": "Basic %s" % base64string.decode("utf-8")}
         else:
             # Doesn't help to encourage servers to set correct content-type
             #request_headers = {"Accept": "application/xml"}

@@ -1311,7 +1311,6 @@
 'Exterior Only': '외부 전용',
 'Exterior and Interior': '외부 및 내부',
 'Eye Color': '눈 색상',
-'Facebook': '페이스북',
 'Facial hair, color': '얼굴 털, 색상',
 'Facial hair, type': '얼굴 털. 모양',
 'Facial hear, length': 'facial 듣고, 길이',

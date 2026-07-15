@@ -2449,7 +2449,6 @@
 'Logged Time Details': 'Оруулсан хугацааны мэдээлэл',
 'Logged Time': 'Оруулсан цаг',
 'Login using Google account': 'Google хаяг ашиглан нэвтрэх',
-'Login with Facebook': 'Facebook хаяг ашиглан нэвтрэх',
 'Login with Google': 'Google хаяг ашиглан нэвтрэх',
 'Login': 'Нэвтрэх',
 'Logo of the organization. This should be a png or jpeg file and it should be no larger than 400x400': 'Байгууллагын таних тэмдэг. Энэ нь png or jpeg файл дээр байх бөгөөд 400x400 их хэмжээтэй байна',

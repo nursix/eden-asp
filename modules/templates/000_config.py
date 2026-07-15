@@ -130,8 +130,6 @@ settings.auth.hmac_key = "akeytochange"
 # GeoNames username
 #settings.gis.geonames_username = ""
 
-# Fill this in to get a Facebook Pixel for your site
-#settings.base.facebook_pixel_id = ""
 # Fill this in to get Google Analytics for your site
 #settings.base.google_analytics_tracking_id = ""
 

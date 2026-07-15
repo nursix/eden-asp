@@ -31,7 +31,6 @@ __all__ = ("MsgChannelModel",
            "MsgMessageContactModel",
            "MsgMessageTagModel",
            "MsgEmailModel",
-           "MsgFacebookModel",
            "MsgMCommonsModel",
            "MsgGCMModel",
            "MsgParsingModel",
@@ -81,7 +80,6 @@ class MsgChannelModel(DataModel):
         # Super entity: msg_channel
         #
         channel_types = Storage(msg_email_channel = T("Email (Inbound)"),
-                                msg_facebook_channel = T("Facebook"),
                                 msg_gcm_channel = T("Google Cloud Messaging"),
                                 msg_mcommons_channel = T("Mobile Commons (Inbound)"),
                                 msg_rss_channel = T("RSS Feed"),
@@ -160,6 +158,7 @@ class MsgChannelModel(DataModel):
 
         # ---------------------------------------------------------------------
         # Pass names back to global scope (s3.*)
+        #
         return {"msg_channel_id": channel_id,
                 "msg_channel_enable": self.channel_enable,
                 "msg_channel_disable": self.channel_disable,
@@ -349,6 +348,7 @@ class MsgChannelModel(DataModel):
             return "Unsupported channel: %s" % tablename
 
         redirect(URL(f=fn))
+        return None
 
 # =============================================================================
 class MsgMessageModel(DataModel):
@@ -371,19 +371,12 @@ class MsgMessageModel(DataModel):
 
         configure = self.configure
 
-        # Message priority
-        msg_priority_opts = {3 : T("High"),
-                             2 : T("Medium"),
-                             1 : T("Low"),
-                             }
-
         # ---------------------------------------------------------------------
         # Message Super Entity - all Inbound & Outbound Messages
         #
 
         message_types = Storage(msg_contact = T("Contact"),
                                 msg_email = T("Email"),
-                                msg_facebook = T("Facebook"),
                                 msg_rss = T("RSS"),
                                 msg_sms = T("SMS"),
                                 )
@@ -520,8 +513,7 @@ class MsgMessageModel(DataModel):
                 }
 
     # -------------------------------------------------------------------------
-    @staticmethod
-    def defaults():
+    def defaults(self):
         """
             Return safe defaults in case the model has been deactivated.
         """
@@ -552,7 +544,8 @@ class MsgMessageAttachmentModel(DataModel):
 
         # ---------------------------------------------------------------------
         # Pass names back to global scope (s3.*)
-        return None
+        #
+        #return {}
 
 # =============================================================================
 class MsgMessageContactModel(DataModel):
@@ -648,7 +641,9 @@ class MsgMessageContactModel(DataModel):
             msg_list_empty=T("No Contacts currently registered"))
 
         # ---------------------------------------------------------------------
-        return None
+        # Pass names back to global scope (s3.*)
+        #
+        #return {}
 
 # =============================================================================
 class MsgMessageTagModel(DataModel):
@@ -691,8 +686,10 @@ class MsgMessageTagModel(DataModel):
                                                  ),
                        )
 
+        # ---------------------------------------------------------------------
         # Pass names back to global scope (s3.*)
-        return None
+        #
+        #return {}
 
 # =============================================================================
 class MsgEmailModel(MsgChannelModel):
@@ -826,154 +823,9 @@ class MsgEmailModel(MsgChannelModel):
                             )
 
         # ---------------------------------------------------------------------
-        return None
-
-# =============================================================================
-class MsgFacebookModel(MsgChannelModel):
-    """
-        Facebook
-            Channels
-            InBox/OutBox
-
-        https://developers.facebook.com/docs/graph-api
-    """
-
-    names = ("msg_facebook_channel",
-             "msg_facebook",
-             "msg_facebook_login",
-             )
-
-    def model(self):
-
-        T = current.T
-
-        configure = self.configure
-        define_table = self.define_table
-        set_method = self.set_method
-        super_link = self.super_link
-
-        # ---------------------------------------------------------------------
-        # Facebook Channels
+        # Pass names back to global scope (s3.*)
         #
-        tablename = "msg_facebook_channel"
-        define_table(tablename,
-                     # Instance
-                     super_link("channel_id", "msg_channel"),
-                     Field("name"),
-                     Field("description"),
-                     Field("enabled", "boolean",
-                           default = True,
-                           label = T("Enabled?"),
-                           represent = s3_yes_no_represent,
-                           ),
-                     Field("login", "boolean",
-                           default = False,
-                           label = T("Use for Login?"),
-                           represent = s3_yes_no_represent,
-                           ),
-                     Field("app_id", "bigint",
-                           requires = IS_INT_IN_RANGE(0, +1e16)
-                           ),
-                     Field("app_secret", "password", length=64,
-                           readable = False,
-                           requires = [IS_NOT_EMPTY(),
-                                       IS_LENGTH(64),
-                                       ],
-                           widget = S3PasswordWidget.widget,
-                           ),
-                     # Optional
-                     Field("page_id", "bigint",
-                           requires = IS_INT_IN_RANGE(0, +1e16)
-                           ),
-                     Field("page_access_token"),
-                     )
-
-        configure(tablename,
-                  onaccept = self.msg_facebook_channel_onaccept,
-                  super_entity = "msg_channel",
-                  )
-
-        set_method("msg_facebook_channel",
-                   method = "enable",
-                   action = self.msg_channel_enable_interactive)
-
-        set_method("msg_facebook_channel",
-                   method = "disable",
-                   action = self.msg_channel_disable_interactive)
-
-        #set_method("msg_facebook_channel",
-        #           method = "poll",
-        #           action = self.msg_channel_poll)
-
-        # ---------------------------------------------------------------------
-        # Facebook Messages: InBox & Outbox
-        #
-
-        tablename = "msg_facebook"
-        define_table(tablename,
-                     # Instance
-                     super_link("message_id", "msg_message"),
-                     self.msg_channel_id(),
-                     DateTimeField(default = "now"),
-                     Field("body", "text",
-                           label = T("Message"),
-                           ),
-                     # @ToDo: Are from_address / to_address relevant in Facebook?
-                     Field("from_address", #notnull=True,
-                           #default = sender,
-                           label = T("Sender"),
-                           ),
-                     Field("to_address",
-                           label = T("To"),
-                           ),
-                     Field("inbound", "boolean",
-                           default = False,
-                           label = T("Direction"),
-                           represent = lambda direction: \
-                                       (direction and [T("In")] or [T("Out")])[0],
-                           ),
-                     )
-
-        configure(tablename,
-                  orderby = "msg_facebook.date desc",
-                  super_entity = "msg_message",
-                  )
-
-        # ---------------------------------------------------------------------
-        return {"msg_facebook_login": self.msg_facebook_login,
-                }
-
-    # -------------------------------------------------------------------------
-    @staticmethod
-    def defaults():
-        """ Safe defaults for model-global names if module is disabled """
-
-        return {"msg_facebook_login": lambda: False,
-                }
-
-    # -------------------------------------------------------------------------
-    @classmethod
-    def msg_facebook_channel_onaccept(cls, form):
-
-        if form.vars.login:
-            # Ensure only a single account used for Login
-            current.db(current.s3db.msg_facebook_channel.id != form.vars.id).update(login = False)
-
-        # Normal onaccept processing
-        cls.channel_onaccept(form)
-
-    # -------------------------------------------------------------------------
-    @staticmethod
-    def msg_facebook_login():
-
-        table = current.s3db.msg_facebook_channel
-        query = (table.login == True) & \
-                (table.deleted == False)
-        c = current.db(query).select(table.app_id,
-                                     table.app_secret,
-                                     limitby=(0, 1)
-                                     ).first()
-        return c
+        #return {}
 
 # =============================================================================
 class MsgMCommonsModel(MsgChannelModel):
@@ -1043,7 +895,9 @@ class MsgMCommonsModel(MsgChannelModel):
                    action = self.msg_channel_poll)
 
         # ---------------------------------------------------------------------
-        return None
+        # Pass names back to global scope (s3.*)
+        #
+        #return {}
 
 # =============================================================================
 class MsgGCMModel(MsgChannelModel):
@@ -1105,7 +959,9 @@ class MsgGCMModel(MsgChannelModel):
         #           action = self.msg_channel_poll)
 
         # ---------------------------------------------------------------------
-        return None
+        # Pass names back to global scope (s3.*)
+        #
+        #return {}
 
     # -------------------------------------------------------------------------
     @classmethod
@@ -1283,10 +1139,7 @@ class MsgParsingModel(DataModel):
         record = current.db(table.channel_id == channel_id).select(table.enabled,
                                                                    limitby=(0, 1),
                                                                    ).first()
-        if record and record.enabled:
-            return True
-        else:
-            return False
+        return record.enabled if record else False
 
     # -------------------------------------------------------------------------
     @staticmethod
@@ -1610,7 +1463,9 @@ class MsgRSSModel(MsgChannelModel):
                        )
 
         # ---------------------------------------------------------------------
-        return None
+        # Pass names back to global scope (s3.*)
+        #
+        #return {}
 
 # =============================================================================
 class MsgSMSModel(DataModel):
@@ -1675,7 +1530,9 @@ class MsgSMSModel(DataModel):
                        )
 
         # ---------------------------------------------------------------------
-        return None
+        # Pass names back to global scope (s3.*)
+        #
+        #return {}
 
 # =============================================================================
 class MsgSMSOutboundModel(DataModel):
@@ -1850,7 +1707,9 @@ class MsgSMSOutboundModel(DataModel):
                   )
 
         # ---------------------------------------------------------------------
-        return None
+        # Pass names back to global scope (s3.*)
+        #
+        #return {}
 
 # =============================================================================
 class MsgTropoModel(DataModel):
@@ -1918,7 +1777,9 @@ class MsgTropoModel(DataModel):
                      )
 
         # ---------------------------------------------------------------------
-        return None
+        # Pass names back to global scope (s3.*)
+        #
+        #return {}
 
 # =============================================================================
 class MsgTwilioModel(MsgChannelModel):
@@ -2000,7 +1861,9 @@ class MsgTwilioModel(MsgChannelModel):
                      )
 
         # ---------------------------------------------------------------------
-        return None
+        # Pass names back to global scope (s3.*)
+        #
+        #return {}
 
 # =============================================================================
 class MsgXFormsModel(DataModel):
@@ -2029,7 +1892,9 @@ class MsgXFormsModel(DataModel):
                           )
 
         # ---------------------------------------------------------------------
-        return None
+        # Pass names back to global scope (s3.*)
+        #
+        #return {}
 
 # =============================================================================
 class MsgBaseStationModel(DataModel):
@@ -2105,6 +1970,6 @@ class MsgBaseStationModel(DataModel):
         # ---------------------------------------------------------------------
         # Pass names back to global scope (s3.*)
         #
-        return None
+        #return {}
 
 # END =========================================================================

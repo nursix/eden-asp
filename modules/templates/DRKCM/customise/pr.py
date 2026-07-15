@@ -86,7 +86,6 @@ def pr_contact_resource(r, tablename):
               "EMAIL",
               "HOME_PHONE",
               "WORK_PHONE",
-              "FACEBOOK",
               "SKYPE",
               "WHATSAPP",
               "OTHER",

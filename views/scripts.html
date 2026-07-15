@@ -1,14 +1,7 @@
-{{fb_pixel_id = settings.get_facebook_pixel_id()}}{{ga_id = settings.get_google_analytics_tracking_id()}}{{if fb_pixel_id or ga_id:}}
+{{ga_id = settings.get_google_analytics_tracking_id()}}{{if ga_id:}}
 {{if s3.debug:}}<script src="/{{=appname}}/static/scripts/jquery.ihavecookies.js"></script>{{else:}}<script src="/{{=appname}}/static/scripts/jquery.ihavecookies.min.js"></script>{{pass}}
 {{if ga_id:}}<script async src='https://www.google-analytics.com/analytics.js'></script>{{pass}}
 <script type="text/javascript">//<![CDATA[
-{{if fb_pixel_id:}}!function(f,b,e,v,n,t,s)
-{if(f.fbq)return;n=f.fbq=function(){n.callMethod?n.callMethod.apply(n,arguments):n.queue.push(arguments)};
-if(!f._fbq)f._fbq=n;n.push=n;n.loaded=!0;n.version='2.0';n.queue=[];t=b.createElement(e);t.async=!0;t.src=v;s=b.getElementsByTagName(e)[0];
-s.parentNode.insertBefore(t,s)}(window, document,'script','https://connect.facebook.net/en_US/fbevents.js');
-fbq('consent','revoke');{{# Do not activate Facebook Pixel ID until consent granted}}
-fbq('init','{{=fb_pixel_id}}');
-fbq('track','PageView');{{pass}}
 {{if ga_id:}}window.ga=window.ga||function(){(ga.q=ga.q||[]).push(arguments)};ga.l=+new Date;{{pass}}
 </script>{{pass}}
 {{include "chat.html"}}
@@ -17,7 +10,7 @@ fbq('track','PageView');{{pass}}
 <script type="text/javascript">//<![CDATA[
 {{pass}}{{for script in s3.js_global:}}{{=XML(script)}}
 {{pass}}$(function(){
- {{if fb_pixel_id or ga_id:}}$('body').ihavecookies({
+ {{if ga_id:}}$('body').ihavecookies({
   title:i18n.ihc_title,
   message:i18n.ihc_message,
   link:S3.Ap.concat('/default/privacy'),
@@ -30,7 +23,6 @@ fbq('track','PageView');{{pass}}
   fixedCookieTypeDesc:i18n.ihc_fixedCookieTypeDesc,
   cookieTypes:[{type:i18n.ihc_analytics,value:'analytics',description:i18n.ihc_analytics_desc}],
   onAccept:function(){if($.fn.ihavecookies.preference('analytics')){
-  {{if fb_pixel_id:}}fbq('consent', 'grant');{{pass}}
   {{if ga_id:}}ga('create','{{=ga_id}}','auto');ga('send','pageview');{{pass}}
   }
  }});{{pass}}

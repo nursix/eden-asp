@@ -525,13 +525,6 @@ class S3Config(Storage):
         return module_name in self.modules
 
     # -------------------------------------------------------------------------
-    def get_facebook_pixel_id(self):
-        """
-            Facebook Pixel ID
-        """
-        return self.base.get("facebook_pixel_id")
-
-    # -------------------------------------------------------------------------
     def get_google_analytics_tracking_id(self):
         """
             Google Analytics Key
@@ -3046,13 +3039,6 @@ class S3Config(Storage):
         """
 
         return self.cap.get("same_code")
-
-    def get_cap_post_to_facebook(self):
-        """
-            Whether to post the alerts in facebook
-        """
-
-        return self.cap.get("post_to_facebook", False)
 
     def get_cap_rss_use_links(self):
         """

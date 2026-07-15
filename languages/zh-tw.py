@@ -1764,7 +1764,6 @@
 'Exterior and Interior': '外部和內部',
 'External Features': '外部特性',
 'Eye Color': '眼睛顏色',
-'Facebook': '臉書',
 'Facial hair, color': 'Facial頭髮,顏色',
 'Facial hair, type': 'Facial頭髮,類型',
 'Facial hear, length': 'Facial聽,長度',

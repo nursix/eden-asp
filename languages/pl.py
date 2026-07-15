@@ -2485,7 +2485,6 @@
 'External Cooperation': 'Współpraca zewnętrzna',
 'External': 'Zewnętrzny',
 'Eye Color': 'Kolor oczu',
-'Facebook Channels': 'Kanały Facebook',
 'Facial hair, color': 'Zarost, kolor',
 'Facial hair, type': 'Zarost, typ',
 'Facial hear, length': 'Zarost, długość',

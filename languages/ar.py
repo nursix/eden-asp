@@ -1443,7 +1443,6 @@
 'External Instructor': 'مدرب خارجي',
 'External': 'خارجي',
 'Eye Color': 'لون العينين',
-'Facebook': 'فيسبوك',
 'Facial hair, color': 'شعر الوجه، لون',
 'Facial hair, comment': 'شعر الوجه، وتعليق',
 'Facial hair, length': 'شعر الوجه، طول',

@@ -17,7 +17,6 @@
 'Errors': 'වැරදි',
 'Event': 'සිදුවීම',
 'Events': 'සිද්ධීන්',
-'Facebook Channels': 'ෆේස්බුක් නාලිකා',
 'Facilities': 'ස්ථාන',
 'Facility Types': 'ස්ථාන වර්ග',
 'Facility': 'ස්ථානය',

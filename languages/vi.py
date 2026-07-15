@@ -2537,7 +2537,6 @@
 'Log': 'Nhật ký',
 'Logged Time Details': 'Thông tin về thời gian đã truy cập',
 'Logged Time': 'Thời gian đã truy cập',
-'Login with Facebook': 'Đăng nhập với Facebook',
 'Login with Google': 'Đăng nhập với Google',
 'Login': 'Đăng nhập',
 'Logistics & Warehouse': 'Hậu cần & Nhà kho',
