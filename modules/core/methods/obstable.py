@@ -80,6 +80,7 @@ class ObsTable(CRUDMethod):
 
         # Initial data
         data = self.extract(r)
+        print(data)
 
         # Instantiate Widget
         widget = ObsTableWidget(data=data)
@@ -91,13 +92,14 @@ class ObsTable(CRUDMethod):
 
         return output
 
+    # -------------------------------------------------------------------------
     def extract(self, r):
 
         resource = self.resource
 
         reader = resource.get_config("obstable")
 
-        return reader(resource).extract() if reader else {}
+        return reader(resource).results() if reader else {}
 
 # =============================================================================
 class ObsTableWidget:

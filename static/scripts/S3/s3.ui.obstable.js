@@ -99,51 +99,87 @@
 
         _renderHeader: function(data) {
 
-            const head = $('<thead>').hide(),
-                  row = $('<tr>').appendTo(head),
-                  label = data.label || '',
-                  slots = data.slots || [];
-
-            $('<th scope="col">').addClass('fixed').text(label).appendTo(row);
-            slots.forEach(function(slot) {
-                var slotLabel = slot[2] || '??';
-                $('<th scope="col">').text(slotLabel).appendTo(row);
-            });
+            const head = $('<thead>').hide();
 
             return this._renderSlots(head, data);
         },
 
         _renderBody: function(data) {
 
-            const body = $('<tbody>').hide(),
-                  slots = data.slots || [],
-                  params = data.params || [];
+            // TODO re-implement for new data structure
 
-            params.forEach(function(param) {
+            const body = $('<tbody>').hide();
 
-                var row = $('<tr>').appendTo(body),
-                    label = $('<div class="obstable-param">').text(param.name || '??'),
-                    range = $('<div class="obstable-range">').text(param.range || '??'),
-                    values = param.values;
+            const groups = data.g || [],
+                  series = data.s || [],
+                  slots = data.d || [];
 
-                $('<th class="fixed">').append(label).append(range).appendTo(row);
-                slots.forEach(function(slot) {
-                    var slotID = slot[0],
-                        cell = $('<td>').appendTo(row),
-                        cellData = values[slotID];
-                    if (cellData) {
-                        var value = cellData[0] || '***',
-                            status = cellData[1],
-                            outOfRange = cellData[2],
-                            invalid = cellData[3];
+            if (groups) {
+                groups.forEach(group => {
+                    var groupID = group[0];
+                    groupRow = $('<tr>').append($('<td colspan=' + (1 + slots.length) + '>').text(group[1])).appendTo(body);
+                    series.forEach(parameter => {
+                        if (parameter[1] != groupID) {
+                            return;
+                        }
+                        var row = $('<tr>').appendTo(body),
+                            label = $('<div class="obstable-param">').text(param[2] || '??'),
+                            range = $('<div class="obstable-range">').text(param[3] || '??');
 
-                        // TODO process status, range excess and inalid
-                        cell.text(value);
-                    }
+
+                        parameter
+                        $('<th class="fixed">').append(label).append(range).appendTo(row);
+                    });
                 });
-            });
+            }
+
+            // ,
+            //       slots = data.d || [],
+            //       series = data.s || [];
+            //
+            // series.forEach(function(param) {
+            //
+            //     var row = $('<tr>').appendTo(body),
+            //         label = $('<div class="obstable-param">').text(param[2] || '??'),
+            //         range = $('<div class="obstable-range">').text(param[3] || '??'),
+            //         values = param.values;
+            //
+            //     $('<th class="fixed">').append(label).append(range).appendTo(row);
+            //     slots.forEach(function(slot) {
+            //         var slotID = slot[0],
+            //             cell = $('<td>').appendTo(row),
+            //             cellData = values[slotID];
+            //         if (cellData) {
+            //             var value = cellData[0] || '***',
+            //                 status = cellData[1],
+            //                 outOfRange = cellData[2],
+            //                 invalid = cellData[3];
+            //
+            //             // TODO process status, range excess and inalid
+            //             cell.text(value);
+            //         }
+            //     });
+            // });
 
             return body;
+        },
+
+        _renderSeries: function(data, series) {
+
+            const slots = data.d || [],
+                  values = data.v;
+
+            // TODO render series header
+
+            slots.forEach(slot => {
+
+                var slotID = slot[0],
+                    slotValues = values[slotID],
+                    result = slotValues ? slotsValues[series[0]] : null;
+
+                // TODO render result (or empty cell if null)
+
+            });
         },
 
         _renderFooter: function(data) {
@@ -156,8 +192,8 @@
         _renderSlots: function(container, data) {
 
             const row = $('<tr>').appendTo(container),
-                  label = data.label || '',
-                  slots = data.slots || [];
+                  label = data.l || '',
+                  slots = data.d || [];
 
             $('<th scope="col">').addClass('fixed').text(label).appendTo(row);
             slots.forEach(function(slot) {
