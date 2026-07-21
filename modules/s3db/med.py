@@ -4673,7 +4673,7 @@ def med_rheader(r, tabs=None):
                         # Vaccinations [viewing]
                         # Medication [viewing]
                         (T("Vital Signs"), "vitals", {"_class": "emphasis"}),
-                        (T("Parameters"), "analysis/results", {"_class": "emphasis"}), # TESTING
+                        (T("Parameters"), "analysis", {"_class": "emphasis"}, "results"), # TESTING
                         (T("Status"), "status", {"_class": "emphasis"}),
                         (T("Treatment"), "treatment", {"_class": "emphasis"}),
                         (T("Epicrisis"), "epicrisis"),
