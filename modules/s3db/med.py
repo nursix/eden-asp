@@ -1353,12 +1353,6 @@ class MedParameterModel(DataModel):
                             med_analysis_result = "analysis_id",
                             )
 
-        # Methods
-        self.set_method(tablename,
-                        method = "results",
-                        action = ObsTable,
-                        )
-
         # CRUD Form (with embedded results)
         crud_form = CustomForm("date",
                                InlineComponent("analysis_result",
@@ -1378,8 +1372,14 @@ class MedParameterModel(DataModel):
         configure(tablename,
                   crud_form = crud_form,
                   onaccept = self.analysis_result_onaccept,
-                  obstable = AnalysisData,
+                  data_series = AnalysisDataSeries,
                   )
+
+        # Methods
+        self.set_method(tablename,
+                        method = "results",
+                        action = DataSeriesCRUD,
+                        )
 
         # Foreign key template
         represent = S3Represent(lookup=tablename, fields=["date"])
@@ -3292,8 +3292,12 @@ class RiskClass:
             self.vitals.update_record(risk_class=risk)
 
 # =============================================================================
-class AnalysisData:
-    """ ObsTable data reader for analysis results """
+class AnalysisDataSeries:
+    """ Data series handler for analysis results """
+
+    # TODO formalize API with base class DataSeries in dseries.py
+    # TODO extend with form data lookup
+    # TODO extend with form data validation + processing
 
     # -------------------------------------------------------------------------
     def __init__(self, resource):
@@ -3322,9 +3326,6 @@ class AnalysisData:
                     },
                  }
         """
-
-        db = current.db
-        s3db = current.s3db
 
         resource = self.resource
 
@@ -3491,7 +3492,7 @@ class AnalysisData:
             minimum = maximum = None
 
         if maximum is not None and minimum is not None:
-            repr_str= "%s - %s" % vn
+            repr_str = "%s - %s" % (minimum, maximum)
         elif maximum is not None:
             repr_str = "< %s" % maximum
         elif minimum is not None:
@@ -4672,6 +4673,7 @@ def med_rheader(r, tabs=None):
                         # Vaccinations [viewing]
                         # Medication [viewing]
                         (T("Vital Signs"), "vitals", {"_class": "emphasis"}),
+                        (T("Parameters"), "analysis/results", {"_class": "emphasis"}), # TESTING
                         (T("Status"), "status", {"_class": "emphasis"}),
                         (T("Treatment"), "treatment", {"_class": "emphasis"}),
                         (T("Epicrisis"), "epicrisis"),

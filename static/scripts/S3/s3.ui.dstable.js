@@ -1,5 +1,5 @@
 /**
- * jQuery UI Widget for ObsTable
+ * jQuery UI Widget for DataSeriesTable
  *
  * @copyright 2026 (c) Sahana Software Foundation
  * @license MIT
@@ -10,12 +10,12 @@
 (function($, undefined) {
 
     "use strict";
-    var obsTableID = 0;
+    var dsTableID = 0;
 
     /**
-     * obsTable
+     * dsTable
      */
-    $.widget('s3.obsTable', {
+    $.widget('s3.dsTable', {
 
         /**
          * Default options
@@ -31,10 +31,10 @@
          */
         _create: function() {
 
-            this.id = obsTableID;
-            obsTableID += 1;
+            this.id = dsTableID;
+            dsTableID += 1;
 
-            this.eventNamespace = '.obsTable';
+            this.eventNamespace = '.dsTable';
         },
 
         /**
@@ -112,54 +112,27 @@
 
             const groups = data.g || [],
                   series = data.s || [],
-                  slots = data.d || [];
+                  slots = data.d || [],
+                  self = this;
 
             if (groups) {
                 groups.forEach(group => {
-                    var groupID = group[0];
-                    groupRow = $('<tr>').append($('<td colspan=' + (1 + slots.length) + '>').text(group[1])).appendTo(body);
+                    var groupID = group[0],
+                        groupRow = $('<tr>').append($('<td colspan=' + (1 + slots.length) + '>')
+                                            .text(group[1]))
+                                            .appendTo(body);
                     series.forEach(parameter => {
                         if (parameter[1] != groupID) {
                             return;
                         }
-                        var row = $('<tr>').appendTo(body),
-                            label = $('<div class="obstable-param">').text(param[2] || '??'),
-                            range = $('<div class="obstable-range">').text(param[3] || '??');
-
-
-                        parameter
-                        $('<th class="fixed">').append(label).append(range).appendTo(row);
+                        self._renderSeries(data, parameter).appendTo(body);
                     });
                 });
+            } else {
+                series.forEach(parameter => {
+                    self._renderSeries(data, parameter).appendTo(body);
+                });
             }
-
-            // ,
-            //       slots = data.d || [],
-            //       series = data.s || [];
-            //
-            // series.forEach(function(param) {
-            //
-            //     var row = $('<tr>').appendTo(body),
-            //         label = $('<div class="obstable-param">').text(param[2] || '??'),
-            //         range = $('<div class="obstable-range">').text(param[3] || '??'),
-            //         values = param.values;
-            //
-            //     $('<th class="fixed">').append(label).append(range).appendTo(row);
-            //     slots.forEach(function(slot) {
-            //         var slotID = slot[0],
-            //             cell = $('<td>').appendTo(row),
-            //             cellData = values[slotID];
-            //         if (cellData) {
-            //             var value = cellData[0] || '***',
-            //                 status = cellData[1],
-            //                 outOfRange = cellData[2],
-            //                 invalid = cellData[3];
-            //
-            //             // TODO process status, range excess and inalid
-            //             cell.text(value);
-            //         }
-            //     });
-            // });
 
             return body;
         },
@@ -171,15 +144,26 @@
 
             // TODO render series header
 
+            var row = $('<tr>'),
+                label = $('<div class="dstable-param">').text(series[2] || '??'),
+                range = $('<div class="dstable-range">').text((series[4] || '??') + ' ' + (series[5] || '??'));
+
+            $('<th class="fixed">').append(label).append(range).appendTo(row);
+
             slots.forEach(slot => {
 
                 var slotID = slot[0],
                     slotValues = values[slotID],
-                    result = slotValues ? slotsValues[series[0]] : null;
+                    result = slotValues ? slotValues[series[0]] : null,
+                    cell = $("<td>");
 
-                // TODO render result (or empty cell if null)
-
+                if (result !== null) {
+                    cell.text(result[0]);
+                }
+                cell.appendTo(row);
             });
+
+            return row;
         },
 
         _renderFooter: function(data) {

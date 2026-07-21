@@ -1,7 +1,8 @@
 """
-    Observation Tables
+    Data Series CRUD
 
     - to display observed/measured values along a date/time axis
+    - to add a series of observed/measured values for a point in time
 
     Copyright: 2026 (c) Sahana Software Foundation
 
@@ -27,19 +28,18 @@
     OTHER DEALINGS IN THE SOFTWARE.
 """
 
-__all__ = ("ObsTable",
-           "ObsTableWidget",
+__all__ = ("DataSeriesCRUD",
+           "DataSeriesTable",
            )
 
 import json
 
-from gluon import current, \
-                  INPUT, DIV, TABLE, THEAD, TBODY, TFOOT, TR, TH, TD
+from gluon import current, INPUT, DIV, TABLE
 
-from .base import CRUDMethod
+from .crud import BasicCRUD
 
 # =============================================================================
-class ObsTable(CRUDMethod):
+class DataSeriesCRUD(BasicCRUD):
 
     # -------------------------------------------------------------------------
     def apply_method(self, r, **attr):
@@ -55,16 +55,16 @@ class ObsTable(CRUDMethod):
 
         output = {}
         if r.http == "GET":
-            output = self.render_table(r, **attr)
+            output = self.select(r, **attr)
         else:
             r.error(405, current.ERROR.BAD_METHOD)
 
         return output
 
     # -------------------------------------------------------------------------
-    def render_table(self, r, **attr):
+    def select(self, r, **attr):
         """
-            Render the observation table (HTML method)
+            Render the data series table (HTML method)
 
             Args:
                 r: the CRUDRequest instance
@@ -76,34 +76,47 @@ class ObsTable(CRUDMethod):
 
         output = {}
 
-        widget_id = "obstable"
+        widget_id = "dstable"
 
         # Initial data
         data = self.extract(r)
-        print(data)
 
         # Instantiate Widget
-        widget = ObsTableWidget(data=data)
-        output["obstable"] = widget.html(widget_id = widget_id,
-                                         )
+        widget = DataSeriesTable(data=data)
+        output["items"] = widget.html(widget_id=widget_id)
+
+        # TODO embed multi-parameter form
+        # output["form"] = self.form(r, **attr)
+
+        # Add an action-button linked to the create view
+        # TODO replace by trigger-button for embedded form
+        buttons = self.render_buttons(r, ["add"], **attr)
+        if buttons:
+            output["buttons"] = buttons
 
         # View
-        current.response.view = self._view(r, "obstable.html")
+        current.response.view = self._view(r, "dseries.html")
 
         return output
 
+    # -------------------------------------------------------------------------
+    # def form(self, r, **attr):
+    #
+    #     # TODO implement
+    #     return DIV(BUTTON(), FORM(), _class="ds-crud")
+    #
     # -------------------------------------------------------------------------
     def extract(self, r):
 
         resource = self.resource
 
-        reader = resource.get_config("obstable")
+        reader = resource.get_config("data_series")
 
         return reader(resource).results() if reader else {}
 
 # =============================================================================
-class ObsTableWidget:
-    """ Helper to configure and render the observation table UI """
+class DataSeriesTable:
+    """ Helper to configure and render the data series table """
 
     def __init__(self, data=None):
         # TODO docstring
@@ -115,15 +128,15 @@ class ObsTableWidget:
     def html(self, widget_id):
         # TODO docstring
 
-        widget = DIV(TABLE(_class = "obstable-table",
+        widget = DIV(TABLE(_class = "dstable-table",
                            _id = widget_id,
                            ),
                      INPUT(value = json.dumps(self.data),
-                           _class = "obstable-data",
+                           _class = "dstable-data",
                            _id = f"{widget_id}-data",
                            _type = "hidden",
                            ),
-                     _class = "obstable-scroll",
+                     _class = "dstable-scroll",
                      _id = f"{widget_id}-scroll",
                      )
 
@@ -151,14 +164,14 @@ class ObsTableWidget:
 
         # Inject static script
         if s3.debug:
-            script = "/%s/static/scripts/S3/s3.ui.obstable.js" % appname
+            script = "/%s/static/scripts/S3/s3.ui.dstable.js" % appname
         else:
-            script = "/%s/static/scripts/S3/s3.ui.obstable.min.js" % appname
+            script = "/%s/static/scripts/S3/s3.ui.dstable.min.js" % appname
         if script not in scripts:
             scripts.append(script)
 
         # Script to instantiate the widget
-        script = """$("#%(widget_id)s").obsTable(%(options)s)""" % \
+        script = """$("#%(widget_id)s").dsTable(%(options)s)""" % \
                     {"widget_id": widget_id,
                      "options": json.dumps(options),
                      }
