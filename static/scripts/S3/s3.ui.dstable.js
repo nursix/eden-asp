@@ -1,5 +1,5 @@
 /**
- * jQuery UI Widget for ObsTable
+ * jQuery UI Widget for DataSeriesTable
  *
  * @copyright 2026 (c) Sahana Software Foundation
  * @license MIT
@@ -10,12 +10,12 @@
 (function($, undefined) {
 
     "use strict";
-    var obsTableID = 0;
+    var dsTableID = 0;
 
     /**
-     * obsTable
+     * dsTable
      */
-    $.widget('s3.obsTable', {
+    $.widget('s3.dsTable', {
 
         /**
          * Default options
@@ -31,10 +31,10 @@
          */
         _create: function() {
 
-            this.id = obsTableID;
-            obsTableID += 1;
+            this.id = dsTableID;
+            dsTableID += 1;
 
-            this.eventNamespace = '.obsTable';
+            this.eventNamespace = '.dsTable';
         },
 
         /**
@@ -99,51 +99,71 @@
 
         _renderHeader: function(data) {
 
-            const head = $('<thead>').hide(),
-                  row = $('<tr>').appendTo(head),
-                  label = data.label || '',
-                  slots = data.slots || [];
-
-            $('<th scope="col">').addClass('fixed').text(label).appendTo(row);
-            slots.forEach(function(slot) {
-                var slotLabel = slot[2] || '??';
-                $('<th scope="col">').text(slotLabel).appendTo(row);
-            });
+            const head = $('<thead>').hide();
 
             return this._renderSlots(head, data);
         },
 
         _renderBody: function(data) {
 
-            const body = $('<tbody>').hide(),
-                  slots = data.slots || [],
-                  params = data.params || [];
+            // TODO re-implement for new data structure
 
-            params.forEach(function(param) {
+            const body = $('<tbody>').hide();
 
-                var row = $('<tr>').appendTo(body),
-                    label = $('<div class="obstable-param">').text(param.name || '??'),
-                    range = $('<div class="obstable-range">').text(param.range || '??'),
-                    values = param.values;
+            const groups = data.g || [],
+                  series = data.s || [],
+                  slots = data.d || [],
+                  self = this;
 
-                $('<th class="fixed">').append(label).append(range).appendTo(row);
-                slots.forEach(function(slot) {
-                    var slotID = slot[0],
-                        cell = $('<td>').appendTo(row),
-                        cellData = values[slotID];
-                    if (cellData) {
-                        var value = cellData[0] || '***',
-                            status = cellData[1],
-                            outOfRange = cellData[2],
-                            invalid = cellData[3];
-
-                        // TODO process status, range excess and inalid
-                        cell.text(value);
-                    }
+            if (groups) {
+                groups.forEach(group => {
+                    var groupID = group[0],
+                        groupRow = $('<tr>').append($('<td colspan=' + (1 + slots.length) + '>')
+                                            .text(group[1]))
+                                            .appendTo(body);
+                    series.forEach(parameter => {
+                        if (parameter[1] != groupID) {
+                            return;
+                        }
+                        self._renderSeries(data, parameter).appendTo(body);
+                    });
                 });
-            });
+            } else {
+                series.forEach(parameter => {
+                    self._renderSeries(data, parameter).appendTo(body);
+                });
+            }
 
             return body;
+        },
+
+        _renderSeries: function(data, series) {
+
+            const slots = data.d || [],
+                  values = data.v;
+
+            // TODO render series header
+
+            var row = $('<tr>'),
+                label = $('<div class="dstable-param">').text(series[2] || '??'),
+                range = $('<div class="dstable-range">').text((series[4] || '??') + ' ' + (series[5] || '??'));
+
+            $('<th class="fixed">').append(label).append(range).appendTo(row);
+
+            slots.forEach(slot => {
+
+                var slotID = slot[0],
+                    slotValues = values[slotID],
+                    result = slotValues ? slotValues[series[0]] : null,
+                    cell = $("<td>");
+
+                if (result !== null) {
+                    cell.text(result[0]);
+                }
+                cell.appendTo(row);
+            });
+
+            return row;
         },
 
         _renderFooter: function(data) {
@@ -156,8 +176,8 @@
         _renderSlots: function(container, data) {
 
             const row = $('<tr>').appendTo(container),
-                  label = data.label || '',
-                  slots = data.slots || [];
+                  label = data.l || '',
+                  slots = data.d || [];
 
             $('<th scope="col">').addClass('fixed').text(label).appendTo(row);
             slots.forEach(function(slot) {

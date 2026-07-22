@@ -1,4 +1,4 @@
-.obstable-scroll {
+.dstable-scroll {
   position: relative;
   width:100%;
   z-index: 1;
@@ -7,7 +7,7 @@
   max-height: 80vh;
   font-size: 0.8rem;
 }
-.obstable-scroll table {
+.dstable-scroll table {
   width: 100%;
   min-width: 800px;
   margin: auto;
@@ -16,8 +16,8 @@
   border: 1px solid #aaa;
   line-height: 1.0;
 }
-.obstable-scroll th,
-.obstable-scroll td {
+.dstable-scroll th,
+.dstable-scroll td {
   padding: 5px 10px;
   background: #fff;
   vertical-align: middle;
@@ -25,12 +25,12 @@
   border-right: 0;
   border-top: 0;
 }
-.obstable-scroll tr:first-child th {
+.dstable-scroll tr:first-child th {
   border-top: 1px solid #aaa;
 }
-.obstable-scroll thead,
-.obstable-scroll thead th,
-.obstable-scroll thead td {
+.dstable-scroll thead,
+.dstable-scroll thead th,
+.dstable-scroll thead td {
   background: #ccc;
   color: #333;
   position: -webkit-sticky;
@@ -38,9 +38,9 @@
   top: 0;
   z-index:4;
 }
-.obstable-scroll tfoot,
-.obstable-scroll tfoot th,
-.obstable-scroll tfoot td {
+.dstable-scroll tfoot,
+.dstable-scroll tfoot th,
+.dstable-scroll tfoot td {
   position: -webkit-sticky;
   position: sticky;
   bottom: 0;
@@ -49,7 +49,7 @@
   z-index:4;
 }
 
-.obstable-table th.fixed {
+.dstable-table th.fixed {
   position: -webkit-sticky;
   position: sticky;
   left: 0;
@@ -57,19 +57,19 @@
   background: #eee;
   border-right: 1px solid #aaa;
 }
-.obstable-table thead th.fixed,
-.obstable-table tfoot th.fixed {
+.dstable-table thead th.fixed,
+.dstable-table tfoot th.fixed {
   z-index: 5;
   font-weight: normal;
   color: #aaa;
 }
 
-.obstable-table .obstable-param {
+.dstable-table .dstable-param {
     display: block;
     font-size: 0.9rem;
     white-space: pre;
 }
-.obstable-table .obstable-range {
+.dstable-table .dstable-range {
     display: block;
     font-size: 0.7rem;
     color: #666;

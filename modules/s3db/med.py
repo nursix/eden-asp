@@ -1353,12 +1353,6 @@ class MedParameterModel(DataModel):
                             med_analysis_result = "analysis_id",
                             )
 
-        # Methods
-        self.set_method(tablename,
-                        method = "results",
-                        action = ObsTable,
-                        )
-
         # CRUD Form (with embedded results)
         crud_form = CustomForm("date",
                                InlineComponent("analysis_result",
@@ -1378,8 +1372,14 @@ class MedParameterModel(DataModel):
         configure(tablename,
                   crud_form = crud_form,
                   onaccept = self.analysis_result_onaccept,
-                  obstable = AnalysisData,
+                  data_series = AnalysisDataSeries,
                   )
+
+        # Methods
+        self.set_method(tablename,
+                        method = "results",
+                        action = DataSeriesCRUD,
+                        )
 
         # Foreign key template
         represent = S3Represent(lookup=tablename, fields=["date"])
@@ -3292,101 +3292,215 @@ class RiskClass:
             self.vitals.update_record(risk_class=risk)
 
 # =============================================================================
-class AnalysisData:
-    """ ObsTable data reader for analysis results """
+class AnalysisDataSeries:
+    """ Data series handler for analysis results """
 
-    # TODO adjust for med_analysis model
+    # TODO formalize API with base class DataSeries in dseries.py
+    # TODO extend with form data lookup
+    # TODO extend with form data validation + processing
 
+    # -------------------------------------------------------------------------
     def __init__(self, resource):
+        # TODO docstring
 
         if resource.tablename != "med_analysis":
             raise RuntimeError
         self.resource = resource
 
-    def extract(self, start=0, limit=None):
+    # -------------------------------------------------------------------------
+    def results(self, start=0, limit=None):
         """
-            Extract data from context resource and generate data dict
+            Extract results from context resource and generate data dict
+
+            Args:
+                start: the start index of the page
+                limit: the number of records in the page
+
+            Returns:
+                a JSON-serializable dict like:
+                {d: [[id, iso_date, title], ...],                           // date/time slots
+                 g: [[id, title], ...]                                      // series groups
+                 s: [[id, group-id, title, full-name, range, unit], ...]    // series
+                 v: {slot-id:                                               // values
+                      {series-id: [value, status, reason, out-of-range], ...}
+                    },
+                 }
+        """
+
+        resource = self.resource
+
+        # Get all relevant rows
+        # TODO filter out records marked as invalid
+        # TODO apply pagination
+        rows = resource.select(["id", "date"],
+                               orderby = "date desc",
+                               as_rows = True,
+                               )
+        analysis_ids = {row.id for row in rows}
+
+        # Represent the dates
+        dates = [[row.id,
+                  row.date.isoformat(),
+                  row.date.isoformat(), # TODO localized representation
+                  ] for row in rows]
+
+        # Lookup groups, series and values
+        series, groups = self.get_series(analysis_ids)
+        values = self.get_values(analysis_ids)
+
+        return {"d": dates, "g": groups, "s": series, "v": values}
+
+    # -------------------------------------------------------------------------
+    def get_series(self, analysis_ids):
+        """
+            Look up all series (parameters)
+
+            Args:
+                analysis_ids: the analysis record IDs
+            Returns:
+                tuple (series, groups)
+
+                series = [[parameter-id, group-id, title, full-name, range, unit], ...]
+                groups = [[group-id, group-title], ...]
         """
 
         db = current.db
         s3db = current.s3db
 
-        resource = self.resource
+        # Sub-query for all parameters used in analyses
+        rtable = s3db.med_analysis_result
+        query = (rtable.analysis_id.belongs(analysis_ids)) & \
+                (rtable.deleted == False)
+        parameter_ids = db(query)._select(rtable.parameter_id)
 
-        rows = resource.select(["id",
-                                "date",
-                                # "status",
-                                ],
-                                orderby = "date desc",
-                                as_rows = True,
+        # Look up parameter details
+        ptable = s3db.med_parameter
+        query = (ptable.id.belongs(parameter_ids)) & \
+                (ptable.deleted == False)
+        rows = db(query).select(ptable.id,
+                                ptable.name,
+                                ptable.abrv,
+                                ptable.parameter_group_id,
+                                ptable.qualitative,
+                                ptable.values_normal,
+                                ptable.um,
+                                orderby = (ptable.sample_type_id, ptable.name),
                                 )
 
-        slots = [[row.id, row.date.isoformat(), row.date.isoformat()] for row in rows]
-
-        rtable = s3db.med_analysis_result
-        query = (rtable.analysis_id.belongs({row.id for row in rows})) & \
-                (rtable.deleted == False)
-        results = db(query).select(rtable.id,
-                                   rtable.analysis_id,
-                                   rtable.parameter_id,
-                                   rtable.result,
-                                   )
-        result_dict = {}
-        for result in results:
-            parameter_id = result["parameter_id"]
-            if parameter_id in result_dict:
-                result_dict[parameter_id].append(result)
+        # Represent as series
+        series, group_ids = [], set()
+        for row in rows:
+            if row.qualitative:
+                normal, unit = "", ""
             else:
-                result_dict[parameter_id] = [result]
-        results = result_dict
+                normal = self.represent_normal_range(row.values_normal)
+                unit = row.um
+            series.append([row.id,
+                           row.parameter_group_id,
+                           row.abrv or row.name,
+                           row.name,
+                           normal,
+                           unit,
+                           ])
+            group_ids.add(row.parameter_group_id)
 
-        ptable = s3db.med_parameter
-        query = (ptable.id.belongs(results.keys()))
-        parameters = db(query).select(ptable.id,
-                                      ptable.name,
-                                      ptable.abrv,
-                                      )
+        # Look up parameter group details
+        gtable = s3db.med_parameter_group
+        query = (gtable.id.belongs(group_ids))
+        rows = db(query).select(gtable.id, gtable.name, orderby=gtable.name)
+        groups = [[row.id, row.name] for row in rows]
 
-        # Look up analysis results
-        params = []
-        for parameter in parameters:
-            rows = results.get(parameter_id)
-            if rows:
-                param_dict = {"name": parameter.abrv or parameter.name,
-                              "range": "-",
-                              "values": {},
-                              }
-                parameter_id = parameter.id
-                for row in rows:
-                    param_dict["values"][row.analysis_id] = [row.result,
-                                                             2, 1, 0,
-                                                             ]
-                params.append(param_dict)
+        return series, groups
 
-        data = {"label": "Results",
-                "slots": slots,
-                "params": params,
-                }
-        return data
+    # -------------------------------------------------------------------------
+    @classmethod
+    def get_values(cls, analysis_ids):
+        """
+            Get all analysis results
 
-        # Status: 0=pending, 1=prelimiary, 2=final
-        # data = {"label": "Parameter",
-        #         "slots": [
-        #             [0, "2025-08-19T10:12:00Z", "19.08.2025 10:12"],
-        #             [1, "2025-08-18T15:23:00Z", "18.08.2025 16:23"],
-        #             [2, "2025-08-16T08:33:00Z", "16.08.2025 08:33"],
-        #             [3, "2025-08-13T12:44:00Z", "13.08.2025 12:44"],
-        #             ],
-        #         "params": [
-        #                 {"name": "Serum-Na+",
-        #                  "range": "137 - 145 mmol/l",
-        #                  "values": {
-        #                      1: ["125", 2, 1, 0],
-        #                      3: ["127", 2, 1, 0],
-        #                      },
-        #                  }
-        #             ],
-        #         }
+            Args:
+                analysis_ids: the med_analysis record IDs
+            Returns:
+                a dict {analysis-id:
+                         {parameter-id: [value, status, reason, out-of-range],
+                          }
+                        }
+        """
+
+        db = current.db
+        s3db = current.s3db
+
+        statuses = {"PENDING": 0,
+                    "PRELIMINARY": 1,
+                    "FINAL": 2,
+                    "FAILED": 3,
+                    }
+
+        table = s3db.med_analysis_result
+        query = (table.analysis_id.belongs(analysis_ids)) & \
+                (table.deleted == False)
+        rows = db(query).select(table.analysis_id,
+                                table.parameter_id,
+                                table.result,
+                                table.status,
+                                table.status_reason,
+                                table.abnormal,
+                                )
+        results = {}
+        for row in rows:
+            analysis_id = row.analysis_id
+            if analysis_id in results:
+                result = results[analysis_id]
+            else:
+                result = results[analysis_id] = {}
+
+            parameter_id = row.parameter_id
+            if not parameter_id:
+                continue
+
+            status = statuses.get(row.status)
+            if status is None:
+                continue
+
+            # TODO use result_numeric with parameter precision
+            #      for quantitative parameters, if available
+            value = "***" if status == 3 else \
+                    "---" if status == 0 else str(row.result)
+
+            result[parameter_id] = [value,
+                                    status,
+                                    row.status_reason or "",
+                                    int(row.abnormal),
+                                    ]
+        return results
+
+    # -------------------------------------------------------------------------
+    def represent_normal_range(self, vn):
+        """
+            Represent normal parameter ranges
+
+            Args:
+                vn: the normal range, a tuple [min, max] where either can be None
+
+            Returns:
+                a string representation of the range
+        """
+
+        if isinstance(vn, (list, tuple)) and len(vn) == 2:
+            minimum, maximum = vn
+        else:
+            minimum = maximum = None
+
+        if maximum is not None and minimum is not None:
+            repr_str = "%s - %s" % (minimum, maximum)
+        elif maximum is not None:
+            repr_str = "< %s" % maximum
+        elif minimum is not None:
+            repr_str = "> %s" % minimum
+        else:
+            repr_str = ""
+
+        return repr_str
 
 # =============================================================================
 class IS_BLOOD_PRESSURE(Validator):
@@ -4559,6 +4673,7 @@ def med_rheader(r, tabs=None):
                         # Vaccinations [viewing]
                         # Medication [viewing]
                         (T("Vital Signs"), "vitals", {"_class": "emphasis"}),
+                        (T("Parameters"), "analysis", {"_class": "emphasis"}, "results"), # TESTING
                         (T("Status"), "status", {"_class": "emphasis"}),
                         (T("Treatment"), "treatment", {"_class": "emphasis"}),
                         (T("Epicrisis"), "epicrisis"),
