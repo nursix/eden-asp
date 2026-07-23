@@ -13,13 +13,12 @@
 {{except:}}
 <div class='row'>
 {{pass}}
- <div class='small-12 columns'>
+ 
+<div class='small-12 columns'>
+  <!-- Input Form-->
+  {{try:}}{{form=form}}{{except:}}{{form=None}}{{pass}}
+  {{if form:}}
   <div class='row'>
-   <div id='map' class='small-12 columns'></div>
-  </div>
-  {{try:}}{{showadd_btn=showadd_btn}}{{except:}}{{showadd_btn=None}}{{pass}}
-  {{if showadd_btn:}}
-  <div id='list-add' class='row'>
    <div class="small-12 columns">
     {{try:}}{{=H3(addtitle)}}{{except:}}{{pass}}
     {{try:}}{{=addheader}}{{except:}}{{pass}}
@@ -30,12 +29,9 @@
    </div>
   </div>
   {{pass}}
+
+  <!-- Filter Form-->
   <div class='row'>
-   <div class='medium-3 large-4 medium-push-9 large-push-8 columns'>
-    <div id='list-btn-add'>
-     {{if showadd_btn:}}{{=showadd_btn}}{{else:}}{{try:}}{{=buttons["add_btn"]}}{{except:}}{{pass}}{{pass}}
-    </div>
-   </div>
    <div class='medium-9 large-8 medium-pull-3 large-pull-4 columns'>
     {{try:}}{{if list_filter_form:}}
     <div id='list-filter' class='form-container'>
@@ -44,7 +40,8 @@
     {{pass}}
     {{except:}}{{pass}}
    </div>
-  </div>
+   
+   <!-- Table -->
   <div class='row'>
    {{try:}}{{items=items}}
    <div id='dstable-container' class='small-12 columns'>

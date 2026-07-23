@@ -34,7 +34,7 @@ __all__ = ("DataSeriesCRUD",
 
 import json
 
-from gluon import current, INPUT, DIV, TABLE
+from gluon import current, INPUT, DIV, TABLE, FORM, BUTTON
 
 from .crud import BasicCRUD
 
@@ -85,14 +85,7 @@ class DataSeriesCRUD(BasicCRUD):
         widget = DataSeriesTable(data=data)
         output["items"] = widget.html(widget_id=widget_id)
 
-        # TODO embed multi-parameter form
-        # output["form"] = self.form(r, **attr)
-
-        # Add an action-button linked to the create view
-        # TODO replace by trigger-button for embedded form
-        buttons = self.render_buttons(r, ["add"], **attr)
-        if buttons:
-            output["buttons"] = buttons
+        output["form"] = self.create(r, **attr)
 
         # View
         current.response.view = self._view(r, "dseries.html")
@@ -100,11 +93,14 @@ class DataSeriesCRUD(BasicCRUD):
         return output
 
     # -------------------------------------------------------------------------
-    # def form(self, r, **attr):
-    #
-    #     # TODO implement
-    #     return DIV(BUTTON(), FORM(), _class="ds-crud")
-    #
+    def create(self, r, **attr):
+        return DIV(BUTTON('Test',
+                          _class='tiny primary button action-btn'
+                          ),
+                    FORM(_id = 'test'),
+                    _class="ds-crud",
+                    )
+
     # -------------------------------------------------------------------------
     def extract(self, r):
 
